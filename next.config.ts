@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
-const repoName = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "";
-const basePath = repoName ? `/${repoName}` : "";
+const isProd = process.env.NODE_ENV === "production";
+const repoName = "dynamic-readme-creature";
+const basePath = isProd ? `/${repoName}` : "";
 
 const nextConfig: NextConfig = {
   output: "export",
