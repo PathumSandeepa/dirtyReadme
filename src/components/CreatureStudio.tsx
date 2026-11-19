@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Camera,
   Check,
+  CheckCircle2,
   Code2,
   Copy,
   Cpu,
@@ -23,6 +24,7 @@ import {
   Sliders,
   Sparkles,
   Terminal,
+  UploadCloud,
   UserSquare2,
   Users,
   Zap,
@@ -31,6 +33,7 @@ import { AutoEvolveModal } from "@/components/AutoEvolveModal";
 import { CreatureComparator } from "@/components/CreatureComparator";
 import { EvolutionMatrix } from "@/components/EvolutionMatrix";
 import { GitHubProfilePreview } from "@/components/GitHubProfilePreview";
+import { PublishProfileRepoModal } from "@/components/PublishProfileRepoModal";
 import { ReadmeEditorPanel } from "@/components/ReadmeEditorPanel";
 import { ShareCardSvg } from "@/components/ShareCardSvg";
 import { generateShareCardSvgString } from "@/lib/generateShareCardSvg";
@@ -141,6 +144,7 @@ export function CreatureStudio() {
   const [showProfileSidebar, setShowProfileSidebar] = useState(true);
   const [showGridBackdrop, setShowGridBackdrop] = useState(false);
   const [evolveModalOpen, setEvolveModalOpen] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
 
   const [ghInput, setGhInput] = useState(DEFAULT_CONFIG.username);
   const [ghLoading, setGhLoading] = useState(false);
@@ -163,6 +167,103 @@ export function CreatureStudio() {
     [config, readmeConfig]
   );
   const rawSvgSource = useMemo(() => generateSvgString(config), [config]);
+  const shareCardSvgSource = useMemo(
+    () => generateShareCardSvgString(config),
+    [config]
+  );
+
+  function applySnapshotToState(snap: GitHubProfileSnapshot) {
+    setGhSnapshot(snap);
+    setConfig((prev) => {
+      const nextCommits =
+        prev.windowMode === "rolling"
+          ? snap.rollingCommits
+          : snap.annualCommits;
+      const updated: CreatureConfig = {
+        ...prev,
+        username: snap.username,
+        commits: nextCommits,
+        languages: snap.languages,
+      };
+      return prev.colorMode === "languages"
+        ? applyLanguageColors(updated, snap.languages)
+        : updated;
+    });
+
+    setReadmeConfig((prev) => {
+      const langSet = new Set(snap.languages.map((l) => l.name.toLowerCase()));
+      const nextLinks = [
+        {
+          id: "github",
+          label: "GITHUB",
+          valueText: `@${snap.username}`,
+          url: `https://github.com/${snap.username}`,
+          color: "181717",
+          logo: "github",
+          enabled: true,
+        },
+        ...(snap.website
+          ? [
+              {
+                id: "website",
+                label: "WEBSITE",
+                valueText: snap.website
+                  .replace(/^https?:\/\//i, "")
+                  .replace(/\/$/, "")
+                  .toUpperCase(),
+                url: snap.website,
+                color: "FF6B00",
+                logo: "googlechrome",
+                enabled: true,
+              },
+            ]
+          : []),
+        ...(snap.twitterUsername
+          ? [
+              {
+                id: "x",
+                label: "X",
+                valueText: `@${snap.twitterUsername}`,
+                url: `https://x.com/${snap.twitterUsername}`,
+                color: "000000",
+                logo: "x",
+                enabled: true,
+              },
+            ]
+          : []),
+      ];
+
+      return {
+        ...prev,
+        profileDisplayName: snap.displayName,
+        profileLocation: snap.location || prev.profileLocation,
+        profileCompany: snap.company || prev.profileCompany,
+        profileWebsite: snap.website || prev.profileWebsite,
+        headline: `${snap.displayName} | Developer Profile`,
+        bio: snap.bio,
+        actionLinks: nextLinks,
+        projects:
+          snap.featuredRepos.length > 0 ? snap.featuredRepos : prev.projects,
+        badges: prev.badges.map((b) =>
+          langSet.has(b.label.toLowerCase()) ? { ...b, enabled: true } : b
+        ),
+      };
+    });
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchGitHubProfileSnapshot(DEFAULT_CONFIG.username)
+      .then((snap) => {
+        if (!cancelled) applySnapshotToState(snap);
+      })
+      .catch(() => {
+        // Silent fallback on initial mount if offline or rate-limited
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSyncGitHub(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -170,22 +271,7 @@ export function CreatureStudio() {
     setGhError(null);
     try {
       const snap = await fetchGitHubProfileSnapshot(ghInput);
-      setGhSnapshot(snap);
-      setConfig((prev) => {
-        const updated: CreatureConfig = {
-          ...prev,
-          username: snap.username,
-          commits: snap.estimatedCommits,
-          languages: snap.languages,
-        };
-        return prev.colorMode === "languages"
-          ? applyLanguageColors(updated, snap.languages)
-          : updated;
-      });
-      setReadmeConfig((prev) => ({
-        ...prev,
-        profileDisplayName: snap.displayName,
-      }));
+      applySnapshotToState(snap);
     } catch (err) {
       setGhError(
         err instanceof Error ? err.message : "Failed to load GitHub data."
@@ -204,7 +290,15 @@ export function CreatureStudio() {
   }
 
   function selectWindow(windowMode: ContributionWindow) {
-    setConfig((prev) => ({ ...prev, windowMode }));
+    setConfig((prev) => ({
+      ...prev,
+      windowMode,
+      commits: ghSnapshot
+        ? windowMode === "rolling"
+          ? ghSnapshot.rollingCommits
+          : ghSnapshot.annualCommits
+        : prev.commits,
+    }));
   }
 
   function applyThemePreset(presetId: (typeof THEME_PRESETS)[number]["id"]) {
@@ -551,11 +645,55 @@ export function CreatureStudio() {
                 </div>
 
                 {ghSnapshot && (
-                  <p className="mt-2 text-[10px] text-[#8b949e]">
-                    Synced @{ghSnapshot.username}: {ghSnapshot.publicRepos}{" "}
-                    repos · {ghSnapshot.totalStars} stars ·{" "}
-                    {ghSnapshot.sourceNote}
-                  </p>
+                  <div className="mt-2.5 space-y-2 border-t border-[#21262d] pt-2.5">
+                    <p className="text-[10px] text-[#8b949e]">
+                      Synced @{ghSnapshot.username}: {ghSnapshot.publicRepos}{" "}
+                      repos · {ghSnapshot.totalStars} stars ·{" "}
+                      {ghSnapshot.annualCommits} ({new Date().getUTCFullYear()}) /{" "}
+                      {ghSnapshot.rollingCommits} (365d)
+                    </p>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] font-semibold ${
+                          ghSnapshot.profileRepoExists
+                            ? "border border-[#00E676]/40 bg-[#00E676]/10 text-[#00E676]"
+                            : "border border-[#FF6B00]/40 bg-[#FF6B00]/10 text-[#FF6B00]"
+                        }`}
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        {ghSnapshot.profileRepoExists
+                          ? `${ghSnapshot.username}/${ghSnapshot.username} ready`
+                          : `Create ${ghSnapshot.username}/${ghSnapshot.username}`}
+                      </span>
+
+                      <div className="flex items-center gap-1.5">
+                        {ghSnapshot.existingProfileReadme && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReadmeConfig((prev) => ({
+                                ...prev,
+                                rawOverride: `${markerSnippet}\n\n${ghSnapshot.existingProfileReadme}`,
+                              }));
+                              setPreviewMode("edit");
+                            }}
+                            className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-0.5 font-mono text-[10px] text-[#c9d1d9] hover:border-[#8b949e] hover:text-white"
+                          >
+                            Import Current README
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setPublishModalOpen(true)}
+                          className="inline-flex items-center gap-1 rounded bg-[#FF6B00] px-2 py-0.5 font-mono text-[10px] font-semibold text-white hover:bg-[#ff7f24]"
+                        >
+                          <UploadCloud className="h-3 w-3" />
+                          Push to Repo
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </section>
 
@@ -930,43 +1068,52 @@ export function CreatureStudio() {
 
             {/* CENTER / RIGHT PANEL — LIVE GITHUB PROFILE PREVIEW, EDITOR & EXPORT */}
             <section className="flex flex-col gap-5 lg:col-span-8 xl:col-span-8">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <button
                   type="button"
                   onClick={() =>
                     triggerFileDownload("creature.svg", rawSvgSource)
                   }
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#FF6B00]/60 bg-[#FF6B00] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#FF6B00]/15 transition hover:bg-[#ff7f24]"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-[#FF6B00]/60 bg-[#FF6B00] px-3.5 py-3 text-xs font-semibold text-white shadow-lg shadow-[#FF6B00]/15 transition hover:bg-[#ff7f24] sm:text-sm"
                 >
-                  <Download className="h-4 w-4" />
-                  Download Animated SVG
+                  <Download className="h-4 w-4 shrink-0" />
+                  Download SVG
                 </button>
 
                 <button
                   type="button"
                   onClick={() => void handleCopy("readme")}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm font-semibold text-[#e6edf3] transition hover:border-[#8b949e] hover:bg-[#21262d]"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-[#30363d] bg-[#161b22] px-3.5 py-3 text-xs font-semibold text-[#e6edf3] transition hover:border-[#8b949e] hover:bg-[#21262d] sm:text-sm"
                 >
                   {copiedSnippet === "readme" ? (
                     <>
-                      <Check className="h-4 w-4 text-[#00E676]" />
-                      Copied Full README.md!
+                      <Check className="h-4 w-4 shrink-0 text-[#00E676]" />
+                      Copied README!
                     </>
                   ) : (
                     <>
-                      <FileText className="h-4 w-4 text-[#8b949e]" />
-                      Copy Full README.md
+                      <FileText className="h-4 w-4 shrink-0 text-[#8b949e]" />
+                      Copy README.md
                     </>
                   )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setEvolveModalOpen(true)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#00E676]/40 bg-[#00E676]/10 px-4 py-3 text-sm font-semibold text-[#00E676] transition hover:border-[#00E676] hover:bg-[#00E676]/20"
+                  onClick={() => setPublishModalOpen(true)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-[#58a6ff]/40 bg-[#58a6ff]/10 px-3.5 py-3 text-xs font-semibold text-[#58a6ff] transition hover:border-[#58a6ff] hover:bg-[#58a6ff]/20 sm:text-sm"
                 >
-                  <Zap className="h-4 w-4" />
-                  Copy Auto-Evolve Action
+                  <UploadCloud className="h-4 w-4 shrink-0" />
+                  Push to {safeUser}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setEvolveModalOpen(true)}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-[#00E676]/40 bg-[#00E676]/10 px-3.5 py-3 text-xs font-semibold text-[#00E676] transition hover:border-[#00E676] hover:bg-[#00E676]/20 sm:text-sm"
+                >
+                  <Zap className="h-4 w-4 shrink-0" />
+                  Auto-Evolve Action
                 </button>
               </div>
 
@@ -1167,6 +1314,16 @@ export function CreatureStudio() {
         open={evolveModalOpen}
         onClose={() => setEvolveModalOpen(false)}
         config={config}
+      />
+
+      <PublishProfileRepoModal
+        open={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        username={safeUser}
+        snapshot={ghSnapshot}
+        creatureSvg={rawSvgSource}
+        shareCardSvg={shareCardSvgSource}
+        readmeMarkdown={fullReadmeMarkdown}
       />
     </div>
   );
