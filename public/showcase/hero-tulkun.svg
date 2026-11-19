@@ -5,86 +5,109 @@
     .cc-float {
       transform-box: fill-box;
       transform-origin: center;
-      animation: ccFloat 5.60s ease-in-out infinite;
+      animation: ccFloat 5.20s ease-in-out infinite;
+    }
+    .cc-tail-swim {
+      transform-box: fill-box;
+      animation: ccTailSwim 4.20s ease-in-out infinite;
+    }
+    .cc-fluke-wave {
+      transform-box: fill-box;
+      animation: ccFlukeWave 4.20s ease-in-out 0.45s infinite;
     }
     .cc-wing-near {
       transform-box: fill-box;
-      animation: ccWingNear 4.40s ease-in-out infinite;
+      animation: ccWingNear 4.00s ease-in-out infinite;
     }
     .cc-wing-far {
       transform-box: fill-box;
-      animation: ccWingFar 4.40s ease-in-out infinite;
+      animation: ccWingFar 4.00s ease-in-out infinite;
     }
     .cc-f1, .cc-f2, .cc-f3, .cc-f4, .cc-f5, .cc-f6 {
       transform-box: fill-box;
     }
-    .cc-f1 { animation: ccFeatherA 3.20s ease-in-out infinite; }
-    .cc-f2 { animation: ccFeatherB 3.50s ease-in-out 0.25s infinite; }
-    .cc-f3 { animation: ccFeatherA 3.80s ease-in-out 0.55s infinite; }
-    .cc-f4 { animation: ccFeatherB 3.40s ease-in-out 0.8s infinite; }
-    .cc-f5 { animation: ccFeatherA 3.70s ease-in-out 1.1s infinite; }
-    .cc-f6 { animation: ccFeatherB 3.10s ease-in-out 1.35s infinite; }
+    .cc-f1 { animation: ccFeatherA 3.10s ease-in-out infinite; }
+    .cc-f2 { animation: ccFeatherB 3.30s ease-in-out 0.25s infinite; }
+    .cc-f3 { animation: ccFeatherA 3.50s ease-in-out 0.55s infinite; }
+    .cc-f4 { animation: ccFeatherB 3.20s ease-in-out 0.8s infinite; }
+    .cc-f5 { animation: ccFeatherA 3.40s ease-in-out 1.1s infinite; }
+    .cc-f6 { animation: ccFeatherB 3.00s ease-in-out 1.35s infinite; }
     .cc-c1, .cc-c2, .cc-c3, .cc-c4, .cc-c5 {
       transform-box: fill-box;
     }
-    .cc-c1 { animation: ccCableA 4.60s ease-in-out infinite; }
-    .cc-c2 { animation: ccCableB 5.10s ease-in-out 0.4s infinite; }
-    .cc-c3 { animation: ccCableA 4.80s ease-in-out 0.9s infinite; }
-    .cc-c4 { animation: ccCableB 5.40s ease-in-out 1.3s infinite; }
-    .cc-c5 { animation: ccCableA 4.30s ease-in-out 0.6s infinite; }
+    .cc-c1 { animation: ccCableA 4.40s ease-in-out infinite; }
+    .cc-c2 { animation: ccCableB 4.80s ease-in-out 0.35s infinite; }
+    .cc-c3 { animation: ccCableA 4.60s ease-in-out 0.75s infinite; }
+    .cc-c4 { animation: ccCableB 5.10s ease-in-out 1.15s infinite; }
+    .cc-c5 { animation: ccCableA 4.20s ease-in-out 0.55s infinite; }
     .cc-pulse {
-      animation: ccPulse 2.40s ease-in-out infinite;
+      animation: ccPulse 2.20s ease-in-out infinite;
     }
     .cc-hud-blink {
-      animation: ccHudBlink 1.80s ease-in-out infinite;
+      animation: ccHudBlink 1.70s ease-in-out infinite;
     }
     @keyframes ccFloat {
-      0%, 100% { transform: translateY(-5px) rotate(-0.5deg); }
-      50% { transform: translateY(5px) rotate(0.5deg); }
+      0%, 100% { transform: translateY(-9px) rotate(-1.3deg); }
+      50% { transform: translateY(9px) rotate(1.3deg); }
+    }
+    @keyframes ccTailSwim {
+      0%, 100% { transform: rotate(-4.5deg) translateY(-2px); }
+      50% { transform: rotate(5.2deg) translateY(3px); }
+    }
+    @keyframes ccFlukeWave {
+      0%, 100% { transform: rotate(5deg); }
+      50% { transform: rotate(-6deg); }
     }
     @keyframes ccWingNear {
-      0%, 100% { transform: rotate(-2.4deg) translateY(-2px); }
-      50% { transform: rotate(2.8deg) translateY(3px); }
+      0%, 100% { transform: rotate(-6.2deg) translateY(-3px); }
+      50% { transform: rotate(7.2deg) translateY(4px); }
     }
     @keyframes ccWingFar {
-      0%, 100% { transform: rotate(2deg) translateY(2px); }
-      50% { transform: rotate(-2.4deg) translateY(-2px); }
+      0%, 100% { transform: rotate(5.5deg) translateY(2px); }
+      50% { transform: rotate(-6deg) translateY(-3px); }
     }
     @keyframes ccFeatherA {
-      0%, 100% { transform: rotate(-3.2deg); }
-      50% { transform: rotate(3.6deg); }
+      0%, 100% { transform: rotate(-5.2deg); }
+      50% { transform: rotate(6deg); }
     }
     @keyframes ccFeatherB {
-      0%, 100% { transform: rotate(3deg); }
-      50% { transform: rotate(-3.5deg); }
+      0%, 100% { transform: rotate(4.8deg); }
+      50% { transform: rotate(-5.5deg); }
     }
     @keyframes ccCableA {
-      0%, 100% { transform: rotate(-3.2deg) translateY(-2px); }
-      50% { transform: rotate(3.4deg) translateY(2.5px); }
+      0%, 100% { transform: rotate(-5.5deg) translateY(-3px); }
+      50% { transform: rotate(6deg) translateY(3.5px); }
     }
     @keyframes ccCableB {
-      0%, 100% { transform: rotate(2.8deg) translateY(2px); }
-      50% { transform: rotate(-3.1deg) translateY(-2px); }
+      0%, 100% { transform: rotate(5deg) translateY(3px); }
+      50% { transform: rotate(-5.5deg) translateY(-3px); }
     }
     @keyframes ccPulse {
-      0%, 100% { opacity: 0.68; }
+      0%, 100% { opacity: 0.48; }
       50% { opacity: 1; }
     }
     @keyframes ccHudBlink {
-      0%, 100% { opacity: 0.45; }
+      0%, 100% { opacity: 0.4; }
       50% { opacity: 1; }
     }
   </style>
     
     <defs>
-      <linearGradient id="cc-armor-v" x1="0%" y1="0%" x2="0%" y2="100%">
+      <linearGradient id="cc-armor-v" x1="0%" y1="0%" x2="10%" y2="100%">
         <stop offset="0%" stop-color="#FBFCFD" />
-        <stop offset="35%" stop-color="#F4F6F8" />
+        <stop offset="42%" stop-color="#F4F6F8" />
         <stop offset="100%" stop-color="#D0D7DE" />
       </linearGradient>
       <linearGradient id="cc-armor-d" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#F4F6F8" />
-        <stop offset="65%" stop-color="#D0D7DE" />
+        <stop offset="0%" stop-color="#FBFCFD" />
+        <stop offset="35%" stop-color="#F4F6F8" />
+        <stop offset="78%" stop-color="#D0D7DE" />
+        <stop offset="100%" stop-color="#ABB1BA" />
+      </linearGradient>
+      <linearGradient id="cc-head-vol" x1="20%" y1="5%" x2="65%" y2="95%">
+        <stop offset="0%" stop-color="#FBFCFD" />
+        <stop offset="38%" stop-color="#F4F6F8" />
+        <stop offset="78%" stop-color="#D0D7DE" />
         <stop offset="100%" stop-color="#ABB1BA" />
       </linearGradient>
       <linearGradient id="cc-frame-v" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -97,514 +120,539 @@
         <stop offset="100%" stop-color="#A84700" />
       </linearGradient>
       <radialGradient id="cc-energy-glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#73F1B4" stop-opacity="0.95" />
-        <stop offset="45%" stop-color="#00E676" stop-opacity="0.55" />
+        <stop offset="0%" stop-color="#73F1B4" stop-opacity="0.98" />
+        <stop offset="45%" stop-color="#00E676" stop-opacity="0.58" />
         <stop offset="100%" stop-color="#00E676" stop-opacity="0" />
       </radialGradient>
       <linearGradient id="cc-hud-bg" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#0D1117" stop-opacity="0.94" />
-        <stop offset="50%" stop-color="#161B22" stop-opacity="0.94" />
-        <stop offset="100%" stop-color="#0D1117" stop-opacity="0.94" />
+        <stop offset="0%" stop-color="#0D1117" stop-opacity="0.95" />
+        <stop offset="50%" stop-color="#161B22" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#0D1117" stop-opacity="0.95" />
       </linearGradient>
     </defs>
   
     
-    <g transform="translate(0, -6)">
+    <g transform="translate(0, -8)">
       
-    <g transform="translate(460, 212) scale(0.98) translate(-460, -212)">
+    <g transform="translate(460, 205) scale(0.97) translate(-460, -205)">
       <g class="cc-float">
+        <!-- Head Dorsal Neural Whips -->
         <g>
-    <g class="cc-c1" style="transform-origin: 244px 74px;">
+    <g class="cc-c1" style="transform-origin: 248px 78px;">
       
-      <path d="M 244 74 C 288 52, 342 46, 392 60" fill="none" stroke="#0D1117" stroke-width="3.4" stroke-linecap="round" />
-      <path d="M 244 74 C 288 52, 342 46, 392 60" fill="none" stroke="#ABB1BA" stroke-width="1.2" stroke-linecap="round" />
-      <path class="cc-pulse" d="M 244 74 C 288 52, 342 46, 392 60" fill="none" stroke="#00E676" stroke-width="0.95" stroke-opacity="0.65" stroke-linecap="round" />
+      <path d="M 248 78 C 296 54, 348 48, 398 58" fill="none" stroke="#0D1117" stroke-width="3.4" stroke-linecap="round" />
+      <path d="M 248 78 C 296 54, 348 48, 398 58" fill="none" stroke="#ABB1BA" stroke-width="1.5" stroke-linecap="round" />
+      <path class="cc-pulse" d="M 248 78 C 296 54, 348 48, 398 58" fill="none" stroke="#00E676" stroke-width="1.1" stroke-opacity="0.78" stroke-linecap="round" />
     
       
-      <circle cx="392" cy="60" r="1.9" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-      <circle cx="392" cy="60" r="0.7" fill="#FBFCFD" />
-    
-    </g>
-    <g class="cc-c2" style="transform-origin: 252px 78px;">
-      
-      <path d="M 252 78 C 304 64, 362 56, 422 50" fill="none" stroke="#1F242D" stroke-width="4.5" stroke-linecap="round" />
-      <path d="M 252 78 C 304 64, 362 56, 422 50" fill="none" stroke="#D0D7DE" stroke-width="2.3" stroke-linecap="round" />
-      <path d="M 252 78 C 304 64, 362 56, 422 50" fill="none" stroke="#1F242D" stroke-width="2.3" stroke-dasharray="3 6" />
-    
-      
-      <circle class="cc-pulse" cx="422" cy="50" r="3.3349999999999995" fill="#00E676" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="422" cy="50" r="1.9549999999999998" fill="#73F1B4" stroke="#00E676" stroke-width="1" />
+      <g transform="translate(398, 58) rotate(8)">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="#1F242D" />
+      </g>
     
     </g>
-    <g class="cc-c3" style="transform-origin: 258px 84px;">
+    <g class="cc-c2" style="transform-origin: 256px 82px;">
       
-      <path d="M 258 84 C 312 78, 368 82, 412 76" fill="none" stroke="#0D1117" stroke-width="3.3" stroke-linecap="round" />
-      <path d="M 258 84 C 312 78, 368 82, 412 76" fill="none" stroke="#ABB1BA" stroke-width="1.2" stroke-linecap="round" />
-      <path class="cc-pulse" d="M 258 84 C 312 78, 368 82, 412 76" fill="none" stroke="#00E676" stroke-width="0.95" stroke-opacity="0.65" stroke-linecap="round" />
+      <path d="M 256 82 C 308 66, 366 60, 424 50" fill="none" stroke="#1F242D" stroke-width="4.2" stroke-linecap="round" />
+      <path d="M 256 82 C 308 66, 366 60, 424 50" fill="none" stroke="#D0D7DE" stroke-width="2.4" stroke-linecap="round" />
+      <path d="M 256 82 C 308 66, 366 60, 424 50" fill="none" stroke="#FBFCFD" stroke-width="1" stroke-linecap="round" opacity="0.85" />
     
       
-      <circle cx="412" cy="76" r="1.805" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-      <circle cx="412" cy="76" r="0.6649999999999999" fill="#FBFCFD" />
+      <g transform="translate(424, 50) rotate(-8)">
+        <circle class="cc-pulse" cx="2" cy="0" r="3.5999999999999996" fill="#00E676" fill-opacity="0.28" />
+        <path class="cc-pulse" d="M -7 -2.4 L 11 0 L -7 2.4 L -3 0 Z" fill="#73F1B4" stroke="#00E676" stroke-width="0.8" stroke-linejoin="round" />
+      </g>
     
     </g>
-    <g class="cc-c4" style="transform-origin: 262px 88px;">
+    <g class="cc-c3" style="transform-origin: 262px 88px;">
       
-      <path d="M 262 88 C 310 92, 354 102, 396 96" fill="none" stroke="#0D1117" stroke-width="3.2" stroke-linecap="round" />
-      <path d="M 262 88 C 310 92, 354 102, 396 96" fill="none" stroke="#ABB1BA" stroke-width="1.2" stroke-linecap="round" />
-      <path class="cc-pulse" d="M 262 88 C 310 92, 354 102, 396 96" fill="none" stroke="#00E676" stroke-width="0.95" stroke-opacity="0.65" stroke-linecap="round" />
+      <path d="M 262 88 C 316 80, 370 84, 412 76" fill="none" stroke="#0D1117" stroke-width="3.2" stroke-linecap="round" />
+      <path d="M 262 88 C 316 80, 370 84, 412 76" fill="none" stroke="#ABB1BA" stroke-width="1.3" stroke-linecap="round" />
+      <path class="cc-pulse" d="M 262 88 C 316 80, 370 84, 412 76" fill="none" stroke="#00E676" stroke-width="1.1" stroke-opacity="0.78" stroke-linecap="round" />
     
       
-      <circle class="cc-pulse" cx="396" cy="96" r="2.61" fill="#00E676" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="396" cy="96" r="1.53" fill="#73F1B4" stroke="#00E676" stroke-width="1" />
+      <g transform="translate(412, 76) rotate(-6)">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="#1F242D" />
+      </g>
+    
+    </g>
+    <g class="cc-c4" style="transform-origin: 266px 94px;">
+      
+      <path d="M 266 94 C 314 96, 358 102, 396 94" fill="none" stroke="#0D1117" stroke-width="3.0999999999999996" stroke-linecap="round" />
+      <path d="M 266 94 C 314 96, 358 102, 396 94" fill="none" stroke="#ABB1BA" stroke-width="1.2" stroke-linecap="round" />
+      <path class="cc-pulse" d="M 266 94 C 314 96, 358 102, 396 94" fill="none" stroke="#00E676" stroke-width="1.1" stroke-opacity="0.78" stroke-linecap="round" />
+    
+      
+      <g transform="translate(396, 94) rotate(-8)">
+        <circle class="cc-pulse" cx="2" cy="0" r="2.55" fill="#00E676" fill-opacity="0.28" />
+        <path class="cc-pulse" d="M -7 -2.4 L 11 0 L -7 2.4 L -3 0 Z" fill="#73F1B4" stroke="#00E676" stroke-width="0.8" stroke-linejoin="round" />
+      </g>
     
     </g></g>
 
-        <!-- Far Pectoral Fin -->
-        <g class="cc-wing-far" style="transform-origin: 240px 235px;">
-          <path d="M 225 224 L 245 276 L 278 326 L 260 336 L 216 254 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.4" />
-          <circle cx="232" cy="240" r="14" fill="#0D1117" stroke="#1F242D" stroke-width="1.4" />
-          <circle cx="232" cy="240" r="8" fill="#A84700" />
+        <!-- Far Pectoral Wing-Fin -->
+        <g class="cc-wing-far" style="transform-origin: 235px 226px;">
           
-    <g transform="translate(246.0, 274.0) rotate(76.0)">
-      <g class="cc-f4" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.7999999999999998 Q 47.84 5.1, 92 8 Q 38.64 12.25, 0 5.3999999999999995 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.25 Q 41.4 -8.600000000000001, 92 8 Q 47.84 5.1, 0 1.7999999999999998 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 71.8 2.2 Q 82.8 5.2, 92 8 Q 81.88 8.6, 75.4 8.3 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 44.16 3.04, 79.1 6.6" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
-      </g>
-    </g>
-    <g transform="translate(254.0, 288.0) rotate(82.0)">
+    <g transform="translate(224.0, 238.0) rotate(112.0)">
       <g class="cc-f5" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.92 Q 53.04 6.1, 102 10 Q 42.839999999999996 13.8, 0 5.76 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.6 Q 45.9 -8.88, 102 10 Q 53.04 6.1, 0 1.92 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 79.6 3.2 Q 91.8 6.72, 102 10 Q 90.78 10.42, 83.6 9.9 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 48.96 3.8, 87.7 8.2" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 0 1.0 C 27.6 1.7, 59.8 -3.8, 92.0 -8.0 C 57.0 4.6, 22.1 9.2, 0 5.2 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.6 C 23.0 -13.9, 62.6 -12.1, 92.0 -8.0 C 59.8 -2.6, 25.8 1.7, 0 1.2 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 68.1 -8.7 Q 81.0 -8.3, 92.0 -8.0 Q 81.9 -5.0, 72.7 -1.9 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
-      </g>
-    </g>
-    <g transform="translate(262.0, 300.0) rotate(88.0)">
-      <g class="cc-f6" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.92 Q 55.120000000000005 6.1, 106 10 Q 44.519999999999996 13.8, 0 5.76 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.6 Q 47.7 -8.88, 106 10 Q 55.120000000000005 6.1, 0 1.92 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 82.7 3.2 Q 95.4 6.72, 106 10 Q 94.34 10.42, 86.9 9.9 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 50.879999999999995 3.8, 91.2 8.2" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        <path class="cc-pulse" d="M 93.3 8.4 L 119.0 12.5" stroke="#00E676" stroke-width="2" stroke-linecap="round" /><circle class="cc-pulse" cx="119.0" cy="12.5" r="2.1" fill="#73F1B4" />
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
-      </g>
-    </g>
-    <g transform="translate(270.0, 312.0) rotate(96.0)">
-      <g class="cc-f1" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.7999999999999998 Q 49.92 5.1, 96 8 Q 40.32 12.25, 0 5.3999999999999995 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.25 Q 43.2 -8.600000000000001, 96 8 Q 49.92 5.1, 0 1.7999999999999998 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 74.9 2.2 Q 86.4 5.2, 96 8 Q 85.44 8.6, 78.7 8.3 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 46.08 3.04, 82.6 6.6" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 5 0 Q 41.4 -2.9, 77.3 -6.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
       </g>
     </g>
-    <g transform="translate(276.0, 322.0) rotate(104.0)">
+    <g transform="translate(234.0, 248.0) rotate(98.0)">
+      <g class="cc-f4" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.1 C 31.8 1.9, 68.9 -2.9, 106.0 -6.0 C 65.7 6.7, 25.4 10.4, 0 5.6 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -6.1 C 26.5 -14.8, 72.1 -11.7, 106.0 -6.0 C 68.9 -1.6, 29.7 1.9, 0 1.4 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 78.4 -8.0 Q 93.3 -6.8, 106.0 -6.0 Q 94.3 -3.2, 83.7 -0.2 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        
+        <path d="M 5 0 Q 47.7 -2.2, 89.0 -4.8" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
+      </g>
+    </g>
+    <g transform="translate(244.0, 258.0) rotate(86.0)">
+      <g class="cc-f3" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.1 C 35.4 1.9, 76.7 1.9, 118.0 4.0 C 73.2 13.2, 28.3 12.2, 0 5.6 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -6.1 C 29.5 -13.8, 80.2 -6.2, 118.0 4.0 C 76.7 2.9, 33.0 1.9, 0 1.4 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 87.3 -2.4 Q 103.8 1.2, 118.0 4.0 Q 105.0 5.4, 93.2 6.8 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        
+        <path d="M 5 0 Q 53.1 1.4, 99.1 3.2" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        <path class="cc-pulse" d="M 103.8 3.4 L 132.0 7.0" stroke="#00E676" stroke-width="1.8" stroke-linecap="round" /><circle class="cc-pulse" cx="132.0" cy="7.0" r="2" fill="#73F1B4" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
+      </g>
+    </g>
+    <g transform="translate(254.0, 266.0) rotate(74.0)">
       <g class="cc-f2" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.68 Q 42.64 4.1000000000000005, 82 6 Q 34.44 10.700000000000001, 0 5.04 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -4.8999999999999995 Q 36.9 -8.32, 82 6 Q 42.64 4.1000000000000005, 0 1.68 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
+        <path d="M 0 1.0 C 33.6 1.7, 72.8 3.8, 112.0 8.0 C 69.4 15.0, 26.9 12.0, 0 5.2 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.6 C 28.0 -12.3, 76.2 -3.3, 112.0 8.0 C 72.8 4.6, 31.4 1.7, 0 1.2 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 82.9 0.2 Q 98.6 4.5, 112.0 8.0 Q 99.7 8.7, 88.5 9.3 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
         
-        <path d="M 3 0 Q 39.36 2.2800000000000002, 70.5 4.9" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 5 0 Q 50.4 2.9, 94.1 6.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
       </g>
     </g>
+    <g transform="translate(262.0, 274.0) rotate(64.0)">
+      <g class="cc-f1" style="transform-origin: 0px 0px;">
+        <path d="M 0 0.9 C 28.8 1.6, 62.4 4.8, 96.0 10.0 C 59.5 15.5, 23.0 11.5, 0 4.8 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.1 C 24.0 -11.0, 65.3 -1.6, 96.0 10.0 C 62.4 5.4, 26.9 1.6, 0 1.1 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        
+        
+        <path d="M 5 0 Q 43.2 3.6, 80.6 8.0" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
+      </g>
+    </g>
+          <path d="M 222 216 L 246 274 L 266 322 L 246 328 L 214 248 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.3" stroke-linejoin="round" />
+          <circle cx="228" cy="230" r="14" fill="#0D1117" stroke="#1F242D" stroke-width="1.3" />
+          <circle cx="228" cy="230" r="7.5" fill="#A84700" />
         </g>
 
-        
+        <!-- Animated Tail Peduncle + Fluke + Trailing Cables -->
+        <g class="cc-tail-swim" style="transform-origin: 430px 168px;">
+          
       <g>
         
-    <g transform="translate(472.0, 204.0) rotate(44.0)">
+    <g transform="translate(474.0, 206.0) rotate(46.0)">
       <g class="cc-f4" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.56 Q 37.44 4.9, 72 8 Q 30.24 11.15, 0 4.68 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -4.55 Q 32.4 -7.24, 72 8 Q 37.44 4.9, 0 1.56 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 56.2 2.6 Q 64.8 5.36, 72 8 Q 64.08 8.36, 59.0 7.9 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 34.56 3.04, 61.9 6.6" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 0 0.9 C 23.4 1.6, 50.7 3.8, 78.0 8.0 C 48.4 14.2, 18.7 11.2, 0 4.8 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.1 C 19.5 -11.2, 53.0 -2.7, 78.0 8.0 C 50.7 4.5, 21.8 1.6, 0 1.1 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 57.7 0.6 Q 68.6 4.7, 78.0 8.0 Q 69.4 8.6, 61.6 9.0 Z" fill="#A84700" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
+        <path d="M 5 0 Q 35.1 2.9, 65.5 6.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
       </g>
     </g>
         
-    <g transform="translate(484.0, 200.0) rotate(36.0)">
+    <g transform="translate(486.0, 202.0) rotate(36.0)">
       <g class="cc-f5" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.3199999999999998 Q 31.200000000000003 3.8000000000000003, 60 6 Q 25.2 9.05, 0 3.96 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -3.8499999999999996 Q 27 -6.28, 60 6 Q 31.200000000000003 3.8000000000000003, 0 1.3199999999999998 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
+        <path d="M 0 0.8 C 19.2 1.4, 41.6 2.9, 64.0 6.0 C 39.7 11.7, 15.4 9.5, 0 4.1 Z" fill="#858B96" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -4.4 C 16.0 -9.8, 43.5 -2.8, 64.0 6.0 C 41.6 3.5, 17.9 1.4, 0 1.0 Z" fill="#ABB1BA" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
         
-        <path d="M 3 0 Q 28.799999999999997 2.2800000000000002, 51.6 4.9" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#ABB1BA" />
+        <path d="M 5 0 Q 28.8 2.2, 53.8 4.8" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#ABB1BA" />
       </g>
     </g>
       </g>
-        <g>
-    <g class="cc-c1" style="transform-origin: 632px 146px;">
+          <g>
+    <g class="cc-c1" style="transform-origin: 648px 158px;">
       
-      <path d="M 632 146 C 698 136, 755 110, 822 126" fill="none" stroke="#0D1117" stroke-width="3.6" stroke-linecap="round" />
-      <path d="M 632 146 C 698 136, 755 110, 822 126" fill="none" stroke="#ABB1BA" stroke-width="1.4000000000000001" stroke-linecap="round" />
-      <path class="cc-pulse" d="M 632 146 C 698 136, 755 110, 822 126" fill="none" stroke="#00E676" stroke-width="0.95" stroke-opacity="0.65" stroke-linecap="round" />
+      <path d="M 648 158 C 722 146, 782 118, 846 130" fill="none" stroke="#0D1117" stroke-width="3.6999999999999997" stroke-linecap="round" />
+      <path d="M 648 158 C 722 146, 782 118, 846 130" fill="none" stroke="#ABB1BA" stroke-width="1.7999999999999998" stroke-linecap="round" />
+      <path class="cc-pulse" d="M 648 158 C 722 146, 782 118, 846 130" fill="none" stroke="#00E676" stroke-width="1.1" stroke-opacity="0.78" stroke-linecap="round" />
     
       
-      <circle class="cc-pulse" cx="822" cy="126" r="3.19" fill="#00E676" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="822" cy="126" r="1.87" fill="#73F1B4" stroke="#00E676" stroke-width="1" />
-    
-    </g>
-    <g class="cc-c2" style="transform-origin: 626px 154px;">
-      
-      <path d="M 626 154 C 708 175, 768 188, 862 146" fill="none" stroke="#1F242D" stroke-width="6.3" stroke-linecap="round" />
-      <path d="M 626 154 C 708 175, 768 188, 862 146" fill="none" stroke="#D0D7DE" stroke-width="4.1" stroke-linecap="round" />
-      <path d="M 626 154 C 708 175, 768 188, 862 146" fill="none" stroke="#1F242D" stroke-width="4.1" stroke-dasharray="3 6" />
-    
-      
-      <circle cx="862" cy="146" r="3.8949999999999996" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-      <circle cx="862" cy="146" r="1.4349999999999998" fill="#FBFCFD" />
+      <g transform="translate(846, 130) rotate(10)">
+        <circle class="cc-pulse" cx="2" cy="0" r="3.4499999999999997" fill="#00E676" fill-opacity="0.28" />
+        <path class="cc-pulse" d="M -7 -2.4 L 11 0 L -7 2.4 L -3 0 Z" fill="#73F1B4" stroke="#00E676" stroke-width="0.8" stroke-linejoin="round" />
+      </g>
     
     </g>
-    <g class="cc-c3" style="transform-origin: 618px 164px;">
+    <g class="cc-c2" style="transform-origin: 642px 166px;">
       
-      <path d="M 618 164 C 692 212, 775 215, 855 178" fill="none" stroke="#0D1117" stroke-width="6.5" stroke-linecap="round" />
-      <path d="M 618 164 C 692 212, 775 215, 855 178" fill="none" stroke="#323843" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="5 3.5" />
+      <path d="M 642 166 C 722 184, 786 196, 868 158" fill="none" stroke="#1F242D" stroke-width="5.6" stroke-linecap="round" />
+      <path d="M 642 166 C 722 184, 786 196, 868 158" fill="none" stroke="#D0D7DE" stroke-width="3.8" stroke-linecap="round" />
+      <path d="M 642 166 C 722 184, 786 196, 868 158" fill="none" stroke="#FBFCFD" stroke-width="1.444" stroke-linecap="round" opacity="0.85" />
     
       
-      <circle cx="855" cy="178" r="4.2749999999999995" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-      <circle cx="855" cy="178" r="1.575" fill="#FBFCFD" />
-    
-    </g>
-    <g class="cc-c4" style="transform-origin: 610px 172px;">
-      
-      <path d="M 610 172 C 675 245, 765 248, 848 214" fill="none" stroke="#1F242D" stroke-width="6.4" stroke-linecap="round" />
-      <path d="M 610 172 C 675 245, 765 248, 848 214" fill="none" stroke="#D0D7DE" stroke-width="4.2" stroke-linecap="round" />
-      <path d="M 610 172 C 675 245, 765 248, 848 214" fill="none" stroke="#1F242D" stroke-width="4.2" stroke-dasharray="3 6" />
-    
-      
-      <circle class="cc-pulse" cx="848" cy="214" r="6.09" fill="#00E676" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="848" cy="214" r="3.57" fill="#73F1B4" stroke="#00E676" stroke-width="1" />
+      <g transform="translate(868, 158) rotate(-16)">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="#1F242D" />
+      </g>
     
     </g>
-    <g class="cc-c5" style="transform-origin: 596px 178px;">
+    <g class="cc-c3" style="transform-origin: 634px 174px;">
       
-      <path d="M 596 178 C 660 278, 755 288, 838 250" fill="none" stroke="#0D1117" stroke-width="6.8" stroke-linecap="round" />
-      <path d="M 596 178 C 660 278, 755 288, 838 250" fill="none" stroke="#323843" stroke-width="4.8" stroke-linecap="round" stroke-dasharray="5 3.5" />
+      <path d="M 634 174 C 708 214, 784 222, 858 190" fill="none" stroke="#0D1117" stroke-width="6" stroke-linecap="round" />
+      <path d="M 634 174 C 708 214, 784 222, 858 190" fill="none" stroke="#1F242D" stroke-width="4.2" stroke-linecap="round" />
+      <path d="M 634 174 C 708 214, 784 222, 858 190" fill="none" stroke="#323843" stroke-width="1.47" stroke-linecap="round" opacity="0.85" />
     
       
-      <circle cx="838" cy="250" r="4.56" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-      <circle cx="838" cy="250" r="1.68" fill="#FBFCFD" />
-    
-    </g>
-    <g class="cc-c1" style="transform-origin: 582px 182px;">
-      
-      <path d="M 582 182 C 642 308, 745 322, 824 282" fill="none" stroke="#1F242D" stroke-width="6.8" stroke-linecap="round" />
-      <path d="M 582 182 C 642 308, 745 322, 824 282" fill="none" stroke="#D0D7DE" stroke-width="4.6" stroke-linecap="round" />
-      <path d="M 582 182 C 642 308, 745 322, 824 282" fill="none" stroke="#1F242D" stroke-width="4.6" stroke-dasharray="3 6" />
-    
-      
-      <circle class="cc-pulse" cx="824" cy="282" r="6.669999999999999" fill="#00E676" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="824" cy="282" r="3.9099999999999997" fill="#73F1B4" stroke="#00E676" stroke-width="1" />
+      <g transform="translate(858, 190) rotate(-12)">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="#1F242D" />
+      </g>
     
     </g>
-    <g class="cc-c2" style="transform-origin: 568px 184px;">
+    <g class="cc-c4" style="transform-origin: 624px 180px;">
       
-      <path d="M 568 184 C 625 325, 725 348, 798 312" fill="none" stroke="#0D1117" stroke-width="4" stroke-linecap="round" />
-      <path d="M 568 184 C 625 325, 725 348, 798 312" fill="none" stroke="#ABB1BA" stroke-width="1.8" stroke-linecap="round" />
-      <path class="cc-pulse" d="M 568 184 C 625 325, 725 348, 798 312" fill="none" stroke="#00E676" stroke-width="0.95" stroke-opacity="0.65" stroke-linecap="round" />
+      <path d="M 624 180 C 692 246, 774 256, 848 224" fill="none" stroke="#1F242D" stroke-width="5.4" stroke-linecap="round" />
+      <path d="M 624 180 C 692 246, 774 256, 848 224" fill="none" stroke="#D0D7DE" stroke-width="3.6" stroke-linecap="round" />
+      <path d="M 624 180 C 692 246, 774 256, 848 224" fill="none" stroke="#FBFCFD" stroke-width="1.368" stroke-linecap="round" opacity="0.85" />
     
       
-      <circle cx="798" cy="312" r="2.4699999999999998" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-      <circle cx="798" cy="312" r="0.9099999999999999" fill="#FBFCFD" />
+      <g transform="translate(848, 224) rotate(-10)">
+        <circle class="cc-pulse" cx="2" cy="0" r="5.4" fill="#00E676" fill-opacity="0.28" />
+        <path class="cc-pulse" d="M -7 -2.4 L 11 0 L -7 2.4 L -3 0 Z" fill="#73F1B4" stroke="#00E676" stroke-width="0.8" stroke-linejoin="round" />
+      </g>
     
     </g>
-    <g class="cc-c3" style="transform-origin: 556px 186px;">
+    <g class="cc-c5" style="transform-origin: 612px 186px;">
       
-      <path d="M 556 186 C 602 292, 682 328, 745 330" fill="none" stroke="#0D1117" stroke-width="5.4" stroke-linecap="round" />
-      <path d="M 556 186 C 602 292, 682 328, 745 330" fill="none" stroke="#323843" stroke-width="3.4" stroke-linecap="round" stroke-dasharray="5 3.5" />
+      <path d="M 612 186 C 676 276, 762 292, 836 258" fill="none" stroke="#0D1117" stroke-width="5.8" stroke-linecap="round" />
+      <path d="M 612 186 C 676 276, 762 292, 836 258" fill="none" stroke="#1F242D" stroke-width="4" stroke-linecap="round" />
+      <path d="M 612 186 C 676 276, 762 292, 836 258" fill="none" stroke="#323843" stroke-width="1.4" stroke-linecap="round" opacity="0.85" />
     
       
-      <circle class="cc-pulse" cx="745" cy="330" r="4.93" fill="#00E676" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="745" cy="330" r="2.8899999999999997" fill="#73F1B4" stroke="#00E676" stroke-width="1" />
+      <g transform="translate(836, 258) rotate(-14)">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="#1F242D" />
+      </g>
+    
+    </g>
+    <g class="cc-c1" style="transform-origin: 598px 190px;">
+      
+      <path d="M 598 190 C 656 302, 742 322, 814 292" fill="none" stroke="#1F242D" stroke-width="5.2" stroke-linecap="round" />
+      <path d="M 598 190 C 656 302, 742 322, 814 292" fill="none" stroke="#D0D7DE" stroke-width="3.4" stroke-linecap="round" />
+      <path d="M 598 190 C 656 302, 742 322, 814 292" fill="none" stroke="#FBFCFD" stroke-width="1.292" stroke-linecap="round" opacity="0.85" />
+    
+      
+      <g transform="translate(814, 292) rotate(-12)">
+        <circle class="cc-pulse" cx="2" cy="0" r="5.1" fill="#00E676" fill-opacity="0.28" />
+        <path class="cc-pulse" d="M -7 -2.4 L 11 0 L -7 2.4 L -3 0 Z" fill="#73F1B4" stroke="#00E676" stroke-width="0.8" stroke-linejoin="round" />
+      </g>
+    
+    </g>
+    <g class="cc-c2" style="transform-origin: 584px 194px;">
+      
+      <path d="M 584 194 C 638 318, 718 342, 786 320" fill="none" stroke="#0D1117" stroke-width="3.8" stroke-linecap="round" />
+      <path d="M 584 194 C 638 318, 718 342, 786 320" fill="none" stroke="#ABB1BA" stroke-width="1.9" stroke-linecap="round" />
+      <path class="cc-pulse" d="M 584 194 C 638 318, 718 342, 786 320" fill="none" stroke="#00E676" stroke-width="1.1" stroke-opacity="0.78" stroke-linecap="round" />
+    
+      
+      <g transform="translate(786, 320) rotate(-8)">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="#1F242D" />
+      </g>
     
     </g></g>
-
-        <!-- Mechanical Spine & Belly Under-Frame -->
-        <path d="M 275 130 C 375 112, 480 124, 625 144 L 622 178 C 495 198, 395 232, 290 250 Z" fill="url(#cc-frame-v)" stroke="#1F242D" stroke-width="1.6" />
-        <path d="M 332 230 C 405 222, 470 206, 520 192" fill="none" stroke="#00E676" stroke-width="2.2" stroke-opacity="0.75" class="cc-pulse" />
-        <path d="M 342 238 L 355 212 M 365 234 L 378 206 M 388 228 L 400 201 M 412 222 L 422 196 M 436 215 L 444 191" stroke="#323843" stroke-width="2.5" stroke-linecap="round" />
-
-        <g>
-    <g transform="translate(432.0, 120.0) rotate(-44.0)">
+          <g>
+    <g transform="translate(432.0, 122.0) rotate(-46.0)">
       <g class="cc-f1" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.56 Q 40.56 -2.3, 78 -8 Q 32.76 3.1500000000000004, 0 4.68 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -4.55 Q 35.1 -10.44, 78 -8 Q 40.56 -2.3, 0 1.56 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 60.8 -6.7 Q 70.2 -7.44, 78 -8 Q 69.42 -5.24, 64.0 -3.3 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 37.44 -3.04, 67.1 -6.6" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 0 0.9 C 24.6 1.6, 53.3 -3.8, 82.0 -8.0 C 50.8 3.8, 19.7 8.3, 0 4.8 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.1 C 20.5 -12.8, 55.8 -11.5, 82.0 -8.0 C 53.3 -2.7, 23.0 1.6, 0 1.1 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 60.7 -8.4 Q 72.2 -8.1, 82.0 -8.0 Q 73.0 -5.2, 64.8 -2.2 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -4.3 Q 32.8 -10.3, 59.0 -8.1" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 36.9 -2.9, 68.9 -6.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
-    <g transform="translate(444.0, 125.0) rotate(-34.0)">
+    <g transform="translate(446.0, 128.0) rotate(-34.0)">
       <g class="cc-f2" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.68 Q 44.72 -2.2, 86 -8 Q 36.12 3.700000000000001, 0 5.04 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -4.8999999999999995 Q 38.7 -11.120000000000001, 86 -8 Q 44.72 -2.2, 0 1.68 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 67.1 -6.9 Q 77.4 -7.5200000000000005, 86 -8 Q 76.54 -5.12, 70.5 -3.1 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 41.28 -3.04, 74.0 -6.6" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        <path class="cc-pulse" d="M 75.7 -6.7 L 99.0 -5.5" stroke="#00E676" stroke-width="2" stroke-linecap="round" /><circle class="cc-pulse" cx="99.0" cy="-5.5" r="2.1" fill="#73F1B4" />
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <path d="M 0 1.0 C 27.6 1.7, 59.8 -3.4, 92.0 -7.0 C 57.0 5.2, 22.1 9.3, 0 5.2 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.6 C 23.0 -13.8, 62.6 -11.6, 92.0 -7.0 C 59.8 -2.2, 25.8 1.7, 0 1.2 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 68.1 -8.2 Q 81.0 -7.5, 92.0 -7.0 Q 81.9 -4.2, 72.7 -1.2 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -4.7 Q 36.8 -10.9, 66.2 -7.9" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 41.4 -2.5, 77.3 -5.6" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        <path class="cc-pulse" d="M 81.0 -5.9 L 106.0 -4.0" stroke="#00E676" stroke-width="1.8" stroke-linecap="round" /><circle class="cc-pulse" cx="106.0" cy="-4.0" r="2" fill="#73F1B4" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
-    <g transform="translate(454.0, 130.0) rotate(-22.0)">
+    <g transform="translate(460.0, 134.0) rotate(-22.0)">
       <g class="cc-f3" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.56 Q 42.64 -1.4000000000000001, 82 -6 Q 34.44 4.15, 0 4.68 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -4.55 Q 36.9 -10.04, 82 -6 Q 42.64 -1.4000000000000001, 0 1.56 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
+        <path d="M 0 0.9 C 26.4 1.6, 57.2 -2.4, 88.0 -5.0 C 54.6 5.7, 21.1 8.8, 0 4.8 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.1 C 22.0 -12.5, 59.8 -9.8, 88.0 -5.0 C 57.2 -1.3, 24.6 1.6, 0 1.1 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
         
-        <path d="M 3 0 Q 39.36 -2.2800000000000002, 70.5 -4.9" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 8 -4.3 Q 35.2 -9.7, 63.4 -6.5" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 39.6 -1.8, 73.9 -4.0" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
-    <g transform="translate(466.0, 136.0) rotate(-12.0)">
+    <g transform="translate(474.0, 140.0) rotate(-12.0)">
       <g class="cc-f4" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.44 Q 38.480000000000004 -0.5999999999999999, 74 -4 Q 31.08 4.6000000000000005, 0 4.32 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -4.199999999999999 Q 33.300000000000004 -8.96, 74 -4 Q 38.480000000000004 -0.5999999999999999, 0 1.44 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 57.7 -4.2 Q 66.60000000000001 -4.16, 74 -4 Q 65.86 -1.96, 60.7 -0.6 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 35.519999999999996 -1.52, 63.6 -3.3" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 0 0.8 C 23.4 1.5, 50.7 -1.9, 78.0 -4.0 C 48.4 5.6, 18.7 8.1, 0 4.3 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -4.7 C 19.5 -11.3, 53.0 -8.6, 78.0 -4.0 C 50.7 -1.0, 21.8 1.5, 0 1.0 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 57.7 -5.8 Q 68.6 -4.8, 78.0 -4.0 Q 69.4 -1.9, 61.6 0.3 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -4.0 Q 31.2 -8.7, 56.2 -5.6" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 35.1 -1.4, 65.5 -3.2" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
-    <g transform="translate(478.0, 142.0) rotate(-4.0)">
+    <g transform="translate(488.0, 146.0) rotate(-4.0)">
       <g class="cc-f5" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.3199999999999998 Q 33.28 -0.25, 64 -3 Q 26.88 4.550000000000001, 0 3.96 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -3.8499999999999996 Q 28.8 -8.08, 64 -3 Q 33.28 -0.25, 0 1.3199999999999998 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
+        <path d="M 0 0.7 C 19.8 1.3, 42.9 -1.4, 66.0 -3.0 C 40.9 5.4, 15.8 7.4, 0 3.9 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -4.2 C 16.5 -10.1, 44.9 -7.5, 66.0 -3.0 C 42.9 -0.6, 18.5 1.3, 0 0.9 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
         
-        <path d="M 3 0 Q 30.72 -1.1400000000000001, 55.0 -2.5" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 8 -3.6 Q 26.4 -7.7, 47.5 -4.7" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 29.7 -1.1, 55.4 -2.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g></g>
 
-        <!-- Segmented Tail Carapace Plates -->
-        <g>
-          
-            <g transform="translate(428, 118) rotate(6)">
-              <rect x="0" y="0" width="48" height="92" rx="10" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.4" />
-              <path d="M 4 25.76 L 44 22.08" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-              <rect x="12" y="5" width="24" height="6" rx="3" fill="#FBFCFD" opacity="0.85" />
-              <rect x="38" y="47.84" width="6" height="10" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.8" />
-            </g>
-            <g transform="translate(468, 124) rotate(7)">
-              <rect x="0" y="0" width="44" height="80" rx="10" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.4" />
-              <path d="M 4 22.400000000000002 L 40 19.2" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-              <rect x="11" y="5" width="22" height="6" rx="3" fill="#FBFCFD" opacity="0.85" />
-              <circle cx="22" cy="52" r="2.2" fill="#00E676" class="cc-pulse" />
-            </g>
-            <g transform="translate(504, 129) rotate(8)">
-              <rect x="0" y="0" width="40" height="68" rx="10" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.4" />
-              <path d="M 4 19.040000000000003 L 36 16.32" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-              <rect x="10" y="5" width="20" height="6" rx="3" fill="#FBFCFD" opacity="0.85" />
-              <rect x="30" y="35.36" width="6" height="10" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.8" />
-            </g>
-            <g transform="translate(538, 133) rotate(8)">
-              <rect x="0" y="0" width="36" height="56" rx="10" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.4" />
-              <path d="M 4 15.680000000000001 L 32 13.44" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-              <rect x="9" y="5" width="18" height="6" rx="3" fill="#FBFCFD" opacity="0.85" />
-              <circle cx="18" cy="36.4" r="2.2" fill="#00E676" class="cc-pulse" />
-            </g>
-            <g transform="translate(568, 136) rotate(7)">
-              <rect x="0" y="0" width="32" height="44" rx="10" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.4" />
-              <path d="M 4 12.32 L 28 10.559999999999999" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-              <rect x="8" y="5" width="16" height="6" rx="3" fill="#FBFCFD" opacity="0.85" />
-              <rect x="22" y="22.880000000000003" width="6" height="10" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.8" />
-            </g>
-            <g transform="translate(595, 139) rotate(6)">
-              <rect x="0" y="0" width="28" height="34" rx="10" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.4" />
-              <path d="M 4 9.520000000000001 L 24 8.16" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-              <rect x="7" y="5" width="14" height="6" rx="3" fill="#FBFCFD" opacity="0.85" />
-              <circle cx="14" cy="22.1" r="2.2" fill="#00E676" class="cc-pulse" />
-            </g>
+          <!-- Sculpted Tapered Mechanical Tail Under-Frame -->
+          <path d="M 418 134 C 498 130, 578 142, 650 156 L 646 184 C 574 196, 496 212, 412 224 Z" fill="url(#cc-frame-v)" stroke="#1F242D" stroke-width="1.4" />
+
+          <!-- Continuous Contoured Interlocking Tail Armor Plates (No Boxy Rects!) -->
+          <path d="M 416 122 C 496 126, 576 138, 646 152 L 642 180 C 572 192, 492 204, 412 214 C 402 184, 404 150, 416 122 Z" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.45" stroke-linejoin="round" />
+          <!-- Curved Anatomical Segment Seams & Orange Trim Ticks -->
+          <path d="M 454 125 C 446 154, 444 184, 452 209" fill="none" stroke="#1F242D" stroke-width="1.25" />
+          <path d="M 494 129 C 486 156, 484 182, 492 203" fill="none" stroke="#1F242D" stroke-width="1.25" />
+          <path d="M 532 134 C 525 157, 524 179, 530 197" fill="none" stroke="#1F242D" stroke-width="1.25" />
+          <path d="M 568 139 C 562 158, 561 176, 566 192" fill="none" stroke="#1F242D" stroke-width="1.25" />
+          <path d="M 604 144 C 599 160, 598 174, 602 186" fill="none" stroke="#1F242D" stroke-width="1.2" />
+          <!-- Dorsal Ridge Highlight Ribbon -->
+          <path d="M 424 129 C 498 134, 572 145, 636 157" fill="none" stroke="#FBFCFD" stroke-width="3" stroke-linecap="round" opacity="0.75" />
+          <!-- Subtle Energy & Accent Micro-Ports along Tail -->
+          <rect x="466" y="164" width="12" height="5" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.7" />
+          <rect x="542" y="162" width="10" height="5" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.7" />
+          <circle class="cc-pulse" cx="512" cy="166" r="2.6" fill="#00E676" />
+          <circle class="cc-pulse" cx="585" cy="165" r="2.4" fill="#00E676" />
+
+          <!-- Rear Tail Stabilizer Fluke -->
+          <g class="cc-fluke-wave" style="transform-origin: 642px 164px;">
+            <path d="M 636 156 L 732 130 L 762 140 L 704 166 L 638 174 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.4" stroke-linejoin="round" />
+            <path d="M 708 136 L 732 130 L 762 140 L 736 150 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
+            <circle cx="644" cy="165" r="6" fill="#1F242D" stroke="#1F242D" stroke-width="1.1" />
+            <circle class="cc-pulse" cx="644" cy="165" r="2.4" fill="#73F1B4" />
+          </g>
         </g>
 
-        <!-- Rear Tail Stabilizer Fluke -->
+        <!-- Mid-Torso Sculpted Under-Frame & Hydraulic Belly Ribs -->
+        <path d="M 278 124 C 338 112, 390 116, 424 126 L 418 220 C 374 234, 326 244, 286 248 Z" fill="url(#cc-frame-v)" stroke="#1F242D" stroke-width="1.5" />
+        <path class="cc-pulse" d="M 326 232 C 378 226, 422 214, 466 202" fill="none" stroke="#00E676" stroke-width="2" stroke-opacity="0.8" />
+        <path d="M 340 236 L 352 212 M 362 232 L 374 206 M 384 226 L 395 201" stroke="#323843" stroke-width="2.2" stroke-linecap="round" />
+
+        <!-- Mid-Torso Modular Armor Carapace -->
+        <path d="M 284 90 C 344 96, 396 110, 428 126 C 416 158, 412 188, 418 216 C 374 230, 324 240, 288 240 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.5" stroke-linejoin="round" />
+        <path d="M 326 102 C 332 144, 338 186, 346 226 M 374 114 C 378 150, 382 184, 388 214" fill="none" stroke="#1F242D" stroke-width="1.2" opacity="0.82" />
+        <rect x="336" y="138" width="24" height="9" rx="2.5" fill="#1F242D" stroke="#1F242D" stroke-width="0.9" />
+        <rect class="cc-pulse" x="340" y="140.5" width="16" height="4" rx="1" fill="#00E676" />
+
+        <!-- Massive Volumetric Cyber-Tulkun Head -->
         <g>
-          <path d="M 616 144 L 718 124 L 748 134 L 690 156 L 618 162 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.4" stroke-linejoin="round" />
-          <path d="M 696 128 L 718 124 L 748 134 L 724 143 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="1.1" />
-          <circle cx="624" cy="153" r="6" fill="#1F242D" stroke="#1F242D" stroke-width="1.2" />
-          <circle cx="624" cy="153" r="2.3" fill="#00E676" class="cc-pulse" />
-        </g>
+          <!-- Recessed Mechanical Mouth Line & Precision Baleen Louvers -->
+          <path d="M 74 148 C 142 157, 224 162, 306 154 L 310 168 C 222 174, 140 169, 74 161 Z" fill="#0D1117" stroke="#1F242D" stroke-width="1.2" />
+          <path d="M 96 153 L 98 162 M 114 155 L 116 164 M 132 157 L 134 166 M 150 158 L 152 167 M 168 159 L 170 168 M 186 160 L 188 168" stroke="#323843" stroke-width="1.2" opacity="0.85" />
 
-        <!-- Mid-Torso Modular Armor Plates -->
-        <path d="M 285 92 C 350 96, 408 112, 442 132 L 426 218 C 378 232, 326 242, 290 242 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.6" />
-        <path d="M 326 105 L 352 225 M 378 118 L 392 214" stroke="#1F242D" stroke-width="1.2" opacity="0.8" />
-        <rect x="336" y="138" width="26" height="10" rx="2.5" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <rect x="340" y="141" width="18" height="4" rx="1" fill="#00E676" class="cc-pulse" />
+          <!-- Sculpted Lower Jaw Modular Plates -->
+          <path d="M 76 161 C 102 226, 198 265, 322 250 L 332 198 C 258 187, 165 172, 76 161 Z" fill="url(#cc-head-vol)" stroke="#1F242D" stroke-width="1.55" stroke-linejoin="round" />
+          <path d="M 88 180 C 148 212, 232 230, 314 230" fill="none" stroke="#1F242D" stroke-width="1.15" />
+          <path d="M 106 200 C 166 230, 240 244, 318 242" fill="none" stroke="#1F242D" stroke-width="1.15" />
+          <path class="cc-pulse" d="M 102 192 C 160 220, 228 236, 294 236" fill="none" stroke="#00E676" stroke-width="1.6" stroke-dasharray="18 8 4 8" />
+          <circle cx="116" cy="174" r="6" fill="#1F242D" stroke="#1F242D" stroke-width="1.1" />
+          <circle class="cc-pulse" cx="116" cy="174" r="2.8" fill="#73F1B4" />
 
-        <!-- Massive Rounded Cyber-Tulkun Head -->
-        <g>
-          <path d="M 74 148 C 142 156, 224 162, 306 154 L 310 172 C 222 178, 140 172, 74 164 Z" fill="#0D1117" stroke="#1F242D" stroke-width="1.4" />
-          <path d="M 95 154 L 98 164 M 115 156 L 118 166 M 135 158 L 138 168 M 155 159 L 158 169 M 175 160 L 178 170" stroke="#323843" stroke-width="1.6" />
+          <!-- Upper Cranium Dome -->
+          <path d="M 70 149 C 66 82, 152 58, 258 74 L 328 102 L 308 159 C 224 165, 138 157, 70 149 Z" fill="url(#cc-head-vol)" stroke="#1F242D" stroke-width="1.65" stroke-linejoin="round" />
+          <path d="M 84 114 C 144 92, 230 94, 316 116" fill="none" stroke="#1F242D" stroke-width="1.15" />
+          <path d="M 118 76 C 122 104, 128 130, 136 154" fill="none" stroke="#1F242D" stroke-width="1.1" />
+          <path d="M 192 68 C 194 98, 198 128, 206 158" fill="none" stroke="#1F242D" stroke-width="1.15" />
+          <path d="M 262 76 L 248 156" fill="none" stroke="#1F242D" stroke-width="1.15" />
+          <path d="M 92 103 C 144 74, 214 70, 268 84" fill="none" stroke="#FBFCFD" stroke-width="3.8" stroke-linecap="round" opacity="0.85" />
 
-          <path d="M 76 164 C 102 228, 198 266, 322 252 L 332 198 C 258 188, 165 174, 76 164 Z" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.6" stroke-linejoin="round" />
-          <path d="M 88 182 C 148 214, 232 232, 314 232" fill="none" stroke="#1F242D" stroke-width="1.3" />
-          <path d="M 106 202 C 166 232, 240 246, 318 244" fill="none" stroke="#1F242D" stroke-width="1.3" />
-          <path class="cc-pulse" d="M 102 194 C 160 222, 228 238, 294 238" fill="none" stroke="#00E676" stroke-width="2" stroke-dasharray="14 6 4 6" />
-          <circle cx="116" cy="176" r="6.5" fill="#1F242D" stroke="#1F242D" stroke-width="1.2" />
-          <circle class="cc-pulse" cx="116" cy="176" r="3" fill="#73F1B4" />
-
-          <path d="M 70 150 C 66 84, 152 58, 258 74 L 328 102 L 308 160 C 224 166, 138 158, 70 150 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.7" stroke-linejoin="round" />
-          <path d="M 84 114 C 144 92, 230 94, 316 116" fill="none" stroke="#1F242D" stroke-width="1.25" />
-          <path d="M 118 76 C 122 104, 128 130, 136 154" fill="none" stroke="#1F242D" stroke-width="1.2" />
-          <path d="M 192 68 C 194 98, 198 128, 206 158" fill="none" stroke="#1F242D" stroke-width="1.25" />
-          <path d="M 262 76 L 248 156" fill="none" stroke="#1F242D" stroke-width="1.25" />
-          <path d="M 92 106 C 142 78, 212 74, 266 86" fill="none" stroke="#FBFCFD" stroke-width="3.5" stroke-linecap="round" opacity="0.7" />
-
-          <g opacity="0.88">
-                  <rect x="148" y="96" width="38" height="22" rx="3" fill="#00E676" fill-opacity="0.18" stroke="#00E676" stroke-width="1.1" />
-                  <path class="cc-pulse" d="M 154 104 L 180 104 M 154 111 L 172 111" stroke="#73F1B4" stroke-width="1.4" />
-                  <rect x="208" y="104" width="34" height="16" rx="2.5" fill="#00E676" fill-opacity="0.16" stroke="#00E676" stroke-width="1" />
-                  <rect x="172" y="132" width="18" height="7" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-                  <rect x="202" y="138" width="24" height="5" rx="1.5" fill="#00E676" class="cc-pulse" />
+          <!-- Precision Circuit Trace Decals (Refined, Non-Boxy) -->
+          <g opacity="0.9">
+                  <path class="cc-pulse" d="M 150 100 L 184 100 L 192 108 L 236 108" fill="none" stroke="#00E676" stroke-width="1.4" stroke-linecap="round" />
+                  <path d="M 154 110 L 178 110 L 184 116 L 222 116" fill="none" stroke="#00E676" stroke-width="1" stroke-opacity="0.65" />
+                  <rect x="172" y="130" width="18" height="6" rx="1.5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.8" />
+                  <rect class="cc-pulse" x="200" y="134" width="20" height="4" rx="1.2" fill="#00E676" />
                 </g>
 
           
 
+          <!-- Primary Brow Sensor Eye -->
           <g>
-            <circle cx="144" cy="144" r="9" fill="#1F242D" stroke="#1F242D" stroke-width="1.3" />
-            <circle cx="144" cy="144" r="12" fill="url(#cc-energy-glow)" class="cc-pulse" />
-            <circle cx="144" cy="144" r="4.5" fill="#00E676" stroke="#0D1117" stroke-width="1" />
-            <circle cx="142.5" cy="142.5" r="1.5" fill="#73F1B4" />
+            <circle cx="144" cy="143" r="8.5" fill="#1F242D" stroke="#1F242D" stroke-width="1.2" />
+            <circle cx="144" cy="143" r="12" fill="url(#cc-energy-glow)" class="cc-pulse" />
+            <circle cx="144" cy="143" r="4.4" fill="#00E676" stroke="#0D1117" stroke-width="1" />
+            <circle cx="142.5" cy="141.5" r="1.5" fill="#73F1B4" />
           </g>
 
+          <!-- Circular Cheek Gyro / Optic Ear Assembly -->
           <g transform="translate(268, 174)">
-            <circle cx="0" cy="0" r="28" fill="#1F242D" stroke="#1F242D" stroke-width="1.6" />
-            <circle cx="0" cy="0" r="22" fill="none" stroke="#00E676" stroke-width="1.6" stroke-dasharray="10 6" class="cc-pulse" />
-            <circle cx="0" cy="0" r="16" fill="#0D1117" stroke="#FF6B00" stroke-width="3.2" />
+            <circle cx="0" cy="0" r="27" fill="#1F242D" stroke="#1F242D" stroke-width="1.5" />
+            <circle cx="0" cy="0" r="21" fill="none" stroke="#00E676" stroke-width="1.5" stroke-dasharray="12 6" class="cc-pulse" />
+            <circle cx="0" cy="0" r="15.5" fill="#0D1117" stroke="#FF6B00" stroke-width="3" />
             <circle cx="0" cy="0" r="10" fill="url(#cc-energy-glow)" class="cc-pulse" />
-            <circle cx="0" cy="0" r="5.5" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
-            <circle cx="0" cy="0" r="2.2" fill="#73F1B4" />
+            <circle cx="0" cy="0" r="5" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
+            <circle cx="0" cy="0" r="2.1" fill="#73F1B4" />
           </g>
 
-          <circle cx="248" cy="78" r="11" fill="#1F242D" stroke="#1F242D" stroke-width="1.3" />
-          <circle cx="248" cy="78" r="5.5" fill="#FF6B00" />
+          <!-- Crown Tendril Socket -->
+          <circle cx="248" cy="78" r="10" fill="#1F242D" stroke="#1F242D" stroke-width="1.2" />
+          <circle cx="248" cy="78" r="5" fill="#FF6B00" />
         </g>
 
-        <!-- Hero Near Pectoral Wing-Fin -->
-        <g class="cc-wing-near" style="transform-origin: 332px 212px;">
-          <circle cx="332" cy="212" r="26" fill="#1F242D" stroke="#1F242D" stroke-width="1.7" />
-          <circle cx="332" cy="212" r="18" fill="#0D1117" stroke="#D0D7DE" stroke-width="2" stroke-dasharray="18 7" />
-          <circle cx="332" cy="212" r="9" fill="#FF6B00" stroke="#1F242D" stroke-width="1.2" />
-          <circle class="cc-pulse" cx="332" cy="212" r="4" fill="#73F1B4" />
-
+        <!-- Hero Near Pectoral Wing-Fin (Broad Overlapping Feathered Wing) -->
+        <g class="cc-wing-near" style="transform-origin: 330px 212px;">
+          <!-- Broad Fanned Mechanical Feathers -->
           
-    <g transform="translate(356.0, 242.0) rotate(34.0)">
-      <g class="cc-f1" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.7999999999999998 Q 58.24 6, 112 10 Q 47.04 13.25, 0 5.3999999999999995 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.25 Q 50.4 -8.200000000000001, 112 10 Q 58.24 6, 0 1.7999999999999998 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 87.4 3.4 Q 100.8 6.8, 112 10 Q 99.68 10.3, 91.8 9.7 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 53.76 3.8, 96.3 8.2" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
-      </g>
-    </g>
-    <g transform="translate(368.0, 252.0) rotate(31.0)">
-      <g class="cc-f2" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.92 Q 66.56 6.550000000000001, 128 11 Q 53.76 14.3, 0 5.76 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.6 Q 57.6 -8.68, 128 11 Q 66.56 6.550000000000001, 0 1.92 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 99.8 3.8 Q 115.2 7.5200000000000005, 128 11 Q 113.92 11.27, 105.0 10.6 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 61.44 4.18, 110.1 9.0" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        <path class="cc-pulse" d="M 112.6 9.2 L 141.0 13.5" stroke="#00E676" stroke-width="2" stroke-linecap="round" /><circle class="cc-pulse" cx="141.0" cy="13.5" r="2.1" fill="#73F1B4" />
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
-      </g>
-    </g>
-    <g transform="translate(382.0, 263.0) rotate(28.0)">
-      <g class="cc-f3" style="transform-origin: 0px 0px;">
-        <path d="M 0 2.04 Q 73.84 7.1000000000000005, 142 12 Q 59.64 15.350000000000001, 0 6.12 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.949999999999999 Q 63.9 -9.16, 142 12 Q 73.84 7.1000000000000005, 0 2.04 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 110.8 4.2 Q 127.8 8.240000000000002, 142 12 Q 126.38 12.239999999999998, 116.4 11.5 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 68.16 4.5600000000000005, 122.1 9.8" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
-      </g>
-    </g>
-    <g transform="translate(396.0, 274.0) rotate(26.0)">
-      <g class="cc-f4" style="transform-origin: 0px 0px;">
-        <path d="M 0 2.16 Q 80.08 7.65, 154 13 Q 64.67999999999999 16.4, 0 6.4799999999999995 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -6.3 Q 69.3 -9.64, 154 13 Q 80.08 7.65, 0 2.16 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 120.1 4.7 Q 138.6 8.96, 154 13 Q 137.06 13.209999999999999, 126.3 12.3 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 73.92 4.94, 132.4 10.7" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        <path class="cc-pulse" d="M 135.5 10.9 L 167.0 15.5" stroke="#00E676" stroke-width="2" stroke-linecap="round" /><circle class="cc-pulse" cx="167.0" cy="15.5" r="2.1" fill="#73F1B4" />
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
-      </g>
-    </g>
-    <g transform="translate(412.0, 286.0) rotate(25.0)">
-      <g class="cc-f5" style="transform-origin: 0px 0px;">
-        <path d="M 0 2.16 Q 84.24000000000001 8.1, 162 14 Q 68.03999999999999 16.9, 0 6.4799999999999995 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -6.3 Q 72.9 -9.44, 162 14 Q 84.24000000000001 8.1, 0 2.16 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 126.4 5.2 Q 145.8 9.760000000000002, 162 14 Q 144.18 14.06, 132.8 13.0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 77.75999999999999 5.32, 139.3 11.5" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
-      </g>
-    </g>
-    <g transform="translate(428.0, 298.0) rotate(24.0)">
+    <g transform="translate(334.0, 226.0) rotate(56.0)">
       <g class="cc-f6" style="transform-origin: 0px 0px;">
-        <path d="M 0 2.28 Q 87.36 8.2, 168 14 Q 70.56 17.450000000000003, 0 6.84 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -6.6499999999999995 Q 75.60000000000001 -10.120000000000001, 168 14 Q 87.36 8.2, 0 2.28 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 131.0 5.1 Q 151.20000000000002 9.680000000000001, 168 14 Q 149.52 14.18, 137.8 13.2 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 80.64 5.32, 144.5 11.5" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 0 1.0 C 34.8 1.8, 75.4 4.8, 116.0 10.0 C 71.9 16.7, 27.8 12.8, 0 5.4 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.9 C 29.0 -12.7, 78.9 -2.6, 116.0 10.0 C 75.4 5.5, 32.5 1.8, 0 1.3 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 85.8 1.2 Q 102.1 6.0, 116.0 10.0 Q 103.2 10.5, 91.6 10.8 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -4.9 Q 46.4 -7.9, 83.5 1.4" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 52.2 3.6, 97.4 8.0" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
-    <g transform="translate(444.0, 310.0) rotate(27.0)">
-      <g class="cc-f1" style="transform-origin: 0px 0px;">
-        <path d="M 0 2.16 Q 82.16 7.2, 158 12 Q 66.36 15.9, 0 6.4799999999999995 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -6.3 Q 71.10000000000001 -9.84, 158 12 Q 82.16 7.2, 0 2.16 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 123.2 4.1 Q 142.20000000000002 8.160000000000002, 158 12 Q 140.62 12.36, 129.6 11.6 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 75.84 4.5600000000000005, 135.9 9.8" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
-        
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+    <g transform="translate(350.0, 240.0) rotate(49.0)">
+      <g class="cc-f5" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.1 C 39.6 2.0, 85.8 5.3, 132.0 11.0 C 81.8 18.2, 31.7 13.9, 0 5.8 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -6.3 C 33.0 -13.6, 89.8 -2.7, 132.0 11.0 C 85.8 6.1, 37.0 2.0, 0 1.4 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 97.7 1.4 Q 116.2 6.7, 132.0 11.0 Q 117.5 11.5, 104.3 11.8 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -5.3 Q 52.8 -8.5, 95.0 1.7" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 59.4 4.0, 110.9 8.8" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        <path class="cc-pulse" d="M 116.2 9.2 L 146.0 14.0" stroke="#00E676" stroke-width="1.8" stroke-linecap="round" /><circle class="cc-pulse" cx="146.0" cy="14.0" r="2" fill="#73F1B4" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
-    <g transform="translate(458.0, 320.0) rotate(31.0)">
+    <g transform="translate(368.0, 254.0) rotate(42.0)">
+      <g class="cc-f4" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.2 C 44.4 2.1, 96.2 5.8, 148.0 12.0 C 91.8 19.6, 35.5 15.0, 0 6.3 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -6.8 C 37.0 -14.6, 100.6 -2.7, 148.0 12.0 C 96.2 6.6, 41.4 2.1, 0 1.5 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 109.5 1.6 Q 130.2 7.3, 148.0 12.0 Q 131.7 12.5, 116.9 12.9 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -5.7 Q 59.2 -9.1, 106.6 1.9" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 66.6 4.3, 124.3 9.6" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
+      </g>
+    </g>
+    <g transform="translate(386.0, 268.0) rotate(36.0)">
+      <g class="cc-f3" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.2 C 48.6 2.2, 105.3 6.2, 162.0 13.0 C 100.4 20.7, 38.9 15.6, 0 6.5 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -7.0 C 40.5 -15.1, 110.2 -2.5, 162.0 13.0 C 105.3 7.1, 45.4 2.2, 0 1.6 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 119.9 2.0 Q 142.6 8.1, 162.0 13.0 Q 144.2 13.5, 128.0 13.7 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -5.9 Q 64.8 -9.3, 116.6 2.3" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 72.9 4.7, 136.1 10.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        <path class="cc-pulse" d="M 142.6 10.9 L 176.0 16.0" stroke="#00E676" stroke-width="1.8" stroke-linecap="round" /><circle class="cc-pulse" cx="176.0" cy="16.0" r="2" fill="#73F1B4" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
+      </g>
+    </g>
+    <g transform="translate(406.0, 282.0) rotate(30.0)">
       <g class="cc-f2" style="transform-origin: 0px 0px;">
-        <path d="M 0 1.92 Q 71.76 6.1, 138 10 Q 57.96 13.8, 0 5.76 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="M 0 -5.6 Q 62.1 -8.88, 138 10 Q 71.76 6.1, 0 1.92 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.25" stroke-linejoin="round" />
-        <path d="M 107.6 3.2 Q 124.2 6.72, 138 10 Q 122.82000000000001 10.42, 113.2 9.9 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" />
-        <path d="M 3 0 Q 66.24 3.8, 118.7 8.2" fill="none" stroke="#1F242D" stroke-width="1" opacity="0.7" />
+        <path d="M 0 1.2 C 50.4 2.2, 109.2 6.2, 168.0 13.0 C 104.2 20.7, 40.3 15.6, 0 6.5 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -7.0 C 42.0 -15.1, 114.2 -2.5, 168.0 13.0 C 109.2 7.1, 47.0 2.2, 0 1.6 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 124.3 2.0 Q 147.8 8.1, 168.0 13.0 Q 149.5 13.5, 132.7 13.7 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -5.9 Q 67.2 -9.3, 121.0 2.3" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 75.6 4.7, 141.1 10.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
         
-        <circle cx="4" cy="0" r="3.2" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="#D0D7DE" />
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
+      </g>
+    </g>
+    <g transform="translate(426.0, 296.0) rotate(24.0)">
+      <g class="cc-f1" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.2 C 48.6 2.0, 105.3 5.8, 162.0 12.0 C 100.4 19.2, 38.9 14.5, 0 6.0 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -6.6 C 40.5 -14.1, 110.2 -2.4, 162.0 12.0 C 105.3 6.6, 45.4 2.0, 0 1.5 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 119.9 1.8 Q 142.6 7.4, 162.0 12.0 Q 144.2 12.5, 128.0 12.7 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -5.5 Q 64.8 -8.7, 116.6 2.1" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 72.9 4.3, 136.1 9.6" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
+      </g>
+    </g>
+    <g transform="translate(446.0, 310.0) rotate(18.0)">
+      <g class="cc-f2" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.1 C 43.8 1.9, 94.9 4.8, 146.0 10.0 C 90.5 17.1, 35.0 13.3, 0 5.6 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -6.1 C 36.5 -13.2, 99.3 -2.9, 146.0 10.0 C 94.9 5.6, 40.9 1.9, 0 1.4 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 108.0 1.0 Q 128.5 6.0, 146.0 10.0 Q 129.9 10.6, 115.3 11.0 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -5.1 Q 58.4 -8.3, 105.1 1.3" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 65.7 3.6, 122.6 8.0" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
+      </g>
+    </g>
+    <g transform="translate(464.0, 322.0) rotate(12.0)">
+      <g class="cc-f3" style="transform-origin: 0px 0px;">
+        <path d="M 0 1.0 C 36.6 1.7, 79.3 3.8, 122.0 8.0 C 75.6 14.6, 29.3 11.6, 0 5.0 Z" fill="#D0D7DE" stroke="#1F242D" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="M 0 -5.4 C 30.5 -11.8, 83.0 -3.0, 122.0 8.0 C 79.3 4.6, 34.2 1.7, 0 1.2 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.15" stroke-linejoin="round" />
+        <path d="M 90.3 0.4 Q 107.4 4.6, 122.0 8.0 Q 108.6 8.6, 96.4 9.1 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="0.9" stroke-linejoin="round" />
+        <path d="M 8 -4.5 Q 48.8 -7.5, 87.8 0.7" fill="none" stroke="#FBFCFD" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />
+        <path d="M 5 0 Q 54.9 2.9, 102.5 6.4" fill="none" stroke="#1F242D" stroke-width="0.9" opacity="0.55" />
+        
+        <circle cx="4" cy="0" r="3.4" fill="#1F242D" stroke="#1F242D" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="#D0D7DE" />
       </g>
     </g>
 
-          <path d="M 328 214 L 408 268 L 478 328 L 456 344 L 386 286 L 316 232 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.6" stroke-linejoin="round" />
-          <path d="M 378 262 L 395 250 L 404 260 L 386 274 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="1.1" />
-          <path class="cc-pulse" d="M 404 278 L 452 318" stroke="#00E676" stroke-width="3.2" stroke-linecap="round" />
-          <circle cx="464" cy="332" r="6.5" fill="#1F242D" stroke="#1F242D" stroke-width="1.2" />
-          <circle class="cc-pulse" cx="464" cy="332" r="2.6" fill="#73F1B4" />
-          <path class="cc-pulse" d="M 476 338 L 516 364" stroke="#00E676" stroke-width="2.4" stroke-linecap="round" />
+          <!-- Shoulder Ball Joint -->
+          <circle cx="330" cy="212" r="25" fill="#1F242D" stroke="#1F242D" stroke-width="1.6" />
+          <circle cx="330" cy="212" r="17" fill="#0D1117" stroke="#D0D7DE" stroke-width="2" stroke-dasharray="16 6" />
+          <circle cx="330" cy="212" r="8.5" fill="#FF6B00" stroke="#1F242D" stroke-width="1.1" />
+          <circle class="cc-pulse" cx="330" cy="212" r="3.8" fill="#73F1B4" />
+
+          <!-- Sculpted Robotic Pectoral Arm Strut -->
+          <path d="M 326 212 L 408 266 L 484 328 L 460 344 L 384 284 L 314 232 Z" fill="url(#cc-armor-v)" stroke="#1F242D" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M 340 226 L 466 326" fill="none" stroke="#FBFCFD" stroke-width="2.2" stroke-linecap="round" opacity="0.7" />
+          <path d="M 380 260 L 398 248 L 406 258 L 388 272 Z" fill="#FF6B00" stroke="#1F242D" stroke-width="1" />
+          <path class="cc-pulse" d="M 406 278 L 454 316" stroke="#00E676" stroke-width="3" stroke-linecap="round" />
+          <circle cx="468" cy="331" r="6" fill="#1F242D" stroke="#1F242D" stroke-width="1.1" />
+          <circle class="cc-pulse" cx="468" cy="331" r="2.5" fill="#73F1B4" />
+          <path class="cc-pulse" d="M 480 338 L 522 365" stroke="#00E676" stroke-width="2.2" stroke-linecap="round" />
         </g>
       </g>
     </g>

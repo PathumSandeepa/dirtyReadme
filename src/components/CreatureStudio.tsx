@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   Activity,
-  BookOpen,
   Camera,
   Check,
   Code2,
@@ -24,13 +23,14 @@ import {
   Sliders,
   Sparkles,
   Terminal,
+  UserSquare2,
   Users,
   Zap,
 } from "lucide-react";
 import { AutoEvolveModal } from "@/components/AutoEvolveModal";
 import { CreatureComparator } from "@/components/CreatureComparator";
-import { CyberCreatureSvg } from "@/components/CyberCreatureSvg";
 import { EvolutionMatrix } from "@/components/EvolutionMatrix";
+import { GitHubProfilePreview } from "@/components/GitHubProfilePreview";
 import { ReadmeEditorPanel } from "@/components/ReadmeEditorPanel";
 import { ShareCardSvg } from "@/components/ShareCardSvg";
 import { generateShareCardSvgString } from "@/lib/generateShareCardSvg";
@@ -43,7 +43,6 @@ import {
   DEFAULT_README_CONFIG,
   buildMarkerSection,
   getEffectiveReadmeMarkdown,
-  resolveDynamicTokens,
 } from "@/lib/readmeBuilder";
 import {
   CAMERA_VIEWS,
@@ -139,10 +138,10 @@ export function CreatureStudio() {
   const [previewMode, setPreviewMode] = useState<"preview" | "edit" | "code">(
     "preview"
   );
+  const [showProfileSidebar, setShowProfileSidebar] = useState(true);
   const [showGridBackdrop, setShowGridBackdrop] = useState(false);
   const [evolveModalOpen, setEvolveModalOpen] = useState(false);
 
-  // GitHub Sync State
   const [ghInput, setGhInput] = useState(DEFAULT_CONFIG.username);
   const [ghLoading, setGhLoading] = useState(false);
   const [ghError, setGhError] = useState<string | null>(null);
@@ -165,13 +164,6 @@ export function CreatureStudio() {
   );
   const rawSvgSource = useMemo(() => generateSvgString(config), [config]);
 
-  const resolvedHeadline = resolveDynamicTokens(readmeConfig.headline, config);
-  const resolvedBio = resolveDynamicTokens(readmeConfig.bio, config);
-  const resolvedFooter = resolveDynamicTokens(
-    readmeConfig.customFooterMarkdown,
-    config
-  );
-
   async function handleSyncGitHub(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setGhLoading(true);
@@ -190,6 +182,10 @@ export function CreatureStudio() {
           ? applyLanguageColors(updated, snap.languages)
           : updated;
       });
+      setReadmeConfig((prev) => ({
+        ...prev,
+        profileDisplayName: snap.displayName,
+      }));
     } catch (err) {
       setGhError(
         err instanceof Error ? err.message : "Failed to load GitHub data."
@@ -307,13 +303,12 @@ export function CreatureStudio() {
                 </span>
               </div>
               <p className="text-xs text-[#8b949e]">
-                Procedural cybernetic companions for GitHub Profile READMEs · by{" "}
+                Cybernetic creature generator &amp; profile README studio ·{" "}
                 <span className="font-mono text-[#c9d1d9]">@PathumSandeepa</span>
               </p>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
           <nav
             aria-label="Studio workspace views"
             className="flex flex-wrap items-center gap-1 rounded-xl border border-[#21262d] bg-[#07090d] p-1"
@@ -321,7 +316,7 @@ export function CreatureStudio() {
             {(
               [
                 { id: "studio", label: "Studio", icon: Sliders },
-                { id: "readme-editor", label: "README Editor", icon: FileText },
+                { id: "readme-editor", label: "Profile README", icon: FileText },
                 { id: "share-card", label: "Social Card", icon: Share2 },
                 { id: "comparator", label: "Compare Users", icon: Users },
                 { id: "evolution", label: "Stages & Views", icon: Layers },
@@ -368,7 +363,6 @@ export function CreatureStudio() {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6">
         {activeTab === "comparator" && <CreatureComparator baseConfig={config} />}
 
@@ -387,18 +381,19 @@ export function CreatureStudio() {
         )}
 
         {activeTab === "readme-editor" && (
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] lg:col-span-7">
+          <div className="space-y-6">
+            <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117]">
               <ReadmeEditorPanel
                 creatureConfig={config}
                 readmeConfig={readmeConfig}
                 onChange={setReadmeConfig}
               />
             </div>
-            <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] lg:col-span-5">
-              <div className="flex items-center justify-between border-b border-[#30363d] bg-[#161b22] px-4 py-2.5 text-xs">
-                <span className="font-mono font-semibold text-[#e6edf3]">
-                  Live {safeUser}/README.md Preview
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs font-semibold text-[#e6edf3]">
+                  Live GitHub Profile Page Preview (@{safeUser})
                 </span>
                 <button
                   type="button"
@@ -409,49 +404,19 @@ export function CreatureStudio() {
                       "text/markdown;charset=utf-8"
                     )
                   }
-                  className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#21262d] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#30363d]"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#FF6B00] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#ff7f24]"
                 >
-                  <Download className="h-3 w-3 text-[#FF6B00]" />
-                  Save README.md
+                  <Download className="h-3.5 w-3.5" />
+                  Download README.md
                 </button>
               </div>
-              <div className="p-5">
-                <div className="rounded-lg border border-[#21262d] bg-[#0d1117] p-2">
-                  <CyberCreatureSvg
-                    config={config}
-                    className="mx-auto block h-auto w-full"
-                  />
-                </div>
-                {readmeConfig.includeTelemetryCaption && (
-                  <p
-                    className={`mt-2 text-xs text-[#8b949e] ${
-                      readmeConfig.align === "center" ? "text-center" : "text-left"
-                    }`}
-                  >
-                    Live <code>dynamic-readme-creature</code> for{" "}
-                    <strong className="text-[#e6edf3]">@{safeUser}</strong> —{" "}
-                    <strong className="text-[#e6edf3]">
-                      Stage {evolution.stage}: {evolution.rank} {meta.name}
-                    </strong>{" "}
-                    · <code>{config.commits.toLocaleString("en-US")} commits</code>
-                  </p>
-                )}
-                {resolvedHeadline && (
-                  <h3 className="mt-4 text-lg font-semibold text-[#e6edf3]">
-                    {resolvedHeadline}
-                  </h3>
-                )}
-                {resolvedBio && (
-                  <p className="mt-2 text-xs leading-relaxed text-[#8b949e]">
-                    {resolvedBio}
-                  </p>
-                )}
-                {readmeConfig.rawOverride !== null && (
-                  <pre className="mt-4 overflow-auto rounded-lg border border-[#21262d] bg-[#090c10] p-3 font-mono text-[11px] text-[#79c0ff]">
-                    <code>{fullReadmeMarkdown}</code>
-                  </pre>
-                )}
-              </div>
+              <GitHubProfilePreview
+                creatureConfig={config}
+                readmeConfig={readmeConfig}
+                ghSnapshot={ghSnapshot}
+                showProfileSidebar
+                showGridBackdrop={showGridBackdrop}
+              />
             </div>
           </div>
         )}
@@ -500,7 +465,7 @@ export function CreatureStudio() {
         {activeTab === "studio" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
             {/* LEFT PANEL — CUSTOMIZATION CONTROLS */}
-            <aside className="space-y-4 lg:col-span-5 xl:col-span-4">
+            <aside className="space-y-4 lg:col-span-4 xl:col-span-4">
               {/* 0. GitHub Profile Sync */}
               <section className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
                 <div className="mb-2.5 flex items-center justify-between">
@@ -645,7 +610,6 @@ export function CreatureStudio() {
                   })}
                 </div>
 
-                {/* Camera Perspectives */}
                 <div className="mt-3 border-t border-[#21262d] pt-3">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 text-xs font-medium text-[#e6edf3]">
@@ -964,9 +928,8 @@ export function CreatureStudio() {
               </section>
             </aside>
 
-            {/* CENTER / RIGHT PANEL — LIVE GITHUB README PREVIEW, EDITOR & EXPORT */}
-            <section className="flex flex-col gap-5 lg:col-span-7 xl:col-span-8">
-              {/* Primary Action Buttons */}
+            {/* CENTER / RIGHT PANEL — LIVE GITHUB PROFILE PREVIEW, EDITOR & EXPORT */}
+            <section className="flex flex-col gap-5 lg:col-span-8 xl:col-span-8">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <button
                   type="button"
@@ -981,18 +944,18 @@ export function CreatureStudio() {
 
                 <button
                   type="button"
-                  onClick={() => void handleCopy("md")}
+                  onClick={() => void handleCopy("readme")}
                   className="flex items-center justify-center gap-2 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-3 text-sm font-semibold text-[#e6edf3] transition hover:border-[#8b949e] hover:bg-[#21262d]"
                 >
-                  {copiedSnippet === "md" ? (
+                  {copiedSnippet === "readme" ? (
                     <>
                       <Check className="h-4 w-4 text-[#00E676]" />
-                      Copied Markdown!
+                      Copied Full README.md!
                     </>
                   ) : (
                     <>
-                      <Copy className="h-4 w-4 text-[#8b949e]" />
-                      Copy README Markdown
+                      <FileText className="h-4 w-4 text-[#8b949e]" />
+                      Copy Full README.md
                     </>
                   )}
                 </button>
@@ -1007,347 +970,159 @@ export function CreatureStudio() {
                 </button>
               </div>
 
-              {/* Realistic GitHub Profile Dark Mode README Card */}
-              <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] shadow-2xl">
-                {/* GitHub File Header Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#30363d] bg-[#161b22] px-4 py-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex overflow-hidden rounded-md border border-[#30363d] bg-[#0d1117] text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("preview")}
-                        className={`px-3 py-1 font-medium transition ${
-                          previewMode === "preview"
-                            ? "bg-[#21262d] text-white"
-                            : "text-[#8b949e] hover:text-white"
-                        }`}
-                      >
-                        Preview
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("edit")}
-                        className={`inline-flex items-center gap-1 border-l border-[#30363d] px-3 py-1 font-medium transition ${
-                          previewMode === "edit"
-                            ? "bg-[#21262d] text-[#00E676]"
-                            : "text-[#8b949e] hover:text-white"
-                        }`}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                        Edit README
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewMode("code")}
-                        className={`border-l border-[#30363d] px-3 py-1 font-medium transition ${
-                          previewMode === "code"
-                            ? "bg-[#21262d] text-white"
-                            : "text-[#8b949e] hover:text-white"
-                        }`}
-                      >
-                        SVG Code
-                      </button>
-                    </div>
-                    <div className="hidden items-center gap-1.5 text-xs sm:flex">
-                      <BookOpen className="h-3.5 w-3.5 text-[#8b949e]" />
-                      <span className="font-semibold text-[#e6edf3]">
-                        {safeUser}
-                      </span>
-                      <span className="text-[#8b949e]">/</span>
-                      <span className="font-mono font-semibold text-[#e6edf3]">
-                        README.md
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowGridBackdrop((v) => !v)}
-                      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition ${
-                        showGridBackdrop
-                          ? "border-[#FF6B00]/60 bg-[#FF6B00]/15 text-[#FF6B00]"
-                          : "border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3]"
-                      }`}
-                    >
-                      <Eye className="h-3 w-3" />
-                      {showGridBackdrop ? "Alpha Grid" : "GitHub #0d1117"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("share-card")}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-[11px] font-medium text-[#58a6ff] transition hover:border-[#58a6ff]"
-                    >
-                      <Share2 className="h-3 w-3" />
-                      1280×640 Card
-                    </button>
-                  </div>
+              {/* Controls Bar for Preview / Edit README / SVG Code */}
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-2.5">
+                <div className="flex overflow-hidden rounded-md border border-[#30363d] bg-[#0d1117] text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("preview")}
+                    className={`px-3 py-1 font-medium transition ${
+                      previewMode === "preview"
+                        ? "bg-[#21262d] text-white"
+                        : "text-[#8b949e] hover:text-white"
+                    }`}
+                  >
+                    GitHub Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("edit")}
+                    className={`inline-flex items-center gap-1 border-l border-[#30363d] px-3 py-1 font-medium transition ${
+                      previewMode === "edit"
+                        ? "bg-[#21262d] text-[#00E676]"
+                        : "text-[#8b949e] hover:text-white"
+                    }`}
+                  >
+                    <Edit3 className="h-3 w-3" />
+                    Edit Profile README
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("code")}
+                    className={`border-l border-[#30363d] px-3 py-1 font-medium transition ${
+                      previewMode === "code"
+                        ? "bg-[#21262d] text-white"
+                        : "text-[#8b949e] hover:text-white"
+                    }`}
+                  >
+                    SVG XML
+                  </button>
                 </div>
 
-                {/* Card Body */}
-                {previewMode === "edit" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileSidebar((v) => !v)}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition ${
+                      showProfileSidebar
+                        ? "border-[#00E676]/50 bg-[#00E676]/10 text-[#00E676]"
+                        : "border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-white"
+                    }`}
+                  >
+                    <UserSquare2 className="h-3 w-3" />
+                    {showProfileSidebar ? "Full Profile" : "README Only"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGridBackdrop((v) => !v)}
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition ${
+                      showGridBackdrop
+                        ? "border-[#FF6B00]/60 bg-[#FF6B00]/15 text-[#FF6B00]"
+                        : "border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3]"
+                    }`}
+                  >
+                    <Eye className="h-3 w-3" />
+                    {showGridBackdrop ? "Alpha Grid" : "#0d1117"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("share-card")}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-[11px] font-medium text-[#58a6ff] transition hover:border-[#58a6ff]"
+                  >
+                    <Share2 className="h-3 w-3" />
+                    1280×640 Card
+                  </button>
+                </div>
+              </div>
+
+              {previewMode === "preview" && (
+                <GitHubProfilePreview
+                  creatureConfig={config}
+                  readmeConfig={readmeConfig}
+                  ghSnapshot={ghSnapshot}
+                  showProfileSidebar={showProfileSidebar}
+                  showGridBackdrop={showGridBackdrop}
+                  onEditClick={() => setPreviewMode("edit")}
+                />
+              )}
+
+              {previewMode === "edit" && (
+                <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] shadow-2xl">
                   <ReadmeEditorPanel
                     creatureConfig={config}
                     readmeConfig={readmeConfig}
                     onChange={setReadmeConfig}
                   />
-                )}
+                </div>
+              )}
 
-                {previewMode === "code" && (
-                  <div className="relative bg-[#090c10]">
-                    <div className="flex items-center justify-between border-b border-[#21262d] px-4 py-2 text-xs">
-                      <span className="font-mono text-[#8b949e]">
-                        creature.svg ({rawSvgSource.length.toLocaleString()} bytes)
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => void handleCopy("svg")}
-                        className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#161b22] px-2.5 py-1 text-[11px] text-white hover:bg-[#21262d]"
-                      >
-                        {copiedSnippet === "svg" ? (
-                          <>
-                            <Check className="h-3 w-3 text-[#00E676]" />
-                            Copied SVG
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            Copy XML
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <div className="max-h-[520px] overflow-auto p-4">
-                      <pre className="font-mono text-[11px] leading-relaxed text-[#79c0ff]">
-                        <code>{rawSvgSource}</code>
-                      </pre>
-                    </div>
-                  </div>
-                )}
-
-                {previewMode === "preview" && (
-                  <div className="p-5 sm:p-7">
-                    {/* Animated SVG Stage */}
-                    <div
-                      className={`relative overflow-hidden rounded-lg border border-[#21262d] p-2 sm:p-4 ${
-                        showGridBackdrop ? "transparency-grid" : "bg-[#0d1117]"
-                      }`}
+              {previewMode === "code" && (
+                <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#090c10] shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-[#21262d] bg-[#161b22] px-4 py-2 text-xs">
+                    <span className="font-mono text-[#8b949e]">
+                      creature.svg ({rawSvgSource.length.toLocaleString()} bytes)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopy("svg")}
+                      className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-[11px] text-white hover:bg-[#21262d]"
                     >
-                      <div
-                        className={
-                          readmeConfig.align === "center"
-                            ? "mx-auto"
-                            : "mr-auto"
-                        }
-                        style={{ maxWidth: `${readmeConfig.imageWidth}px` }}
-                      >
-                        <CyberCreatureSvg
-                          config={config}
-                          className="block h-auto w-full"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Dynamic Telemetry Caption */}
-                    {readmeConfig.includeTelemetryCaption && (
-                      <p
-                        className={`mt-3 text-xs italic text-[#8b949e] ${
-                          readmeConfig.align === "center"
-                            ? "text-center"
-                            : "text-left"
-                        }`}
-                      >
-                        Live{" "}
-                        <code className="rounded bg-[#161b22] px-1.5 py-0.5 not-italic text-[#c9d1d9]">
-                          dynamic-readme-creature
-                        </code>{" "}
-                        for{" "}
-                        <span className="not-italic text-[#58a6ff]">
-                          @{safeUser}
-                        </span>{" "}
-                        —{" "}
-                        <strong className="not-italic text-[#e6edf3]">
-                          Stage {evolution.stage}: {evolution.rank} {meta.name}
-                        </strong>{" "}
-                        ·{" "}
-                        <code className="not-italic">
-                          {config.commits.toLocaleString("en-US")} commits
-                        </code>{" "}
-                        · View:{" "}
-                        <code className="not-italic">{config.view}</code>
-                      </p>
-                    )}
-
-                    {/* Dynamic Editable Profile Markdown Content */}
-                    {readmeConfig.templateId !== "auto-evolve-block" && (
-                      <div className="mt-5 space-y-4 border-t border-[#21262d] pt-5">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-xl font-semibold text-[#e6edf3]">
-                            {resolvedHeadline || `@${safeUser}`}
-                          </h3>
-                          <button
-                            type="button"
-                            onClick={() => setPreviewMode("edit")}
-                            className="inline-flex items-center gap-1 rounded-md border border-[#30363d] bg-[#161b22] px-2.5 py-1 text-[11px] font-medium text-[#8b949e] transition hover:border-[#00E676] hover:text-[#00E676]"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                            Customize README
-                          </button>
-                        </div>
-
-                        {resolvedBio && (
-                          <p className="text-sm leading-relaxed text-[#8b949e]">
-                            {resolvedBio}
-                          </p>
-                        )}
-
-                        {readmeConfig.templateId !== "minimal-header" && (
-                          <div
-                            className={`flex flex-wrap gap-2 pt-1 font-mono text-[11px] ${
-                              readmeConfig.align === "center"
-                                ? "justify-center"
-                                : "justify-start"
-                            }`}
-                          >
-                            {readmeConfig.badges
-                              .filter((b) => b.enabled)
-                              .map((badge) => (
-                                <span
-                                  key={badge.id}
-                                  className="inline-flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#161b22] px-2.5 py-1 text-[#c9d1d9]"
-                                >
-                                  <span
-                                    className="h-2.5 w-2.5 rounded-full"
-                                    style={{
-                                      backgroundColor: `#${badge.color}`,
-                                    }}
-                                  />
-                                  {badge.label}
-                                </span>
-                              ))}
-                          </div>
-                        )}
-
-                        {readmeConfig.includeStatsTable &&
-                          readmeConfig.templateId !== "minimal-header" && (
-                            <div className="overflow-hidden rounded-lg border border-[#30363d] text-xs">
-                              <table className="w-full text-left">
-                                <thead className="border-b border-[#30363d] bg-[#161b22] text-[#8b949e]">
-                                  <tr>
-                                    <th className="px-3 py-2 font-medium">
-                                      Metric
-                                    </th>
-                                    <th className="px-3 py-2 font-medium">
-                                      Active Value
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-[#21262d]">
-                                  <tr>
-                                    <td className="px-3 py-2 font-medium text-[#c9d1d9]">
-                                      Guardian Chassis
-                                    </td>
-                                    <td className="px-3 py-2 font-mono text-[#e6edf3]">
-                                      {meta.name} ({meta.designation})
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="px-3 py-2 font-medium text-[#c9d1d9]">
-                                      Evolution Stage
-                                    </td>
-                                    <td className="px-3 py-2 font-mono text-[#00E676]">
-                                      Stage {evolution.stage} / 5 —{" "}
-                                      {evolution.rank}
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="px-3 py-2 font-medium text-[#c9d1d9]">
-                                      Contributions ({config.windowMode})
-                                    </td>
-                                    <td className="px-3 py-2 font-mono text-[#e6edf3]">
-                                      {config.commits.toLocaleString("en-US")}{" "}
-                                      commits
-                                    </td>
-                                  </tr>
-                                  <tr>
-                                    <td className="px-3 py-2 font-medium text-[#c9d1d9]">
-                                      Top Languages
-                                    </td>
-                                    <td className="px-3 py-2 font-mono text-[#e6edf3]">
-                                      {config.languages
-                                        .map((l) => l.name)
-                                        .join(" · ")}
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-
-                        {readmeConfig.includeShareCard && (
-                          <div className="rounded-lg border border-[#21262d] bg-[#070b12] p-2">
-                            <ShareCardSvg
-                              config={config}
-                              className="mx-auto block h-auto w-full"
-                            />
-                          </div>
-                        )}
-
-                        {resolvedFooter && (
-                          <pre className="whitespace-pre-wrap rounded-lg border border-[#21262d] bg-[#161b22]/50 p-3 font-mono text-xs text-[#c9d1d9]">
-                            {resolvedFooter}
-                          </pre>
-                        )}
-                      </div>
-                    )}
+                      {copiedSnippet === "svg" ? (
+                        <>
+                          <Check className="h-3 w-3 text-[#00E676]" />
+                          Copied SVG
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          Copy XML
+                        </>
+                      )}
+                    </button>
                   </div>
-                )}
-              </div>
+                  <div className="max-h-[540px] overflow-auto p-4">
+                    <pre className="font-mono text-[11px] leading-relaxed text-[#79c0ff]">
+                      <code>{rawSvgSource}</code>
+                    </pre>
+                  </div>
+                </div>
+              )}
 
-              {/* Embed & README Export Snippets */}
+              {/* Bottom Quick Snippets */}
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
                 <div className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="flex items-center gap-2 text-xs font-semibold text-[#e6edf3]">
                       <Code2 className="h-4 w-4 text-[#00E676]" />
-                      Direct Markdown &amp; Full README.md
+                      Simple Markdown Embed
                     </span>
-                    <div className="flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => void handleCopy("md")}
-                        className="inline-flex items-center gap-1 rounded-md border border-[#30363d] bg-[#21262d] px-2.5 py-1 text-[11px] font-medium text-[#e6edf3] hover:bg-[#30363d]"
-                      >
-                        {copiedSnippet === "md" ? (
-                          <>
-                            <Check className="h-3 w-3 text-[#00E676]" />
-                            Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            Img Tag
-                          </>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleCopy("readme")}
-                        className="inline-flex items-center gap-1 rounded-md border border-[#00E676]/40 bg-[#00E676]/10 px-2.5 py-1 text-[11px] font-medium text-[#00E676] hover:bg-[#00E676]/20"
-                      >
-                        {copiedSnippet === "readme" ? (
-                          <>
-                            <Check className="h-3 w-3" />
-                            Copied README
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="h-3 w-3" />
-                            Full README
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleCopy("md")}
+                      className="inline-flex items-center gap-1 rounded-md border border-[#30363d] bg-[#21262d] px-2.5 py-1 text-[11px] font-medium text-[#e6edf3] hover:bg-[#30363d]"
+                    >
+                      {copiedSnippet === "md" ? (
+                        <>
+                          <Check className="h-3 w-3 text-[#00E676]" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          Copy
+                        </>
+                      )}
+                    </button>
                   </div>
                   <code className="block overflow-x-auto rounded-lg border border-[#30363d] bg-[#0d1117] px-3 py-2.5 font-mono text-xs text-[#79c0ff]">
                     {markdownSnippet}

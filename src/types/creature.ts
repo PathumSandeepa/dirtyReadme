@@ -117,13 +117,37 @@ export interface ReadmeBadge {
   id: string;
   label: string;
   color: string;
+  logo?: string;
+  logoColor?: string;
+  category?: "design" | "frontend" | "backend" | "languages" | "devops";
+  enabled: boolean;
+}
+
+export interface ReadmeActionLink {
+  id: string;
+  label: string;
+  valueText: string;
+  url: string;
+  color: string;
+  logo?: string;
+  enabled: boolean;
+}
+
+export interface ReadmeFeaturedProject {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  language: string;
   enabled: boolean;
 }
 
 export interface ReadmeConfig {
   templateId: ReadmeTemplateId;
   headline: string;
+  subtitleTags: string[];
   bio: string;
+  ctaLine: string;
   align: "center" | "left";
   imageWidth: number;
   useOutputBranchUrl: boolean;
@@ -131,7 +155,16 @@ export interface ReadmeConfig {
   includeTelemetryCaption: boolean;
   includeShareCard: boolean;
   includeStatsTable: boolean;
+  includeProjects: boolean;
   customFooterMarkdown: string;
   badges: ReadmeBadge[];
+  actionLinks: ReadmeActionLink[];
+  projects: ReadmeFeaturedProject[];
+  /** Optional profile sidebar display metadata for realistic GitHub preview */
+  profileDisplayName: string;
+  profileLocation: string;
+  profileCompany: string;
+  profileWebsite: string;
+  /** When user switches to manual raw edit mode, stores their custom edited Markdown */
   rawOverride: string | null;
 }

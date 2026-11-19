@@ -32,6 +32,11 @@ interface FeatherSpec {
   animClass?: string;
 }
 
+/**
+ * Renders a broad, aerodynamic overlapping mechanical feather blade
+ * with upper specular bevel, shaded lower vane, structural spine,
+ * safety-orange tip chevron, and optional cyber-green optical filament.
+ */
 function renderFeather(
   spec: FeatherSpec,
   p: DerivedPalette,
@@ -43,7 +48,7 @@ function renderFeather(
     length,
     width,
     angle,
-    curve = 14,
+    curve = 12,
     orangeTip = true,
     orangeFull = false,
     greenTip = false,
@@ -51,12 +56,12 @@ function renderFeather(
     animClass = "cc-f1",
   } = spec;
 
-  const fillMain = orangeFull
+  const fillUpper = orangeFull
     ? p.accentMain
     : far
       ? p.armorShadow
       : `url(#${idPrefix}-armor-v)`;
-  const fillVane = orangeFull
+  const fillLower = orangeFull
     ? p.accentDeep
     : far
       ? p.armorFar
@@ -65,33 +70,55 @@ function renderFeather(
   const tipX = length;
   const tipY = curve;
 
-  const upperPath = `M 0 ${-width * 0.35} Q ${length * 0.45} ${-width * 0.68 + curve * 0.2}, ${tipX} ${tipY} Q ${length * 0.52} ${width * 0.1 + curve * 0.45}, 0 ${width * 0.12} Z`;
-  const lowerPath = `M 0 ${width * 0.12} Q ${length * 0.52} ${width * 0.1 + curve * 0.45}, ${tipX} ${tipY} Q ${length * 0.42} ${width * 0.55 + curve * 0.5}, 0 ${width * 0.36} Z`;
+  // Broad asymmetrical airfoil feather silhouette
+  const upperW = width * 0.52;
+  const lowerW = width * 0.48;
 
-  const tipStart = 0.78;
+  const upperPath = [
+    `M 0 ${(-upperW * 0.45).toFixed(1)}`,
+    `C ${(length * 0.25).toFixed(1)} ${(-upperW * 1.05 + curve * 0.1).toFixed(1)}, ${(length * 0.68).toFixed(1)} ${(-upperW * 0.62 + curve * 0.55).toFixed(1)}, ${tipX.toFixed(1)} ${tipY.toFixed(1)}`,
+    `C ${(length * 0.65).toFixed(1)} ${(curve * 0.45 + upperW * 0.08).toFixed(1)}, ${(length * 0.28).toFixed(1)} ${(upperW * 0.14).toFixed(1)}, 0 ${(upperW * 0.1).toFixed(1)}`,
+    `Z`,
+  ].join(" ");
+
+  const lowerPath = [
+    `M 0 ${(upperW * 0.08).toFixed(1)}`,
+    `C ${(length * 0.3).toFixed(1)} ${(upperW * 0.14).toFixed(1)}, ${(length * 0.65).toFixed(1)} ${(curve * 0.48).toFixed(1)}, ${tipX.toFixed(1)} ${tipY.toFixed(1)}`,
+    `C ${(length * 0.62).toFixed(1)} ${(lowerW * 0.85 + curve * 0.65).toFixed(1)}, ${(length * 0.24).toFixed(1)} ${(lowerW * 0.92 + curve * 0.18).toFixed(1)}, 0 ${(lowerW * 0.45).toFixed(1)}`,
+    `Z`,
+  ].join(" ");
+
+  // Safety orange angled tip blade
+  const tipStart = 0.74;
   const tx1 = length * tipStart;
-  const ty1 = curve * 0.58 - width * 0.16;
-  const tx2 = length * (tipStart + 0.04);
-  const ty2 = curve * 0.7 + width * 0.18;
+  const ty1 = curve * 0.56 - upperW * 0.34;
+  const tx2 = length * (tipStart + 0.05);
+  const ty2 = curve * 0.7 + lowerW * 0.32;
   const orangeCap =
     orangeTip && !orangeFull
-      ? `<path d="M ${tx1.toFixed(1)} ${ty1.toFixed(1)} Q ${length * 0.9} ${curve * 0.8 - width * 0.08}, ${tipX} ${tipY} Q ${length * 0.89} ${curve * 0.85 + width * 0.12}, ${tx2.toFixed(1)} ${ty2.toFixed(1)} Z" fill="${far ? p.accentDeep : p.accentMain}" stroke="${strokeCol}" stroke-width="0.9" />`
+      ? `<path d="M ${tx1.toFixed(1)} ${ty1.toFixed(1)} Q ${(length * 0.88).toFixed(1)} ${(curve * 0.8 - upperW * 0.15).toFixed(1)}, ${tipX.toFixed(1)} ${tipY.toFixed(1)} Q ${(length * 0.89).toFixed(1)} ${(curve * 0.86 + lowerW * 0.16).toFixed(1)}, ${tx2.toFixed(1)} ${ty2.toFixed(1)} Z" fill="${far ? p.accentDeep : p.accentMain}" stroke="${strokeCol}" stroke-width="0.9" stroke-linejoin="round" />`
       : "";
 
+  // Subtle internal panel notch & specular edge
+  const highlightEdge = !far
+    ? `<path d="M 8 ${(-upperW * 0.38).toFixed(1)} Q ${(length * 0.4).toFixed(1)} ${(-upperW * 0.76 + curve * 0.2).toFixed(1)}, ${(length * 0.72).toFixed(1)} ${(-upperW * 0.32 + curve * 0.56).toFixed(1)}" fill="none" stroke="${p.armorHighlight}" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />`
+    : "";
+
   const greenFilament = greenTip
-    ? `<path class="cc-pulse" d="M ${(length * 0.88).toFixed(1)} ${(curve * 0.84).toFixed(1)} L ${(length + 13).toFixed(1)} ${(curve + 2.5).toFixed(1)}" stroke="${p.energyMain}" stroke-width="2" stroke-linecap="round" /><circle class="cc-pulse" cx="${(length + 13).toFixed(1)}" cy="${(curve + 2.5).toFixed(1)}" r="2.1" fill="${p.energyBright}" />`
+    ? `<path class="cc-pulse" d="M ${(length * 0.88).toFixed(1)} ${(curve * 0.84).toFixed(1)} L ${(length + 14).toFixed(1)} ${(curve + 3).toFixed(1)}" stroke="${p.energyMain}" stroke-width="1.8" stroke-linecap="round" /><circle class="cc-pulse" cx="${(length + 14).toFixed(1)}" cy="${(curve + 3).toFixed(1)}" r="2" fill="${p.energyBright}" />`
     : "";
 
   return `
     <g transform="translate(${x.toFixed(1)}, ${y.toFixed(1)}) rotate(${angle.toFixed(1)})">
       <g class="${animClass}" style="transform-origin: 0px 0px;">
-        <path d="${lowerPath}" fill="${fillVane}" stroke="${strokeCol}" stroke-width="1.15" stroke-linejoin="round" />
-        <path d="${upperPath}" fill="${fillMain}" stroke="${strokeCol}" stroke-width="1.25" stroke-linejoin="round" />
+        <path d="${lowerPath}" fill="${fillLower}" stroke="${strokeCol}" stroke-width="1.05" stroke-linejoin="round" />
+        <path d="${upperPath}" fill="${fillUpper}" stroke="${strokeCol}" stroke-width="1.15" stroke-linejoin="round" />
         ${orangeCap}
-        <path d="M 3 0 Q ${length * 0.48} ${curve * 0.38}, ${(length * 0.86).toFixed(1)} ${(curve * 0.82).toFixed(1)}" fill="none" stroke="${strokeCol}" stroke-width="1" opacity="0.7" />
+        ${highlightEdge}
+        <path d="M 5 0 Q ${(length * 0.45).toFixed(1)} ${(curve * 0.36).toFixed(1)}, ${(length * 0.84).toFixed(1)} ${(curve * 0.8).toFixed(1)}" fill="none" stroke="${strokeCol}" stroke-width="0.9" opacity="0.55" />
         ${greenFilament}
-        <circle cx="4" cy="0" r="3.2" fill="${p.frameMain}" stroke="${strokeCol}" stroke-width="1" />
-        <circle cx="4" cy="0" r="1.2" fill="${far ? p.armorShadow : p.armorMid}" />
+        <circle cx="4" cy="0" r="3.4" fill="${p.frameMain}" stroke="${strokeCol}" stroke-width="1" />
+        <circle cx="4" cy="0" r="1.3" fill="${far ? p.armorShadow : p.armorMid}" />
       </g>
     </g>`;
 }
@@ -100,7 +127,8 @@ interface CableSpec {
   d: string;
   tipX: number;
   tipY: number;
-  variant: "ribbed" | "fiber" | "white-rib";
+  tipAngle?: number;
+  variant: "armored" | "fiber" | "ceramic";
   width?: number;
   tipColor?: "orange" | "green" | "none";
   animClass: string;
@@ -108,11 +136,17 @@ interface CableSpec {
   originY: number;
 }
 
+/**
+ * Renders sleek, continuous robotic conduits & fiber-optic tendrils
+ * (no ugly dashed marching-ants boxes!) with metallic gradient highlights
+ * and sharp lancet emitter tips.
+ */
 function renderCable(spec: CableSpec, p: DerivedPalette): string {
   const {
     d,
     tipX,
     tipY,
+    tipAngle = 0,
     variant,
     width = 3.2,
     tipColor = "orange",
@@ -122,35 +156,40 @@ function renderCable(spec: CableSpec, p: DerivedPalette): string {
   } = spec;
 
   let strokeMarkup = "";
-  if (variant === "ribbed") {
+  if (variant === "ceramic") {
     strokeMarkup = `
-      <path d="${d}" fill="none" stroke="${p.frameDark}" stroke-width="${width + 2}" stroke-linecap="round" />
-      <path d="${d}" fill="none" stroke="${p.frameLight}" stroke-width="${width}" stroke-linecap="round" stroke-dasharray="5 3.5" />
-    `;
-  } else if (variant === "white-rib") {
-    strokeMarkup = `
-      <path d="${d}" fill="none" stroke="${p.seamStroke}" stroke-width="${width + 2.2}" stroke-linecap="round" />
+      <path d="${d}" fill="none" stroke="${p.seamStroke}" stroke-width="${width + 1.8}" stroke-linecap="round" />
       <path d="${d}" fill="none" stroke="${p.armorMid}" stroke-width="${width}" stroke-linecap="round" />
-      <path d="${d}" fill="none" stroke="${p.frameMain}" stroke-width="${width}" stroke-dasharray="3 6" />
+      <path d="${d}" fill="none" stroke="${p.armorHighlight}" stroke-width="${Math.max(1, width * 0.38)}" stroke-linecap="round" opacity="0.85" />
+    `;
+  } else if (variant === "armored") {
+    strokeMarkup = `
+      <path d="${d}" fill="none" stroke="${p.frameDark}" stroke-width="${width + 1.8}" stroke-linecap="round" />
+      <path d="${d}" fill="none" stroke="${p.frameMain}" stroke-width="${width}" stroke-linecap="round" />
+      <path d="${d}" fill="none" stroke="${p.frameLight}" stroke-width="${Math.max(1, width * 0.35)}" stroke-linecap="round" opacity="0.85" />
     `;
   } else {
     strokeMarkup = `
       <path d="${d}" fill="none" stroke="${p.frameDark}" stroke-width="${width + 1.4}" stroke-linecap="round" />
-      <path d="${d}" fill="none" stroke="${p.armorShadow}" stroke-width="${Math.max(1.2, width - 0.8)}" stroke-linecap="round" />
-      <path class="cc-pulse" d="${d}" fill="none" stroke="${p.energyMain}" stroke-width="0.95" stroke-opacity="0.65" stroke-linecap="round" />
+      <path d="${d}" fill="none" stroke="${p.armorShadow}" stroke-width="${Math.max(1.2, width - 0.5)}" stroke-linecap="round" />
+      <path class="cc-pulse" d="${d}" fill="none" stroke="${p.energyMain}" stroke-width="1.1" stroke-opacity="0.78" stroke-linecap="round" />
     `;
   }
 
   let tipMarkup = "";
   if (tipColor === "orange") {
     tipMarkup = `
-      <circle cx="${tipX}" cy="${tipY}" r="${width * 0.95}" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
-      <circle cx="${tipX}" cy="${tipY}" r="${width * 0.35}" fill="${p.armorHighlight}" />
+      <g transform="translate(${tipX}, ${tipY}) rotate(${tipAngle})">
+        <path d="M -8 -2.8 L 10 0 L -8 2.8 L -4 0 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.9" stroke-linejoin="round" />
+        <circle cx="-6" cy="0" r="2" fill="${p.frameMain}" />
+      </g>
     `;
   } else if (tipColor === "green") {
     tipMarkup = `
-      <circle class="cc-pulse" cx="${tipX}" cy="${tipY}" r="${width * 1.45}" fill="${p.energyMain}" fill-opacity="0.32" />
-      <circle class="cc-pulse" cx="${tipX}" cy="${tipY}" r="${width * 0.85}" fill="${p.energyBright}" stroke="${p.energyMain}" stroke-width="1" />
+      <g transform="translate(${tipX}, ${tipY}) rotate(${tipAngle})">
+        <circle class="cc-pulse" cx="2" cy="0" r="${width * 1.5}" fill="${p.energyMain}" fill-opacity="0.28" />
+        <path class="cc-pulse" d="M -7 -2.4 L 11 0 L -7 2.4 L -3 0 Z" fill="${p.energyBright}" stroke="${p.energyMain}" stroke-width="0.8" stroke-linejoin="round" />
+      </g>
     `;
   }
 
@@ -169,73 +208,89 @@ function buildAnimationStyles(speed: number): string {
     .cc-float {
       transform-box: fill-box;
       transform-origin: center;
-      animation: ccFloat ${dur(5.6)} ease-in-out infinite;
+      animation: ccFloat ${dur(5.2)} ease-in-out infinite;
+    }
+    .cc-tail-swim {
+      transform-box: fill-box;
+      animation: ccTailSwim ${dur(4.2)} ease-in-out infinite;
+    }
+    .cc-fluke-wave {
+      transform-box: fill-box;
+      animation: ccFlukeWave ${dur(4.2)} ease-in-out 0.45s infinite;
     }
     .cc-wing-near {
       transform-box: fill-box;
-      animation: ccWingNear ${dur(4.4)} ease-in-out infinite;
+      animation: ccWingNear ${dur(4.0)} ease-in-out infinite;
     }
     .cc-wing-far {
       transform-box: fill-box;
-      animation: ccWingFar ${dur(4.4)} ease-in-out infinite;
+      animation: ccWingFar ${dur(4.0)} ease-in-out infinite;
     }
     .cc-f1, .cc-f2, .cc-f3, .cc-f4, .cc-f5, .cc-f6 {
       transform-box: fill-box;
     }
-    .cc-f1 { animation: ccFeatherA ${dur(3.2)} ease-in-out infinite; }
-    .cc-f2 { animation: ccFeatherB ${dur(3.5)} ease-in-out 0.25s infinite; }
-    .cc-f3 { animation: ccFeatherA ${dur(3.8)} ease-in-out 0.55s infinite; }
-    .cc-f4 { animation: ccFeatherB ${dur(3.4)} ease-in-out 0.8s infinite; }
-    .cc-f5 { animation: ccFeatherA ${dur(3.7)} ease-in-out 1.1s infinite; }
-    .cc-f6 { animation: ccFeatherB ${dur(3.1)} ease-in-out 1.35s infinite; }
+    .cc-f1 { animation: ccFeatherA ${dur(3.1)} ease-in-out infinite; }
+    .cc-f2 { animation: ccFeatherB ${dur(3.3)} ease-in-out 0.25s infinite; }
+    .cc-f3 { animation: ccFeatherA ${dur(3.5)} ease-in-out 0.55s infinite; }
+    .cc-f4 { animation: ccFeatherB ${dur(3.2)} ease-in-out 0.8s infinite; }
+    .cc-f5 { animation: ccFeatherA ${dur(3.4)} ease-in-out 1.1s infinite; }
+    .cc-f6 { animation: ccFeatherB ${dur(3.0)} ease-in-out 1.35s infinite; }
     .cc-c1, .cc-c2, .cc-c3, .cc-c4, .cc-c5 {
       transform-box: fill-box;
     }
-    .cc-c1 { animation: ccCableA ${dur(4.6)} ease-in-out infinite; }
-    .cc-c2 { animation: ccCableB ${dur(5.1)} ease-in-out 0.4s infinite; }
-    .cc-c3 { animation: ccCableA ${dur(4.8)} ease-in-out 0.9s infinite; }
-    .cc-c4 { animation: ccCableB ${dur(5.4)} ease-in-out 1.3s infinite; }
-    .cc-c5 { animation: ccCableA ${dur(4.3)} ease-in-out 0.6s infinite; }
+    .cc-c1 { animation: ccCableA ${dur(4.4)} ease-in-out infinite; }
+    .cc-c2 { animation: ccCableB ${dur(4.8)} ease-in-out 0.35s infinite; }
+    .cc-c3 { animation: ccCableA ${dur(4.6)} ease-in-out 0.75s infinite; }
+    .cc-c4 { animation: ccCableB ${dur(5.1)} ease-in-out 1.15s infinite; }
+    .cc-c5 { animation: ccCableA ${dur(4.2)} ease-in-out 0.55s infinite; }
     .cc-pulse {
-      animation: ccPulse ${dur(2.4)} ease-in-out infinite;
+      animation: ccPulse ${dur(2.2)} ease-in-out infinite;
     }
     .cc-hud-blink {
-      animation: ccHudBlink ${dur(1.8)} ease-in-out infinite;
+      animation: ccHudBlink ${dur(1.7)} ease-in-out infinite;
     }
     @keyframes ccFloat {
-      0%, 100% { transform: translateY(-5px) rotate(-0.5deg); }
-      50% { transform: translateY(5px) rotate(0.5deg); }
+      0%, 100% { transform: translateY(-9px) rotate(-1.3deg); }
+      50% { transform: translateY(9px) rotate(1.3deg); }
+    }
+    @keyframes ccTailSwim {
+      0%, 100% { transform: rotate(-4.5deg) translateY(-2px); }
+      50% { transform: rotate(5.2deg) translateY(3px); }
+    }
+    @keyframes ccFlukeWave {
+      0%, 100% { transform: rotate(5deg); }
+      50% { transform: rotate(-6deg); }
     }
     @keyframes ccWingNear {
-      0%, 100% { transform: rotate(-2.4deg) translateY(-2px); }
-      50% { transform: rotate(2.8deg) translateY(3px); }
+      0%, 100% { transform: rotate(-6.2deg) translateY(-3px); }
+      50% { transform: rotate(7.2deg) translateY(4px); }
     }
     @keyframes ccWingFar {
-      0%, 100% { transform: rotate(2deg) translateY(2px); }
-      50% { transform: rotate(-2.4deg) translateY(-2px); }
+      0%, 100% { transform: rotate(5.5deg) translateY(2px); }
+      50% { transform: rotate(-6deg) translateY(-3px); }
     }
     @keyframes ccFeatherA {
-      0%, 100% { transform: rotate(-3.2deg); }
-      50% { transform: rotate(3.6deg); }
+      0%, 100% { transform: rotate(-5.2deg); }
+      50% { transform: rotate(6deg); }
     }
     @keyframes ccFeatherB {
-      0%, 100% { transform: rotate(3deg); }
-      50% { transform: rotate(-3.5deg); }
+      0%, 100% { transform: rotate(4.8deg); }
+      50% { transform: rotate(-5.5deg); }
     }
     @keyframes ccCableA {
-      0%, 100% { transform: rotate(-3.2deg) translateY(-2px); }
-      50% { transform: rotate(3.4deg) translateY(2.5px); }
+      0%, 100% { transform: rotate(-5.5deg) translateY(-3px); }
+      50% { transform: rotate(6deg) translateY(3.5px); }
     }
     @keyframes ccCableB {
-      0%, 100% { transform: rotate(2.8deg) translateY(2px); }
-      50% { transform: rotate(-3.1deg) translateY(-2px); }
+      0%, 100% { transform: rotate(5deg) translateY(3px); }
+      50% { transform: rotate(-5.5deg) translateY(-3px); }
     }
     @keyframes ccPulse {
-      0%, 100% { opacity: 0.68; }
+      0%, 100% { opacity: 0.48; }
       50% { opacity: 1; }
     }
     @keyframes ccHudBlink {
-      0%, 100% { opacity: 0.45; }
+      0%, 100% { opacity: 0.4; }
       50% { opacity: 1; }
     }
   `;
@@ -244,14 +299,21 @@ function buildAnimationStyles(speed: number): string {
 function buildDefs(p: DerivedPalette, idPrefix: string): string {
   return `
     <defs>
-      <linearGradient id="${idPrefix}-armor-v" x1="0%" y1="0%" x2="0%" y2="100%">
+      <linearGradient id="${idPrefix}-armor-v" x1="0%" y1="0%" x2="10%" y2="100%">
         <stop offset="0%" stop-color="${p.armorHighlight}" />
-        <stop offset="35%" stop-color="${p.armorMain}" />
+        <stop offset="42%" stop-color="${p.armorMain}" />
         <stop offset="100%" stop-color="${p.armorMid}" />
       </linearGradient>
       <linearGradient id="${idPrefix}-armor-d" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${p.armorMain}" />
-        <stop offset="65%" stop-color="${p.armorMid}" />
+        <stop offset="0%" stop-color="${p.armorHighlight}" />
+        <stop offset="35%" stop-color="${p.armorMain}" />
+        <stop offset="78%" stop-color="${p.armorMid}" />
+        <stop offset="100%" stop-color="${p.armorShadow}" />
+      </linearGradient>
+      <linearGradient id="${idPrefix}-head-vol" x1="20%" y1="5%" x2="65%" y2="95%">
+        <stop offset="0%" stop-color="${p.armorHighlight}" />
+        <stop offset="38%" stop-color="${p.armorMain}" />
+        <stop offset="78%" stop-color="${p.armorMid}" />
         <stop offset="100%" stop-color="${p.armorShadow}" />
       </linearGradient>
       <linearGradient id="${idPrefix}-frame-v" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -264,14 +326,14 @@ function buildDefs(p: DerivedPalette, idPrefix: string): string {
         <stop offset="100%" stop-color="${p.accentDeep}" />
       </linearGradient>
       <radialGradient id="${idPrefix}-energy-glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="${p.energyBright}" stop-opacity="0.95" />
-        <stop offset="45%" stop-color="${p.energyMain}" stop-opacity="0.55" />
+        <stop offset="0%" stop-color="${p.energyBright}" stop-opacity="0.98" />
+        <stop offset="45%" stop-color="${p.energyMain}" stop-opacity="0.58" />
         <stop offset="100%" stop-color="${p.energyMain}" stop-opacity="0" />
       </radialGradient>
       <linearGradient id="${idPrefix}-hud-bg" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stop-color="#0D1117" stop-opacity="0.94" />
-        <stop offset="50%" stop-color="#161B22" stop-opacity="0.94" />
-        <stop offset="100%" stop-color="#0D1117" stop-opacity="0.94" />
+        <stop offset="0%" stop-color="#0D1117" stop-opacity="0.95" />
+        <stop offset="50%" stop-color="#161B22" stop-opacity="0.95" />
+        <stop offset="100%" stop-color="#0D1117" stop-opacity="0.95" />
       </linearGradient>
     </defs>
   `;
@@ -279,21 +341,21 @@ function buildDefs(p: DerivedPalette, idPrefix: string): string {
 
 function getStageScaleTransform(stage: number): string {
   const scales: Record<number, number> = {
-    1: 0.72,
-    2: 0.81,
+    1: 0.74,
+    2: 0.82,
     3: 0.9,
-    4: 0.98,
-    5: 1.03,
+    4: 0.97,
+    5: 1.01,
   };
   const s = scales[stage] ?? 1;
   if (s === 1) return "";
   const cx = 460;
-  const cy = 212;
+  const cy = 205;
   return `translate(${cx}, ${cy}) scale(${s}) translate(${-cx}, ${-cy})`;
 }
 
 /* -------------------------------------------------------------------------- */
-/* CREATURE 1: CYBER-TULKUN (SIDE / DIVE / TOP)                               */
+/* CREATURE 1: CYBER-TULKUN (ARMORED LEVIATHAN)                               */
 /* -------------------------------------------------------------------------- */
 
 function renderTulkunSide(
@@ -301,207 +363,83 @@ function renderTulkunSide(
   idPrefix: string,
   stage: number
 ): string {
-  const allTailCables: CableSpec[] = [
-    {
-      d: "M 632 146 C 698 136, 755 110, 822 126",
-      tipX: 822,
-      tipY: 126,
-      variant: "fiber",
-      width: 2.2,
-      tipColor: "green",
-      animClass: "cc-c1",
-      originX: 632,
-      originY: 146,
-    },
-    {
-      d: "M 626 154 C 708 175, 768 188, 862 146",
-      tipX: 862,
-      tipY: 146,
-      variant: "white-rib",
-      width: 4.1,
-      tipColor: "orange",
-      animClass: "cc-c2",
-      originX: 626,
-      originY: 154,
-    },
-    {
-      d: "M 618 164 C 692 212, 775 215, 855 178",
-      tipX: 855,
-      tipY: 178,
-      variant: "ribbed",
-      width: 4.5,
-      tipColor: "orange",
-      animClass: "cc-c3",
-      originX: 618,
-      originY: 164,
-    },
-    {
-      d: "M 610 172 C 675 245, 765 248, 848 214",
-      tipX: 848,
-      tipY: 214,
-      variant: "white-rib",
-      width: 4.2,
-      tipColor: "green",
-      animClass: "cc-c4",
-      originX: 610,
-      originY: 172,
-    },
-    {
-      d: "M 596 178 C 660 278, 755 288, 838 250",
-      tipX: 838,
-      tipY: 250,
-      variant: "ribbed",
-      width: 4.8,
-      tipColor: "orange",
-      animClass: "cc-c5",
-      originX: 596,
-      originY: 178,
-    },
-    {
-      d: "M 582 182 C 642 308, 745 322, 824 282",
-      tipX: 824,
-      tipY: 282,
-      variant: "white-rib",
-      width: 4.6,
-      tipColor: "green",
-      animClass: "cc-c1",
-      originX: 582,
-      originY: 182,
-    },
-    {
-      d: "M 568 184 C 625 325, 725 348, 798 312",
-      tipX: 798,
-      tipY: 312,
-      variant: "fiber",
-      width: 2.6,
-      tipColor: "orange",
-      animClass: "cc-c2",
-      originX: 568,
-      originY: 184,
-    },
-    {
-      d: "M 556 186 C 602 292, 682 328, 745 330",
-      tipX: 745,
-      tipY: 330,
-      variant: "ribbed",
-      width: 3.4,
-      tipColor: "green",
-      animClass: "cc-c3",
-      originX: 556,
-      originY: 186,
-    },
+  // Trailing tail robotic cables & fiber-optic whips (anchored at tail peduncle)
+  const rawTailCables: CableSpec[] = [
+    { d: "M 648 158 C 722 146, 782 118, 846 130", tipX: 846, tipY: 130, tipAngle: 10, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c1", originX: 648, originY: 158 },
+    { d: "M 642 166 C 722 184, 786 196, 868 158", tipX: 868, tipY: 158, tipAngle: -16, variant: "ceramic", width: 3.8, tipColor: "orange", animClass: "cc-c2", originX: 642, originY: 166 },
+    { d: "M 634 174 C 708 214, 784 222, 858 190", tipX: 858, tipY: 190, tipAngle: -12, variant: "armored", width: 4.2, tipColor: "orange", animClass: "cc-c3", originX: 634, originY: 174 },
+    { d: "M 624 180 C 692 246, 774 256, 848 224", tipX: 848, tipY: 224, tipAngle: -10, variant: "ceramic", width: 3.6, tipColor: "green", animClass: "cc-c4", originX: 624, originY: 180 },
+    { d: "M 612 186 C 676 276, 762 292, 836 258", tipX: 836, tipY: 258, tipAngle: -14, variant: "armored", width: 4.0, tipColor: "orange", animClass: "cc-c5", originX: 612, originY: 186 },
+    { d: "M 598 190 C 656 302, 742 322, 814 292", tipX: 814, tipY: 292, tipAngle: -12, variant: "ceramic", width: 3.4, tipColor: "green", animClass: "cc-c1", originX: 598, originY: 190 },
+    { d: "M 584 194 C 638 318, 718 342, 786 320", tipX: 786, tipY: 320, tipAngle: -8, variant: "fiber", width: 2.4, tipColor: "orange", animClass: "cc-c2", originX: 584, originY: 194 },
   ];
-  const cableLimit = stage === 1 ? 2 : stage === 2 ? 4 : stage === 3 ? 6 : 8;
-  const tailCables = allTailCables.slice(0, cableLimit);
+  const cableLimit = stage === 1 ? 2 : stage === 2 ? 4 : stage === 3 ? 5 : 7;
+  const tailCables = rawTailCables.slice(0, cableLimit);
 
+  // Cranial neural whips (Stage 2+)
   const headTendrils: CableSpec[] =
     stage >= 2
       ? [
-        {
-          d: "M 244 74 C 288 52, 342 46, 392 60",
-          tipX: 392,
-          tipY: 60,
-          variant: "fiber",
-          width: 2.0,
-          tipColor: "orange",
-          animClass: "cc-c1",
-          originX: 244,
-          originY: 74,
-        },
-        {
-          d: "M 252 78 C 304 64, 362 56, 422 50",
-          tipX: 422,
-          tipY: 50,
-          variant: "white-rib",
-          width: 2.3,
-          tipColor: "green",
-          animClass: "cc-c2",
-          originX: 252,
-          originY: 78,
-        },
-        ...(stage >= 4
-          ? [
-            {
-              d: "M 258 84 C 312 78, 368 82, 412 76",
-              tipX: 412,
-              tipY: 76,
-              variant: "fiber" as const,
-              width: 1.9,
-              tipColor: "orange" as const,
-              animClass: "cc-c3",
-              originX: 258,
-              originY: 84,
-            },
-            {
-              d: "M 262 88 C 310 92, 354 102, 396 96",
-              tipX: 396,
-              tipY: 96,
-              variant: "fiber" as const,
-              width: 1.8,
-              tipColor: "green" as const,
-              animClass: "cc-c4",
-              originX: 262,
-              originY: 88,
-            },
-          ]
-          : []),
-      ]
+          { d: "M 248 78 C 296 54, 348 48, 398 58", tipX: 398, tipY: 58, tipAngle: 8, variant: "fiber", width: 2.0, tipColor: "orange", animClass: "cc-c1", originX: 248, originY: 78 },
+          { d: "M 256 82 C 308 66, 366 60, 424 50", tipX: 424, tipY: 50, tipAngle: -8, variant: "ceramic", width: 2.4, tipColor: "green", animClass: "cc-c2", originX: 256, originY: 82 },
+          ...(stage >= 4
+            ? [
+                { d: "M 262 88 C 316 80, 370 84, 412 76", tipX: 412, tipY: 76, tipAngle: -6, variant: "fiber" as const, width: 1.8, tipColor: "orange" as const, animClass: "cc-c3", originX: 262, originY: 88 },
+                { d: "M 266 94 C 314 96, 358 102, 396 94", tipX: 396, tipY: 94, tipAngle: -8, variant: "fiber" as const, width: 1.7, tipColor: "green" as const, animClass: "cc-c4", originX: 266, originY: 94 },
+              ]
+            : []),
+        ]
       : [];
 
-  const farFeathers: FeatherSpec[] = [
-    { x: 246, y: 274, length: 92, width: 15, angle: 76, curve: 8, far: true, orangeTip: true, animClass: "cc-f4" },
-    { x: 254, y: 288, length: 102, width: 16, angle: 82, curve: 10, far: true, orangeTip: true, animClass: "cc-f5" },
-    { x: 262, y: 300, length: 106, width: 16, angle: 88, curve: 10, far: true, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f6" },
-    { x: 270, y: 312, length: 96, width: 15, angle: 96, curve: 8, far: true, orangeTip: true, animClass: "cc-f1" },
-    { x: 276, y: 322, length: 82, width: 14, angle: 104, curve: 6, far: true, orangeTip: false, animClass: "cc-f2" },
-  ].slice(0, stage <= 2 ? 3 : 5);
+  // Far-side pectoral wing: broad fanned mechanical feathers
+  const rawFarFeathers: FeatherSpec[] = [
+    { x: 224, y: 238, length: 92, width: 24, angle: 112, curve: -8, far: true, orangeTip: true, animClass: "cc-f5" },
+    { x: 234, y: 248, length: 106, width: 26, angle: 98, curve: -6, far: true, orangeTip: true, animClass: "cc-f4" },
+    { x: 244, y: 258, length: 118, width: 26, angle: 86, curve: 4, far: true, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f3" },
+    { x: 254, y: 266, length: 112, width: 24, angle: 74, curve: 8, far: true, orangeTip: true, animClass: "cc-f2" },
+    { x: 262, y: 274, length: 96, width: 22, angle: 64, curve: 10, far: true, orangeTip: false, animClass: "cc-f1" },
+  ];
+  const farFeathers = rawFarFeathers.slice(0, stage <= 2 ? 3 : 5);
 
+  // Dorsal spine feather crest (Stage 3+): broad curved swept blades
   const dorsalFeathers: FeatherSpec[] =
     stage >= 3
       ? [
-        { x: 432, y: 120, length: 78, width: 13, angle: -44, curve: -8, orangeTip: true, animClass: "cc-f1" },
-        { x: 444, y: 125, length: 86, width: 14, angle: -34, curve: -8, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
-        { x: 454, y: 130, length: 82, width: 13, angle: -22, curve: -6, orangeTip: false, animClass: "cc-f3" },
-        ...(stage >= 4
-          ? [
-            { x: 466, y: 136, length: 74, width: 12, angle: -12, curve: -4, orangeTip: true, animClass: "cc-f4" },
-            { x: 478, y: 142, length: 64, width: 11, angle: -4, curve: -3, orangeTip: false, animClass: "cc-f5" },
-          ]
-          : []),
-      ]
+          { x: 432, y: 122, length: 82, width: 22, angle: -46, curve: -8, orangeTip: true, animClass: "cc-f1" },
+          { x: 446, y: 128, length: 92, width: 24, angle: -34, curve: -7, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
+          { x: 460, y: 134, length: 88, width: 22, angle: -22, curve: -5, orangeTip: false, animClass: "cc-f3" },
+          ...(stage >= 4
+            ? [
+                { x: 474, y: 140, length: 78, width: 20, angle: -12, curve: -4, orangeTip: true, animClass: "cc-f4" },
+                { x: 488, y: 146, length: 66, width: 18, angle: -4, curve: -3, orangeTip: false, animClass: "cc-f5" },
+              ]
+            : []),
+        ]
       : [];
 
+  // Hero near pectoral wing: broad overlapping fanned feather vanes (drawn outer-to-inner for clean overlap!)
   const allNearFeathers: FeatherSpec[] = [
-    { x: 356, y: 242, length: 112, width: 15, angle: 34, curve: 10, orangeTip: true, animClass: "cc-f1" },
-    { x: 368, y: 252, length: 128, width: 16, angle: 31, curve: 11, orangeTip: true, greenTip: stage >= 3, animClass: "cc-f2" },
-    { x: 382, y: 263, length: 142, width: 17, angle: 28, curve: 12, orangeTip: true, animClass: "cc-f3" },
-    { x: 396, y: 274, length: 154, width: 18, angle: 26, curve: 13, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f4" },
-    { x: 412, y: 286, length: 162, width: 18, angle: 25, curve: 14, orangeTip: true, animClass: "cc-f5" },
-    { x: 428, y: 298, length: 168, width: 19, angle: 24, curve: 14, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f6" },
-    { x: 444, y: 310, length: 158, width: 18, angle: 27, curve: 12, orangeTip: true, animClass: "cc-f1" },
-    { x: 458, y: 320, length: 138, width: 16, angle: 31, curve: 10, orangeTip: true, animClass: "cc-f2" },
+    { x: 334, y: 226, length: 116, width: 25, angle: 56, curve: 10, orangeTip: true, animClass: "cc-f6" },
+    { x: 350, y: 240, length: 132, width: 27, angle: 49, curve: 11, orangeTip: true, greenTip: stage >= 3, animClass: "cc-f5" },
+    { x: 368, y: 254, length: 148, width: 29, angle: 42, curve: 12, orangeTip: true, animClass: "cc-f4" },
+    { x: 386, y: 268, length: 162, width: 30, angle: 36, curve: 13, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f3" },
+    { x: 406, y: 282, length: 168, width: 30, angle: 30, curve: 13, orangeTip: true, animClass: "cc-f2" },
+    { x: 426, y: 296, length: 162, width: 28, angle: 24, curve: 12, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f1" },
+    { x: 446, y: 310, length: 146, width: 26, angle: 18, curve: 10, orangeTip: true, animClass: "cc-f2" },
+    { x: 464, y: 322, length: 122, width: 23, angle: 12, curve: 8, orangeTip: true, animClass: "cc-f3" },
   ];
   const nearFeathers = allNearFeathers.slice(
     0,
     stage === 1 ? 4 : stage === 2 ? 5 : stage === 3 ? 6 : 8
   );
 
-  const tailSegments = [
-    { x: 428, y: 118, w: 48, h: 92, r: 6 },
-    { x: 468, y: 124, w: 44, h: 80, r: 7 },
-    { x: 504, y: 129, w: 40, h: 68, r: 8 },
-    { x: 538, y: 133, w: 36, h: 56, r: 8 },
-    { x: 568, y: 136, w: 32, h: 44, r: 7 },
-    { x: 595, y: 139, w: 28, h: 34, r: 6 },
-  ];
-
-  // Stage 5 Ascended Overdrive Crown & Scar Glow
+  // Stage 5 Ascended Crown Plumes & Battle Energy Scars
   const ascendedCrown =
     stage === 5
       ? `
       <g>
-        ${renderFeather({ x: 204, y: 74, length: 68, width: 11, angle: -24, curve: -8, orangeTip: true, greenTip: true, animClass: "cc-f2" }, p, idPrefix)}
-        ${renderFeather({ x: 222, y: 70, length: 76, width: 12, angle: -18, curve: -8, orangeFull: true, greenTip: true, animClass: "cc-f3" }, p, idPrefix)}
+        ${renderFeather({ x: 204, y: 74, length: 72, width: 18, angle: -24, curve: -8, orangeTip: true, greenTip: true, animClass: "cc-f2" }, p, idPrefix)}
+        ${renderFeather({ x: 222, y: 70, length: 82, width: 20, angle: -18, curve: -8, orangeFull: true, greenTip: true, animClass: "cc-f3" }, p, idPrefix)}
         <path class="cc-pulse" d="M 118 118 L 166 106 L 154 128 L 210 116" fill="none" stroke="${p.energyBright}" stroke-width="2" stroke-linecap="round" />
       </g>`
       : "";
@@ -511,137 +449,156 @@ function renderTulkunSide(
     stage >= 3
       ? `
       <g>
-        ${renderFeather({ x: 472, y: 204, length: 72, width: 13, angle: 44, curve: 8, far: true, orangeTip: true, animClass: "cc-f4" }, p, idPrefix)}
-        ${renderFeather({ x: 484, y: 200, length: 60, width: 11, angle: 36, curve: 6, far: true, orangeTip: false, greenTip: stage >= 5, animClass: "cc-f5" }, p, idPrefix)}
+        ${renderFeather({ x: 474, y: 206, length: 78, width: 22, angle: 46, curve: 8, far: true, orangeTip: true, animClass: "cc-f4" }, p, idPrefix)}
+        ${renderFeather({ x: 486, y: 202, length: 64, width: 19, angle: 36, curve: 6, far: true, orangeTip: false, greenTip: stage >= 5, animClass: "cc-f5" }, p, idPrefix)}
       </g>`
       : "";
 
   return `
     <g transform="${getStageScaleTransform(stage)}">
       <g class="cc-float">
+        <!-- Head Dorsal Neural Whips -->
         <g>${headTendrils.map((c) => renderCable(c, p)).join("")}</g>
 
-        <!-- Far Pectoral Fin -->
-        <g class="cc-wing-far" style="transform-origin: 240px 235px;">
-          <path d="M 225 224 L 245 276 L 278 326 L 260 336 L 216 254 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.4" />
-          <circle cx="232" cy="240" r="14" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.4" />
-          <circle cx="232" cy="240" r="8" fill="${p.accentDeep}" />
+        <!-- Far Pectoral Wing-Fin -->
+        <g class="cc-wing-far" style="transform-origin: 235px 226px;">
           ${farFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
+          <path d="M 222 216 L 246 274 L 266 322 L 246 328 L 214 248 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.3" stroke-linejoin="round" />
+          <circle cx="228" cy="230" r="14" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.3" />
+          <circle cx="228" cy="230" r="7.5" fill="${p.accentDeep}" />
         </g>
 
-        ${ventralPaddle}
-        <g>${tailCables.map((c) => renderCable(c, p)).join("")}</g>
+        <!-- Animated Tail Peduncle + Fluke + Trailing Cables -->
+        <g class="cc-tail-swim" style="transform-origin: 430px 168px;">
+          ${ventralPaddle}
+          <g>${tailCables.map((c) => renderCable(c, p)).join("")}</g>
+          <g>${dorsalFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
 
-        <!-- Mechanical Spine & Belly Under-Frame -->
-        <path d="M 275 130 C 375 112, 480 124, 625 144 L 622 178 C 495 198, 395 232, 290 250 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
-        ${stage >= 2
-      ? `<path d="M 332 230 C 405 222, 470 206, 520 192" fill="none" stroke="${p.energyMain}" stroke-width="2.2" stroke-opacity="0.75" class="cc-pulse" />`
-      : ""
-    }
-        <path d="M 342 238 L 355 212 M 365 234 L 378 206 M 388 228 L 400 201 M 412 222 L 422 196 M 436 215 L 444 191" stroke="${p.frameLight}" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Sculpted Tapered Mechanical Tail Under-Frame -->
+          <path d="M 418 134 C 498 130, 578 142, 650 156 L 646 184 C 574 196, 496 212, 412 224 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.4" />
 
-        <g>${dorsalFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
+          <!-- Continuous Contoured Interlocking Tail Armor Plates (No Boxy Rects!) -->
+          <path d="M 416 122 C 496 126, 576 138, 646 152 L 642 180 C 572 192, 492 204, 412 214 C 402 184, 404 150, 416 122 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.45" stroke-linejoin="round" />
+          <!-- Curved Anatomical Segment Seams & Orange Trim Ticks -->
+          <path d="M 454 125 C 446 154, 444 184, 452 209" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
+          <path d="M 494 129 C 486 156, 484 182, 492 203" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
+          <path d="M 532 134 C 525 157, 524 179, 530 197" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
+          <path d="M 568 139 C 562 158, 561 176, 566 192" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
+          <path d="M 604 144 C 599 160, 598 174, 602 186" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <!-- Dorsal Ridge Highlight Ribbon -->
+          <path d="M 424 129 C 498 134, 572 145, 636 157" fill="none" stroke="${p.armorHighlight}" stroke-width="3" stroke-linecap="round" opacity="0.75" />
+          <!-- Subtle Energy & Accent Micro-Ports along Tail -->
+          ${stage >= 3 ? `<rect x="466" y="164" width="12" height="5" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.7" />` : ""}
+          ${stage >= 3 ? `<rect x="542" y="162" width="10" height="5" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.7" />` : ""}
+          <circle class="cc-pulse" cx="512" cy="166" r="2.6" fill="${p.energyMain}" />
+          <circle class="cc-pulse" cx="585" cy="165" r="2.4" fill="${p.energyMain}" />
 
-        <!-- Segmented Tail Carapace Plates -->
-        <g>
-          ${tailSegments
-      .slice(0, stage === 1 ? 4 : 6)
-      .map(
-        (seg, idx) => `
-            <g transform="translate(${seg.x}, ${seg.y}) rotate(${seg.r})">
-              <rect x="0" y="0" width="${seg.w}" height="${seg.h}" rx="10" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.4" />
-              <path d="M 4 ${seg.h * 0.28} L ${seg.w - 4} ${seg.h * 0.24}" stroke="${p.seamStroke}" stroke-width="1" opacity="0.7" />
-              <rect x="${seg.w * 0.25}" y="5" width="${seg.w * 0.5}" height="6" rx="3" fill="${p.armorHighlight}" opacity="0.85" />
-              ${idx % 2 === 0 && stage >= 3 ? `<rect x="${seg.w - 10}" y="${seg.h * 0.52}" width="6" height="10" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.8" />` : `<circle cx="${seg.w * 0.5}" cy="${seg.h * 0.65}" r="2.2" fill="${p.energyMain}" class="cc-pulse" />`}
-            </g>`
-      )
-      .join("")}
+          <!-- Rear Tail Stabilizer Fluke -->
+          <g class="cc-fluke-wave" style="transform-origin: 642px 164px;">
+            <path d="M 636 156 L 732 130 L 762 140 L 704 166 L 638 174 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.4" stroke-linejoin="round" />
+            <path d="M 708 136 L 732 130 L 762 140 L 736 150 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
+            <circle cx="644" cy="165" r="6" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
+            <circle class="cc-pulse" cx="644" cy="165" r="2.4" fill="${p.energyBright}" />
+          </g>
         </g>
 
-        <!-- Rear Tail Stabilizer Fluke -->
+        <!-- Mid-Torso Sculpted Under-Frame & Hydraulic Belly Ribs -->
+        <path d="M 278 124 C 338 112, 390 116, 424 126 L 418 220 C 374 234, 326 244, 286 248 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
+        ${
+          stage >= 2
+            ? `<path class="cc-pulse" d="M 326 232 C 378 226, 422 214, 466 202" fill="none" stroke="${p.energyMain}" stroke-width="2" stroke-opacity="0.8" />`
+            : ""
+        }
+        <path d="M 340 236 L 352 212 M 362 232 L 374 206 M 384 226 L 395 201" stroke="${p.frameLight}" stroke-width="2.2" stroke-linecap="round" />
+
+        <!-- Mid-Torso Modular Armor Carapace -->
+        <path d="M 284 90 C 344 96, 396 110, 428 126 C 416 158, 412 188, 418 216 C 374 230, 324 240, 288 240 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+        <path d="M 326 102 C 332 144, 338 186, 346 226 M 374 114 C 378 150, 382 184, 388 214" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" opacity="0.82" />
+        <rect x="336" y="138" width="24" height="9" rx="2.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="0.9" />
+        <rect class="cc-pulse" x="340" y="140.5" width="16" height="4" rx="1" fill="${p.energyMain}" />
+
+        <!-- Massive Volumetric Cyber-Tulkun Head -->
         <g>
-          <path d="M 616 144 L 718 124 L 748 134 L 690 156 L 618 162 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.4" stroke-linejoin="round" />
-          <path d="M 696 128 L 718 124 L 748 134 L 724 143 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
-          <circle cx="624" cy="153" r="6" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
-          <circle cx="624" cy="153" r="2.3" fill="${p.energyMain}" class="cc-pulse" />
-        </g>
+          <!-- Recessed Mechanical Mouth Line & Precision Baleen Louvers -->
+          <path d="M 74 148 C 142 157, 224 162, 306 154 L 310 168 C 222 174, 140 169, 74 161 Z" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <path d="M 96 153 L 98 162 M 114 155 L 116 164 M 132 157 L 134 166 M 150 158 L 152 167 M 168 159 L 170 168 M 186 160 L 188 168" stroke="${p.frameLight}" stroke-width="1.2" opacity="0.85" />
 
-        <!-- Mid-Torso Modular Armor Plates -->
-        <path d="M 285 92 C 350 96, 408 112, 442 132 L 426 218 C 378 232, 326 242, 290 242 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
-        <path d="M 326 105 L 352 225 M 378 118 L 392 214" stroke="${p.seamStroke}" stroke-width="1.2" opacity="0.8" />
-        <rect x="336" y="138" width="26" height="10" rx="2.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1" />
-        <rect x="340" y="141" width="18" height="4" rx="1" fill="${p.energyMain}" class="cc-pulse" />
+          <!-- Sculpted Lower Jaw Modular Plates -->
+          <path d="M 76 161 C 102 226, 198 265, 322 250 L 332 198 C 258 187, 165 172, 76 161 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.55" stroke-linejoin="round" />
+          <path d="M 88 180 C 148 212, 232 230, 314 230" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
+          <path d="M 106 200 C 166 230, 240 244, 318 242" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
+          ${
+            stage >= 2
+              ? `<path class="cc-pulse" d="M 102 192 C 160 220, 228 236, 294 236" fill="none" stroke="${p.energyMain}" stroke-width="1.6" stroke-dasharray="18 8 4 8" />`
+              : ""
+          }
+          <circle cx="116" cy="174" r="6" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
+          <circle class="cc-pulse" cx="116" cy="174" r="2.8" fill="${p.energyBright}" />
 
-        <!-- Massive Rounded Cyber-Tulkun Head -->
-        <g>
-          <path d="M 74 148 C 142 156, 224 162, 306 154 L 310 172 C 222 178, 140 172, 74 164 Z" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.4" />
-          <path d="M 95 154 L 98 164 M 115 156 L 118 166 M 135 158 L 138 168 M 155 159 L 158 169 M 175 160 L 178 170" stroke="${p.frameLight}" stroke-width="1.6" />
+          <!-- Upper Cranium Dome -->
+          <path d="M 70 149 C 66 82, 152 58, 258 74 L 328 102 L 308 159 C 224 165, 138 157, 70 149 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.65" stroke-linejoin="round" />
+          <path d="M 84 114 C 144 92, 230 94, 316 116" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
+          <path d="M 118 76 C 122 104, 128 130, 136 154" fill="none" stroke="${p.seamStroke}" stroke-width="1.1" />
+          <path d="M 192 68 C 194 98, 198 128, 206 158" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
+          <path d="M 262 76 L 248 156" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
+          <path d="M 92 103 C 144 74, 214 70, 268 84" fill="none" stroke="${p.armorHighlight}" stroke-width="3.8" stroke-linecap="round" opacity="0.85" />
 
-          <path d="M 76 164 C 102 228, 198 266, 322 252 L 332 198 C 258 188, 165 174, 76 164 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.6" stroke-linejoin="round" />
-          <path d="M 88 182 C 148 214, 232 232, 314 232" fill="none" stroke="${p.seamStroke}" stroke-width="1.3" />
-          <path d="M 106 202 C 166 232, 240 246, 318 244" fill="none" stroke="${p.seamStroke}" stroke-width="1.3" />
-          ${stage >= 2
-      ? `<path class="cc-pulse" d="M 102 194 C 160 222, 228 238, 294 238" fill="none" stroke="${p.energyMain}" stroke-width="2" stroke-dasharray="14 6 4 6" />`
-      : ""
-    }
-          <circle cx="116" cy="176" r="6.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
-          <circle class="cc-pulse" cx="116" cy="176" r="3" fill="${p.energyBright}" />
-
-          <path d="M 70 150 C 66 84, 152 58, 258 74 L 328 102 L 308 160 C 224 166, 138 158, 70 150 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.7" stroke-linejoin="round" />
-          <path d="M 84 114 C 144 92, 230 94, 316 116" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
-          <path d="M 118 76 C 122 104, 128 130, 136 154" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
-          <path d="M 192 68 C 194 98, 198 128, 206 158" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
-          <path d="M 262 76 L 248 156" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
-          <path d="M 92 106 C 142 78, 212 74, 266 86" fill="none" stroke="${p.armorHighlight}" stroke-width="3.5" stroke-linecap="round" opacity="0.7" />
-
-          ${stage >= 3
-      ? `<g opacity="0.88">
-                  <rect x="148" y="96" width="38" height="22" rx="3" fill="${p.energyMain}" fill-opacity="0.18" stroke="${p.energyMain}" stroke-width="1.1" />
-                  <path class="cc-pulse" d="M 154 104 L 180 104 M 154 111 L 172 111" stroke="${p.energyBright}" stroke-width="1.4" />
-                  <rect x="208" y="104" width="34" height="16" rx="2.5" fill="${p.energyMain}" fill-opacity="0.16" stroke="${p.energyMain}" stroke-width="1" />
-                  <rect x="172" y="132" width="18" height="7" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.9" />
-                  <rect x="202" y="138" width="24" height="5" rx="1.5" fill="${p.energyMain}" class="cc-pulse" />
+          <!-- Precision Circuit Trace Decals (Refined, Non-Boxy) -->
+          ${
+            stage >= 3
+              ? `<g opacity="0.9">
+                  <path class="cc-pulse" d="M 150 100 L 184 100 L 192 108 L 236 108" fill="none" stroke="${p.energyMain}" stroke-width="1.4" stroke-linecap="round" />
+                  <path d="M 154 110 L 178 110 L 184 116 L 222 116" fill="none" stroke="${p.energyMain}" stroke-width="1" stroke-opacity="0.65" />
+                  <rect x="172" y="130" width="18" height="6" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.8" />
+                  <rect class="cc-pulse" x="200" y="134" width="20" height="4" rx="1.2" fill="${p.energyMain}" />
                 </g>`
-      : ""
-    }
+              : ""
+          }
 
           ${ascendedCrown}
 
+          <!-- Primary Brow Sensor Eye -->
           <g>
-            <circle cx="144" cy="144" r="9" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.3" />
-            <circle cx="144" cy="144" r="12" fill="url(#${idPrefix}-energy-glow)" class="cc-pulse" />
-            <circle cx="144" cy="144" r="4.5" fill="${p.energyMain}" stroke="${p.frameDark}" stroke-width="1" />
-            <circle cx="142.5" cy="142.5" r="1.5" fill="${p.energyBright}" />
+            <circle cx="144" cy="143" r="8.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
+            <circle cx="144" cy="143" r="12" fill="url(#${idPrefix}-energy-glow)" class="cc-pulse" />
+            <circle cx="144" cy="143" r="4.4" fill="${p.energyMain}" stroke="${p.frameDark}" stroke-width="1" />
+            <circle cx="142.5" cy="141.5" r="1.5" fill="${p.energyBright}" />
           </g>
 
+          <!-- Circular Cheek Gyro / Optic Ear Assembly -->
           <g transform="translate(268, 174)">
-            <circle cx="0" cy="0" r="${stage >= 4 ? 28 : 22}" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.6" />
-            ${stage >= 4 ? `<circle cx="0" cy="0" r="22" fill="none" stroke="${p.energyMain}" stroke-width="1.6" stroke-dasharray="10 6" class="cc-pulse" />` : ""}
-            <circle cx="0" cy="0" r="16" fill="${p.frameDark}" stroke="${p.accentMain}" stroke-width="3.2" />
+            <circle cx="0" cy="0" r="${stage >= 4 ? 27 : 22}" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.5" />
+            ${stage >= 4 ? `<circle cx="0" cy="0" r="21" fill="none" stroke="${p.energyMain}" stroke-width="1.5" stroke-dasharray="12 6" class="cc-pulse" />` : ""}
+            <circle cx="0" cy="0" r="15.5" fill="${p.frameDark}" stroke="${p.accentMain}" stroke-width="3" />
             <circle cx="0" cy="0" r="10" fill="url(#${idPrefix}-energy-glow)" class="cc-pulse" />
-            <circle cx="0" cy="0" r="5.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
-            <circle cx="0" cy="0" r="2.2" fill="${p.energyBright}" />
+            <circle cx="0" cy="0" r="5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.9" />
+            <circle cx="0" cy="0" r="2.1" fill="${p.energyBright}" />
           </g>
 
-          <circle cx="248" cy="78" r="11" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.3" />
-          <circle cx="248" cy="78" r="5.5" fill="${p.accentMain}" />
+          <!-- Crown Tendril Socket -->
+          <circle cx="248" cy="78" r="10" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <circle cx="248" cy="78" r="5" fill="${p.accentMain}" />
         </g>
 
-        <!-- Hero Near Pectoral Wing-Fin -->
-        <g class="cc-wing-near" style="transform-origin: 332px 212px;">
-          <circle cx="332" cy="212" r="26" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.7" />
-          <circle cx="332" cy="212" r="18" fill="${p.frameDark}" stroke="${p.armorMid}" stroke-width="2" stroke-dasharray="18 7" />
-          <circle cx="332" cy="212" r="9" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
-          <circle class="cc-pulse" cx="332" cy="212" r="4" fill="${p.energyBright}" />
-
+        <!-- Hero Near Pectoral Wing-Fin (Broad Overlapping Feathered Wing) -->
+        <g class="cc-wing-near" style="transform-origin: 330px 212px;">
+          <!-- Broad Fanned Mechanical Feathers -->
           ${nearFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
 
-          <path d="M 328 214 L 408 268 L 478 328 L 456 344 L 386 286 L 316 232 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" stroke-linejoin="round" />
-          <path d="M 378 262 L 395 250 L 404 260 L 386 274 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
-          <path class="cc-pulse" d="M 404 278 L 452 318" stroke="${p.energyMain}" stroke-width="3.2" stroke-linecap="round" />
-          <circle cx="464" cy="332" r="6.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
-          <circle class="cc-pulse" cx="464" cy="332" r="2.6" fill="${p.energyBright}" />
-          ${stage >= 3 ? `<path class="cc-pulse" d="M 476 338 L 516 364" stroke="${p.energyMain}" stroke-width="2.4" stroke-linecap="round" />` : ""}
+          <!-- Shoulder Ball Joint -->
+          <circle cx="330" cy="212" r="25" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.6" />
+          <circle cx="330" cy="212" r="17" fill="${p.frameDark}" stroke="${p.armorMid}" stroke-width="2" stroke-dasharray="16 6" />
+          <circle cx="330" cy="212" r="8.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
+          <circle class="cc-pulse" cx="330" cy="212" r="3.8" fill="${p.energyBright}" />
+
+          <!-- Sculpted Robotic Pectoral Arm Strut -->
+          <path d="M 326 212 L 408 266 L 484 328 L 460 344 L 384 284 L 314 232 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M 340 226 L 466 326" fill="none" stroke="${p.armorHighlight}" stroke-width="2.2" stroke-linecap="round" opacity="0.7" />
+          <path d="M 380 260 L 398 248 L 406 258 L 388 272 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
+          <path class="cc-pulse" d="M 406 278 L 454 316" stroke="${p.energyMain}" stroke-width="3" stroke-linecap="round" />
+          <circle cx="468" cy="331" r="6" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
+          <circle class="cc-pulse" cx="468" cy="331" r="2.5" fill="${p.energyBright}" />
+          ${stage >= 3 ? `<path class="cc-pulse" d="M 480 338 L 522 365" stroke="${p.energyMain}" stroke-width="2.2" stroke-linecap="round" />` : ""}
         </g>
       </g>
     </g>
@@ -653,9 +610,8 @@ function renderTulkunDive(
   idPrefix: string,
   stage: number
 ): string {
-  // 3/4 Dynamic Dive: pitched down-left with lifted anchor so pectoral tips never touch the HUD bar
   return `
-    <g transform="translate(460, 188) rotate(-15) scale(0.84) translate(-460, -205)">
+    <g transform="translate(460, 188) rotate(-14) scale(0.84) translate(-460, -205)">
       ${renderTulkunSide(p, idPrefix, stage)}
     </g>
   `;
@@ -666,37 +622,64 @@ function renderTulkunTop(
   idPrefix: string,
   stage: number
 ): string {
-  const leftWingFeathers: FeatherSpec[] = [
-    { x: 356, y: 158, length: 120, width: 15, angle: -135, curve: -12, orangeTip: true, animClass: "cc-f1" },
-    { x: 374, y: 156, length: 138, width: 16, angle: -130, curve: -12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
-    { x: 394, y: 156, length: 150, width: 17, angle: -125, curve: -14, orangeTip: true, animClass: "cc-f3" },
-    { x: 414, y: 158, length: 142, width: 16, angle: -118, curve: -10, orangeTip: true, animClass: "cc-f4" },
-    { x: 434, y: 162, length: 122, width: 15, angle: -112, curve: -8, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f5" },
-  ].slice(0, stage <= 2 ? 3 : 5);
+  const rawLeftFeathers: FeatherSpec[] = [
+    { x: 350, y: 158, length: 124, width: 24, angle: -138, curve: -12, orangeTip: true, animClass: "cc-f1" },
+    { x: 370, y: 154, length: 142, width: 26, angle: -132, curve: -12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
+    { x: 392, y: 154, length: 154, width: 26, angle: -124, curve: -12, orangeTip: true, animClass: "cc-f3" },
+    { x: 414, y: 158, length: 142, width: 24, angle: -116, curve: -10, orangeTip: true, animClass: "cc-f4" },
+    { x: 436, y: 164, length: 120, width: 22, angle: -108, curve: -8, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f5" },
+  ];
+  const leftWingFeathers = rawLeftFeathers.slice(0, stage <= 2 ? 3 : 5);
 
-  const rightWingFeathers: FeatherSpec[] = [
-    { x: 356, y: 254, length: 120, width: 15, angle: 135, curve: 12, orangeTip: true, animClass: "cc-f2" },
-    { x: 374, y: 256, length: 138, width: 16, angle: 130, curve: 12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f3" },
-    { x: 394, y: 256, length: 150, width: 17, angle: 125, curve: 14, orangeTip: true, animClass: "cc-f4" },
-    { x: 414, y: 254, length: 142, width: 16, angle: 118, curve: 10, orangeTip: true, animClass: "cc-f5" },
-    { x: 434, y: 250, length: 122, width: 15, angle: 112, curve: 8, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f6" },
-  ].slice(0, stage <= 2 ? 3 : 5);
+  const rawRightFeathers: FeatherSpec[] = [
+    { x: 350, y: 254, length: 124, width: 24, angle: 138, curve: 12, orangeTip: true, animClass: "cc-f2" },
+    { x: 370, y: 258, length: 142, width: 26, angle: 132, curve: 12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f3" },
+    { x: 392, y: 258, length: 154, width: 26, angle: 124, curve: 12, orangeTip: true, animClass: "cc-f4" },
+    { x: 414, y: 254, length: 142, width: 24, angle: 116, curve: 10, orangeTip: true, animClass: "cc-f5" },
+    { x: 436, y: 248, length: 120, width: 22, angle: 108, curve: 8, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f6" },
+  ];
+  const rightWingFeathers = rawRightFeathers.slice(0, stage <= 2 ? 3 : 5);
 
   const rawTopCables: CableSpec[] = [
-    { d: "M 642 194 C 710 176, 778 148, 856 164", tipX: 856, tipY: 164, variant: "white-rib", width: 3.6, tipColor: "orange", animClass: "cc-c1", originX: 642, originY: 194 },
-    { d: "M 646 202 C 722 198, 788 188, 868 194", tipX: 868, tipY: 194, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c2", originX: 646, originY: 202 },
-    { d: "M 646 210 C 722 214, 788 224, 868 218", tipX: 868, tipY: 218, variant: "ribbed", width: 3.8, tipColor: "green", animClass: "cc-c3", originX: 646, originY: 210 },
-    { d: "M 642 218 C 710 236, 778 264, 856 248", tipX: 856, tipY: 248, variant: "white-rib", width: 3.6, tipColor: "orange", animClass: "cc-c4", originX: 642, originY: 218 },
+    { d: "M 642 194 C 710 176, 778 148, 856 164", tipX: 856, tipY: 164, tipAngle: 12, variant: "ceramic", width: 3.4, tipColor: "orange", animClass: "cc-c1", originX: 642, originY: 194 },
+    { d: "M 646 202 C 722 198, 788 188, 868 194", tipX: 868, tipY: 194, tipAngle: 4, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c2", originX: 646, originY: 202 },
+    { d: "M 646 210 C 722 214, 788 224, 868 218", tipX: 868, tipY: 218, tipAngle: -4, variant: "armored", width: 3.6, tipColor: "green", animClass: "cc-c3", originX: 646, originY: 210 },
+    { d: "M 642 218 C 710 236, 778 264, 856 248", tipX: 856, tipY: 248, tipAngle: -12, variant: "ceramic", width: 3.4, tipColor: "orange", animClass: "cc-c4", originX: 642, originY: 218 },
   ];
   const topCables = rawTopCables.slice(0, stage === 1 ? 2 : 4);
 
   return `
     <g transform="${getStageScaleTransform(stage)}">
       <g class="cc-float">
-        <!-- Trailing Tail Cables -->
-        <g>${topCables.map((c) => renderCable(c, p)).join("")}</g>
+        <g class="cc-tail-swim" style="transform-origin: 430px 206px;">
+          <g>${topCables.map((c) => renderCable(c, p)).join("")}</g>
 
-        <!-- Dorsal Top Wing Left & Right -->
+          ${
+            stage >= 3
+              ? `<g>
+                  <path d="M 526 178 L 566 138 L 584 148 L 548 184 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.2" />
+                  <path d="M 526 234 L 566 274 L 584 264 L 548 228 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.2" />
+                </g>`
+              : ""
+          }
+
+          <g class="cc-fluke-wave" style="transform-origin: 632px 206px;">
+            <path d="M 624 198 L 716 142 L 736 160 L 664 206 L 736 252 L 716 270 L 624 214 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+            <path d="M 692 156 L 716 142 L 736 160 L 710 172 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
+            <path d="M 692 256 L 716 270 L 736 252 L 710 240 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
+          </g>
+
+          <path d="M 332 172 L 642 192 L 642 220 L 332 240 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.4" />
+
+          <!-- Continuous Sculpted Dorsal Spine Armor -->
+          <path d="M 336 160 C 446 164, 548 176, 636 192 L 636 220 C 548 236, 446 248, 336 252 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.4" />
+          <path d="M 392 163 L 392 249 M 446 167 L 446 245 M 498 172 L 498 240 M 548 178 L 548 234 M 594 184 L 594 228" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <circle class="cc-pulse" cx="420" cy="206" r="3" fill="${p.energyMain}" />
+          <circle class="cc-pulse" cx="472" cy="206" r="3" fill="${p.energyMain}" />
+          <circle class="cc-pulse" cx="524" cy="206" r="2.8" fill="${p.energyMain}" />
+          <circle class="cc-pulse" cx="572" cy="206" r="2.5" fill="${p.energyMain}" />
+        </g>
+
         <g class="cc-wing-far" style="transform-origin: 344px 170px;">
           ${leftWingFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
           <path d="M 308 176 L 352 102 L 420 56 L 444 74 L 382 140 L 348 182 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
@@ -711,47 +694,16 @@ function renderTulkunTop(
           <path d="M 384 330 L 420 356 L 434 344 L 402 318 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
         </g>
 
-        <!-- Pelvic Stabilizer Paddles (Stage 3+) -->
-        ${stage >= 3
-      ? `<g>
-                <path d="M 526 178 L 566 138 L 584 148 L 548 184 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.2" />
-                <path d="M 526 234 L 566 274 L 584 264 L 548 228 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.2" />
-              </g>`
-      : ""
-    }
+        <path d="M 88 206 C 88 148, 178 134, 316 150 L 352 174 L 352 238 L 316 262 C 178 278, 88 264, 88 206 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.7" />
+        <path d="M 106 206 L 348 206" stroke="${p.seamStroke}" stroke-width="1.3" />
+        <path d="M 164 152 C 168 186, 168 226, 164 260" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
+        <path d="M 244 146 C 248 186, 248 226, 244 266" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
 
-        <!-- Forked Caudal Tail Flukes -->
-        <path d="M 624 198 L 716 142 L 736 160 L 664 206 L 736 252 L 716 270 L 624 214 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
-        <path d="M 692 156 L 716 142 L 736 160 L 710 172 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
-        <path d="M 692 256 L 716 270 L 736 252 L 710 240 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
-
-        <!-- Mechanical Inner Spine -->
-        <path d="M 280 176 L 642 192 L 642 220 L 280 236 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
-
-        <!-- Segmented Dorsal Carapace Spine Plates -->
-        ${[0, 1, 2, 3, 4, 5]
-      .map((i) => {
-        const x = 352 + i * 46;
-        const h = 76 - i * 8;
-        const y = 206 - h / 2;
-        return `<rect x="${x}" y="${y}" width="38" height="${h}" rx="12" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.4" />
-                    <circle cx="${x + 19}" cy="206" r="3.5" fill="${p.energyMain}" class="cc-pulse" />`;
-      })
-      .join("")}
-
-        <!-- Broad Rounded Whale Head (Dorsal Top View) -->
-        <path d="M 88 206 C 88 148, 178 134, 316 150 L 352 174 L 352 238 L 316 262 C 178 278, 88 264, 88 206 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.8" />
-        <path d="M 106 206 L 348 206" stroke="${p.seamStroke}" stroke-width="1.4" />
-        <path d="M 164 152 C 168 186, 168 226, 164 260" fill="none" stroke="${p.seamStroke}" stroke-width="1.3" />
-        <path d="M 244 146 C 248 186, 248 226, 244 266" fill="none" stroke="${p.seamStroke}" stroke-width="1.3" />
-
-        <!-- Dual Dorsal Sensor Optics -->
         <circle cx="148" cy="176" r="7.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
         <circle class="cc-pulse" cx="148" cy="176" r="3.6" fill="${p.energyBright}" />
         <circle cx="148" cy="236" r="7.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
         <circle class="cc-pulse" cx="148" cy="236" r="3.6" fill="${p.energyBright}" />
 
-        <!-- Central Crown Core -->
         <circle cx="282" cy="206" r="14" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.5" />
         <circle cx="282" cy="206" r="9" fill="${p.frameDark}" stroke="${p.accentMain}" stroke-width="2.5" />
         <circle class="cc-pulse" cx="282" cy="206" r="4" fill="${p.energyBright}" />
@@ -761,7 +713,7 @@ function renderTulkunTop(
 }
 
 /* -------------------------------------------------------------------------- */
-/* CREATURE 2: CYBER-SERPENT (SIDE / DIVE / TOP)                              */
+/* CREATURE 2: CYBER-SERPENT (MECHA SKY-DRAGON)                               */
 /* -------------------------------------------------------------------------- */
 
 function renderSerpentSide(
@@ -769,114 +721,100 @@ function renderSerpentSide(
   idPrefix: string,
   stage: number
 ): string {
-  const tailRibbons: FeatherSpec[] = [
-    { x: 258, y: 205, length: 196, width: 22, angle: -158, curve: -26, orangeTip: true, greenTip: stage >= 3, animClass: "cc-c1" },
-    { x: 268, y: 220, length: 215, width: 24, angle: -172, curve: -22, orangeTip: true, animClass: "cc-c2" },
-    { x: 274, y: 234, length: 185, width: 20, angle: 168, curve: -18, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c3" },
-    { x: 262, y: 246, length: 165, width: 18, angle: 154, curve: -16, orangeTip: false, animClass: "cc-c4" },
-  ].slice(0, stage === 1 ? 2 : stage === 2 ? 3 : 4);
+  const rawTailRibbons: FeatherSpec[] = [
+    { x: 268, y: 205, length: 196, width: 28, angle: -154, curve: -24, orangeTip: true, greenTip: stage >= 3, animClass: "cc-c1" },
+    { x: 274, y: 220, length: 215, width: 30, angle: -170, curve: -20, orangeTip: true, animClass: "cc-c2" },
+    { x: 278, y: 234, length: 185, width: 26, angle: 168, curve: -16, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c3" },
+    { x: 266, y: 246, length: 165, width: 24, angle: 152, curve: -14, orangeTip: false, animClass: "cc-c4" },
+  ];
+  const tailRibbons = rawTailRibbons.slice(0, stage === 1 ? 2 : stage === 2 ? 3 : 4);
 
   const rawTailCables: CableSpec[] = [
-    { d: "M 290 236 C 210 310, 128 332, 66 292", tipX: 66, tipY: 292, variant: "ribbed", width: 4.2, tipColor: "orange", animClass: "cc-c1", originX: 290, originY: 236 },
-    { d: "M 305 242 C 232 332, 148 358, 86 336", tipX: 86, tipY: 336, variant: "white-rib", width: 3.6, tipColor: "green", animClass: "cc-c2", originX: 305, originY: 242 },
-    { d: "M 322 246 C 254 342, 185 366, 122 362", tipX: 122, tipY: 362, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c3", originX: 322, originY: 246 },
-    { d: "M 272 200 C 202 146, 146 95, 92 78", tipX: 92, tipY: 78, variant: "fiber", width: 2.1, tipColor: "orange", animClass: "cc-c4", originX: 272, originY: 200 },
+    { d: "M 290 236 C 210 310, 128 332, 68 292", tipX: 68, tipY: 292, tipAngle: -145, variant: "armored", width: 3.8, tipColor: "orange", animClass: "cc-c1", originX: 290, originY: 236 },
+    { d: "M 305 242 C 232 332, 148 358, 86 336", tipX: 86, tipY: 336, tipAngle: -165, variant: "ceramic", width: 3.4, tipColor: "green", animClass: "cc-c2", originX: 305, originY: 242 },
+    { d: "M 322 246 C 254 342, 185 366, 122 362", tipX: 122, tipY: 362, tipAngle: 175, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c3", originX: 322, originY: 246 },
+    { d: "M 272 200 C 202 146, 146 95, 92 78", tipX: 92, tipY: 78, tipAngle: -155, variant: "fiber", width: 2.1, tipColor: "orange", animClass: "cc-c4", originX: 272, originY: 200 },
   ];
   const tailCables = rawTailCables.slice(0, stage === 1 ? 1 : stage === 2 ? 2 : 4);
 
   const spineFeathers: FeatherSpec[] =
     stage >= 2
       ? [
-        { x: 342, y: 188, length: 92, width: 15, angle: -145, curve: -12, orangeTip: true, animClass: "cc-f1" },
-        { x: 378, y: 172, length: 108, width: 16, angle: -140, curve: -14, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
-        { x: 418, y: 154, length: 118, width: 17, angle: -136, curve: -14, orangeTip: true, animClass: "cc-f3" },
-        { x: 458, y: 138, length: 114, width: 17, angle: -134, curve: -12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f4" },
-        { x: 498, y: 126, length: 102, width: 16, angle: -138, curve: -10, orangeTip: true, animClass: "cc-f5" },
-        { x: 540, y: 118, length: 88, width: 14, angle: -144, curve: -8, orangeTip: false, animClass: "cc-f6" },
-        { x: 582, y: 116, length: 74, width: 13, angle: -150, curve: -6, orangeTip: true, animClass: "cc-f1" },
-      ].slice(0, stage === 2 ? 3 : stage === 3 ? 5 : 7)
+          { x: 342, y: 188, length: 92, width: 22, angle: -145, curve: -12, orangeTip: true, animClass: "cc-f1" },
+          { x: 378, y: 172, length: 108, width: 24, angle: -140, curve: -14, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
+          { x: 418, y: 154, length: 118, width: 26, angle: -136, curve: -14, orangeTip: true, animClass: "cc-f3" },
+          { x: 458, y: 138, length: 114, width: 25, angle: -134, curve: -12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f4" },
+          { x: 498, y: 126, length: 102, width: 23, angle: -138, curve: -10, orangeTip: true, animClass: "cc-f5" },
+          { x: 540, y: 118, length: 88, width: 21, angle: -144, curve: -8, orangeTip: false, animClass: "cc-f6" },
+          { x: 582, y: 116, length: 74, width: 19, angle: -150, curve: -6, orangeTip: true, animClass: "cc-f1" },
+        ].slice(0, stage === 2 ? 3 : stage === 3 ? 5 : 7)
       : [];
 
   const farWingFeathers: FeatherSpec[] = [
-    { x: 650, y: 245, length: 84, width: 15, angle: 115, curve: 10, far: true, orangeTip: false, animClass: "cc-f3" },
-    { x: 642, y: 256, length: 96, width: 16, angle: 122, curve: 12, far: true, orangeFull: true, animClass: "cc-f4" },
-    { x: 632, y: 268, length: 102, width: 16, angle: 130, curve: 12, far: true, orangeTip: true, animClass: "cc-f5" },
-    { x: 622, y: 278, length: 90, width: 14, angle: 138, curve: 10, far: true, orangeTip: false, animClass: "cc-f6" },
+    { x: 650, y: 245, length: 84, width: 22, angle: 112, curve: 10, far: true, orangeTip: false, animClass: "cc-f3" },
+    { x: 640, y: 256, length: 96, width: 24, angle: 122, curve: 12, far: true, orangeFull: true, animClass: "cc-f4" },
+    { x: 628, y: 268, length: 102, width: 24, angle: 132, curve: 12, far: true, orangeTip: true, animClass: "cc-f5" },
+    { x: 616, y: 278, length: 90, width: 22, angle: 142, curve: 10, far: true, orangeTip: false, animClass: "cc-f6" },
   ].slice(0, stage <= 2 ? 2 : 4);
 
   const nearWingFeathers: FeatherSpec[] = [
-    { x: 562, y: 196, length: 106, width: 16, angle: 145, curve: 12, orangeTip: false, animClass: "cc-f1" },
-    { x: 552, y: 210, length: 126, width: 18, angle: 142, curve: 14, orangeFull: true, animClass: "cc-f2" },
-    { x: 540, y: 224, length: 144, width: 19, angle: 138, curve: 14, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f3" },
-    { x: 528, y: 238, length: 158, width: 20, angle: 134, curve: 14, orangeFull: true, animClass: "cc-f4" },
-    { x: 516, y: 252, length: 148, width: 19, angle: 130, curve: 12, orangeTip: true, animClass: "cc-f5" },
-    { x: 504, y: 266, length: 126, width: 17, angle: 125, curve: 10, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f6" },
+    { x: 564, y: 196, length: 108, width: 24, angle: 152, curve: 10, orangeTip: false, animClass: "cc-f1" },
+    { x: 552, y: 210, length: 128, width: 26, angle: 144, curve: 12, orangeFull: true, animClass: "cc-f2" },
+    { x: 540, y: 224, length: 146, width: 28, angle: 136, curve: 12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f3" },
+    { x: 526, y: 238, length: 158, width: 28, angle: 128, curve: 12, orangeFull: true, animClass: "cc-f4" },
+    { x: 512, y: 252, length: 146, width: 26, angle: 120, curve: 10, orangeTip: true, animClass: "cc-f5" },
+    { x: 498, y: 266, length: 124, width: 24, angle: 112, curve: 8, orangeTip: true, greenTip: stage >= 5, animClass: "cc-f6" },
   ].slice(0, stage === 1 ? 3 : stage === 2 ? 4 : 6);
-
-  const bodySegments = [
-    { x: 294, y: 198, w: 42, h: 48, r: -18 },
-    { x: 330, y: 180, w: 46, h: 56, r: -20 },
-    { x: 370, y: 162, w: 50, h: 64, r: -18 },
-    { x: 414, y: 144, w: 54, h: 72, r: -14 },
-    { x: 462, y: 130, w: 58, h: 78, r: -10 },
-    { x: 514, y: 120, w: 60, h: 82, r: -4 },
-    { x: 566, y: 116, w: 62, h: 86, r: 4 },
-    { x: 618, y: 120, w: 58, h: 82, r: 10 },
-  ];
 
   return `
     <g transform="${getStageScaleTransform(stage)}">
       <g class="cc-float">
-        <g>${tailCables.map((c) => renderCable(c, p)).join("")}</g>
-        <g>${tailRibbons.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
+        <g class="cc-tail-swim" style="transform-origin: 480px 180px;">
+          <g>${tailCables.map((c) => renderCable(c, p)).join("")}</g>
+          <g>${tailRibbons.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
+        </g>
 
         <g class="cc-wing-far" style="transform-origin: 672px 214px;">
-          <path d="M 672 208 L 656 266 L 622 300 L 636 308 L 682 232 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.4" />
+          <path d="M 672 208 L 656 266 L 622 300 L 636 308 L 682 232 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.3" />
           ${farWingFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
         </g>
 
-        <path d="M 272 222 C 340 202, 415 152, 520 144 C 598 138, 665 152, 718 164 L 712 198 C 655 206, 595 208, 515 206 C 425 204, 345 236, 274 238 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
-        <path class="cc-pulse" d="M 300 222 C 378 192, 462 162, 565 164 C 625 165, 668 174, 704 180" fill="none" stroke="${p.energyMain}" stroke-width="2.4" stroke-dasharray="16 6" />
+        <path d="M 272 222 C 340 202, 415 152, 520 144 C 598 138, 665 152, 718 164 L 712 198 C 655 206, 595 208, 515 206 C 425 204, 345 236, 274 238 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
+        <path class="cc-pulse" d="M 300 222 C 378 192, 462 162, 565 164 C 625 165, 668 174, 704 180" fill="none" stroke="${p.energyMain}" stroke-width="2.2" />
 
         <g>${spineFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
 
-        <g>
-          ${bodySegments
-      .map(
-        (s, i) => `
-            <g transform="translate(${s.x}, ${s.y}) rotate(${s.r})">
-              <rect x="0" y="0" width="${s.w}" height="${s.h}" rx="14" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.4" />
-              <path d="M 6 ${s.h * 0.34} L ${s.w - 6} ${s.h * 0.3}" stroke="${p.seamStroke}" stroke-width="1" opacity="0.7" />
-              <rect x="8" y="6" width="${s.w - 16}" height="7" rx="3.5" fill="${p.armorHighlight}" opacity="0.85" />
-              ${i % 2 === 1 && stage >= 3 ? `<rect x="${s.w * 0.3}" y="${s.h * 0.56}" width="14" height="6" rx="2" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.8" />` : `<circle cx="${s.w * 0.5}" cy="${s.h * 0.6}" r="3" fill="${p.energyMain}" class="cc-pulse" />`}
-            </g>`
-      )
-      .join("")}
-        </g>
+        <!-- Continuous Sculpted S-Curve Carapace Body -->
+        <path d="M 278 214 C 344 182, 434 128, 558 118 C 624 114, 676 126, 714 146 L 704 198 C 652 204, 592 206, 514 202 C 424 198, 344 228, 282 232 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+        <path d="M 342 184 C 344 198, 346 212, 348 224 M 396 160 C 398 178, 400 196, 404 210 M 456 138 C 458 162, 462 184, 466 202 M 520 124 C 522 152, 526 178, 530 202 M 586 120 C 588 148, 592 174, 596 200 M 648 124 C 650 150, 654 174, 656 198" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
+        <path d="M 312 204 C 388 170, 474 134, 578 128 C 628 126, 668 134, 698 146" fill="none" stroke="${p.armorHighlight}" stroke-width="3" stroke-linecap="round" opacity="0.75" />
+        ${stage >= 3 ? `<rect x="480" y="164" width="16" height="6" rx="2" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.8" />` : ""}
+        <circle class="cc-pulse" cx="428" cy="176" r="2.8" fill="${p.energyMain}" />
+        <circle class="cc-pulse" cx="556" cy="164" r="3" fill="${p.energyMain}" />
 
         <g>
           <path d="M 678 148 C 702 144, 722 146, 738 152" fill="none" stroke="${p.frameLight}" stroke-width="6" stroke-linecap="round" />
           <path d="M 678 178 C 704 182, 726 184, 742 180" fill="none" stroke="${p.frameDark}" stroke-width="5" stroke-linecap="round" />
 
-          ${stage >= 2 ? renderFeather({ x: 724, y: 128, length: 68, width: 12, angle: -152, curve: -6, orangeTip: true, animClass: "cc-f2" }, p, idPrefix) : ""}
-          ${stage >= 4 ? renderFeather({ x: 738, y: 122, length: 58, width: 11, angle: -144, curve: -5, orangeTip: false, greenTip: true, animClass: "cc-f3" }, p, idPrefix) : ""}
-          ${stage === 5 ? renderFeather({ x: 752, y: 116, length: 52, width: 10, angle: -136, curve: -4, orangeFull: true, greenTip: true, animClass: "cc-f1" }, p, idPrefix) : ""}
+          ${stage >= 2 ? renderFeather({ x: 724, y: 128, length: 68, width: 18, angle: -152, curve: -6, orangeTip: true, animClass: "cc-f2" }, p, idPrefix) : ""}
+          ${stage >= 4 ? renderFeather({ x: 738, y: 122, length: 58, width: 17, angle: -144, curve: -5, orangeTip: false, greenTip: true, animClass: "cc-f3" }, p, idPrefix) : ""}
+          ${stage === 5 ? renderFeather({ x: 752, y: 116, length: 52, width: 16, angle: -136, curve: -4, orangeFull: true, greenTip: true, animClass: "cc-f1" }, p, idPrefix) : ""}
 
-          <path d="M 738 172 L 828 166 L 838 178 C 810 198, 765 204, 732 192 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
-          <path d="M 762 182 L 814 178" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <path d="M 738 172 L 828 166 L 838 178 C 810 198, 765 204, 732 192 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M 762 182 L 814 178" stroke="${p.seamStroke}" stroke-width="1.1" />
 
-          <path d="M 716 144 C 736 106, 804 106, 846 146 L 854 162 C 824 170, 774 174, 724 168 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.7" stroke-linejoin="round" />
+          <path d="M 716 144 C 736 106, 804 106, 846 146 L 854 162 C 824 170, 774 174, 724 168 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.65" stroke-linejoin="round" />
           <path d="M 744 126 C 778 118, 814 126, 840 144" fill="none" stroke="${p.armorHighlight}" stroke-width="3" stroke-linecap="round" opacity="0.8" />
-          <path d="M 762 118 L 758 168 M 802 122 L 798 166" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <path d="M 762 118 L 758 168 M 802 122 L 798 166" stroke="${p.seamStroke}" stroke-width="1.1" />
 
-          <path d="M 796 148 L 844 146 L 848 156 L 802 158 Z" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <path d="M 796 148 L 844 146 L 848 156 L 802 158 Z" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.1" />
           <circle cx="826" cy="152" r="11" fill="url(#${idPrefix}-energy-glow)" class="cc-pulse" />
           <circle cx="826" cy="152" r="4.8" fill="${p.energyMain}" />
           <circle cx="825" cy="151" r="1.8" fill="${p.energyBright}" />
           <rect x="770" y="142" width="16" height="5" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.8" />
 
           <g transform="translate(734, 162)">
-            <circle cx="0" cy="0" r="22" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.6" />
+            <circle cx="0" cy="0" r="22" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.5" />
             <circle cx="0" cy="0" r="15" fill="${p.frameDark}" stroke="${p.accentMain}" stroke-width="2.8" />
             <circle cx="0" cy="0" r="7" fill="${p.armorMid}" stroke="${p.seamStroke}" stroke-width="1" />
             <circle class="cc-pulse" cx="0" cy="0" r="3" fill="${p.energyMain}" />
@@ -884,11 +822,11 @@ function renderSerpentSide(
         </g>
 
         <g class="cc-wing-near" style="transform-origin: 598px 176px;">
-          <circle cx="598" cy="176" r="22" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.6" />
+          ${nearWingFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
+          <circle cx="598" cy="176" r="22" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.5" />
           <circle cx="598" cy="176" r="14" fill="${p.frameDark}" stroke="${p.accentMain}" stroke-width="2.4" />
           <circle class="cc-pulse" cx="598" cy="176" r="5" fill="${p.energyMain}" />
-          ${nearWingFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
-          <path d="M 596 178 L 542 238 L 494 294 L 512 308 L 568 248 L 614 194 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" stroke-linejoin="round" />
+          <path d="M 596 178 L 542 238 L 494 294 L 512 308 L 568 248 L 614 194 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
           <path class="cc-pulse" d="M 556 226 L 512 276" stroke="${p.energyMain}" stroke-width="3" stroke-linecap="round" />
           <rect x="558" y="210" width="16" height="8" rx="2" transform="rotate(-46 566 214)" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
         </g>
@@ -903,7 +841,7 @@ function renderSerpentDive(
   stage: number
 ): string {
   return `
-    <g transform="translate(460, 200) rotate(14) scale(0.90) translate(-460, -210)">
+    <g transform="translate(460, 198) rotate(14) scale(0.88) translate(-460, -210)">
       ${renderSerpentSide(p, idPrefix, stage)}
     </g>
   `;
@@ -917,34 +855,30 @@ function renderSerpentTop(
   return `
     <g transform="${getStageScaleTransform(stage)}">
       <g class="cc-float">
-        <!-- Sweeping Ribbon Tail Plumes -->
-        ${renderFeather({ x: 256, y: 196, length: 178, width: 20, angle: -162, curve: -18, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c1" }, p, idPrefix)}
-        ${renderFeather({ x: 256, y: 216, length: 178, width: 20, angle: 162, curve: 18, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c2" }, p, idPrefix)}
-        ${renderCable({ d: "M 264 206 C 190 194, 130 218, 68 206", tipX: 68, tipY: 206, variant: "white-rib", width: 3.6, tipColor: "green", animClass: "cc-c3", originX: 264, originY: 206 }, p)}
+        ${renderFeather({ x: 256, y: 196, length: 178, width: 26, angle: -162, curve: -18, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c1" }, p, idPrefix)}
+        ${renderFeather({ x: 256, y: 216, length: 178, width: 26, angle: 162, curve: 18, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c2" }, p, idPrefix)}
+        ${renderCable({ d: "M 264 206 C 190 194, 130 218, 68 206", tipX: 68, tipY: 206, tipAngle: 180, variant: "ceramic", width: 3.4, tipColor: "green", animClass: "cc-c3", originX: 264, originY: 206 }, p)}
 
-        <!-- Symmetric Wings -->
         <g class="cc-wing-far" style="transform-origin: 580px 180px;">
-          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 560 - i * 16, y: 170 - i * 16, length: 118 - i * 10, width: 16, angle: -145 + i * 6, curve: -10, orangeFull: i === 1, orangeTip: true, animClass: `cc-f${i + 1}` }, p, idPrefix)).join("")}
+          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 560 - i * 16, y: 170 - i * 16, length: 118 - i * 10, width: 24, angle: -145 + i * 6, curve: -10, orangeFull: i === 1, orangeTip: true, animClass: `cc-f${i + 1}` }, p, idPrefix)).join("")}
           <path d="M 596 184 L 542 108 L 474 62 L 456 80 L 520 132 L 566 192 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
         </g>
 
         <g class="cc-wing-near" style="transform-origin: 580px 232px;">
-          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 560 - i * 16, y: 242 + i * 16, length: 118 - i * 10, width: 16, angle: 145 - i * 6, curve: 10, orangeFull: i === 1, orangeTip: true, animClass: `cc-f${i + 2}` }, p, idPrefix)).join("")}
+          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 560 - i * 16, y: 242 + i * 16, length: 118 - i * 10, width: 24, angle: 145 - i * 6, curve: 10, orangeFull: i === 1, orangeTip: true, animClass: `cc-f${i + 2}` }, p, idPrefix)).join("")}
           <path d="M 596 228 L 542 304 L 474 350 L 456 332 L 520 280 L 566 220 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
         </g>
 
-        <!-- Undulating Serpentine Spine (Top View) -->
-        <path d="M 262 206 C 340 164, 440 248, 536 206 C 608 176, 668 202, 720 206" fill="none" stroke="${p.frameMain}" stroke-width="34" stroke-linecap="round" />
-        ${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
-    const x = 290 + i * 54;
-    const y = 206 + Math.sin(i * 0.9) * 18;
-    return `<rect x="${x - 22}" y="${y - 24}" width="44" height="48" rx="14" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.4" />
-                  <circle cx="${x}" cy="${y}" r="3.2" fill="${p.energyMain}" class="cc-pulse" />`;
-  }).join("")}
+        <!-- Continuous Undulating Spine Carapace -->
+        <path d="M 262 184 C 340 144, 440 226, 536 184 C 608 156, 668 182, 720 184 L 720 228 C 668 226, 608 200, 536 228 C 440 270, 340 188, 262 228 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" />
+        ${[0, 1, 2, 3, 4, 5, 6].map((i) => {
+          const x = 316 + i * 56;
+          const y = 206 + Math.sin(i * 0.9) * 16;
+          return `<circle cx="${x}" cy="${y}" r="3.2" fill="${p.energyMain}" class="cc-pulse" />`;
+        }).join("")}
 
-        <!-- Dragon Head (Top View) -->
-        <path d="M 702 182 C 744 166, 816 174, 854 206 C 816 238, 744 246, 702 230 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.7" />
-        <path d="M 720 206 L 844 206" stroke="${p.seamStroke}" stroke-width="1.3" />
+        <path d="M 702 182 C 744 166, 816 174, 854 206 C 816 238, 744 246, 702 230 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.65" />
+        <path d="M 720 206 L 844 206" stroke="${p.seamStroke}" stroke-width="1.2" />
         <circle cx="808" cy="192" r="5" fill="${p.energyMain}" class="cc-pulse" />
         <circle cx="808" cy="220" r="5" fill="${p.energyMain}" class="cc-pulse" />
       </g>
@@ -953,7 +887,7 @@ function renderSerpentTop(
 }
 
 /* -------------------------------------------------------------------------- */
-/* CREATURE 3: CYBER-MANTA (SIDE / DIVE / TOP)                                */
+/* CREATURE 3: CYBER-MANTA (AETHER RAY)                                       */
 /* -------------------------------------------------------------------------- */
 
 function renderMantaSide(
@@ -962,29 +896,32 @@ function renderMantaSide(
   stage: number
 ): string {
   const rawTailTendrils: CableSpec[] = [
-    { d: "M 516 208 C 608 182, 702 152, 822 178", tipX: 822, tipY: 178, variant: "white-rib", width: 3.4, tipColor: "orange", animClass: "cc-c1", originX: 516, originY: 208 },
-    { d: "M 508 228 C 618 242, 718 232, 856 202", tipX: 856, tipY: 202, variant: "ribbed", width: 4.4, tipColor: "green", animClass: "cc-c2", originX: 508, originY: 228 },
-    { d: "M 496 244 C 594 278, 694 316, 816 286", tipX: 816, tipY: 286, variant: "fiber", width: 2.6, tipColor: "green", animClass: "cc-c3", originX: 496, originY: 244 },
-    { d: "M 482 252 C 562 308, 658 346, 772 336", tipX: 772, tipY: 336, variant: "white-rib", width: 3.0, tipColor: "orange", animClass: "cc-c4", originX: 482, originY: 252 },
+    { d: "M 516 208 C 608 182, 702 152, 822 178", tipX: 822, tipY: 178, tipAngle: 12, variant: "ceramic", width: 3.4, tipColor: "orange", animClass: "cc-c1", originX: 516, originY: 208 },
+    { d: "M 508 228 C 618 242, 718 232, 856 202", tipX: 856, tipY: 202, tipAngle: -10, variant: "armored", width: 4.0, tipColor: "green", animClass: "cc-c2", originX: 508, originY: 228 },
+    { d: "M 496 244 C 594 278, 694 316, 816 286", tipX: 816, tipY: 286, tipAngle: -14, variant: "fiber", width: 2.6, tipColor: "green", animClass: "cc-c3", originX: 496, originY: 244 },
+    { d: "M 482 252 C 562 308, 658 346, 772 336", tipX: 772, tipY: 336, tipAngle: -4, variant: "ceramic", width: 3.0, tipColor: "orange", animClass: "cc-c4", originX: 482, originY: 252 },
   ];
-  const tailTendrils = rawTailTendrils.slice(0, stage === 1 ? 2 : stage === 2 ? 3 : 4);
+  const tailTendrils = rawTailTendrils.slice(
+    0,
+    stage === 1 ? 2 : stage === 2 ? 3 : 4
+  );
 
   const farWingFeathers: FeatherSpec[] = [
-    { x: 422, y: 128, length: 94, width: 15, angle: -24, curve: -6, far: true, orangeTip: true, animClass: "cc-f1" },
-    { x: 454, y: 108, length: 106, width: 16, angle: -18, curve: -8, far: true, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
-    { x: 486, y: 92, length: 112, width: 16, angle: -12, curve: -8, far: true, orangeTip: true, animClass: "cc-f3" },
-    { x: 518, y: 78, length: 102, width: 15, angle: -6, curve: -6, far: true, orangeTip: false, animClass: "cc-f4" },
-    { x: 550, y: 68, length: 88, width: 13, angle: 0, curve: -4, far: true, orangeTip: true, animClass: "cc-f5" },
+    { x: 422, y: 128, length: 94, width: 22, angle: -24, curve: -6, far: true, orangeTip: true, animClass: "cc-f1" },
+    { x: 454, y: 108, length: 106, width: 24, angle: -18, curve: -8, far: true, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f2" },
+    { x: 486, y: 92, length: 112, width: 24, angle: -12, curve: -8, far: true, orangeTip: true, animClass: "cc-f3" },
+    { x: 518, y: 78, length: 102, width: 22, angle: -6, curve: -6, far: true, orangeTip: false, animClass: "cc-f4" },
+    { x: 550, y: 68, length: 88, width: 20, angle: 0, curve: -4, far: true, orangeTip: true, animClass: "cc-f5" },
   ].slice(0, stage <= 2 ? 3 : 5);
 
   const nearWingFeathers: FeatherSpec[] = [
-    { x: 356, y: 268, length: 108, width: 15, angle: 28, curve: 10, orangeTip: true, animClass: "cc-f1" },
-    { x: 382, y: 284, length: 124, width: 16, angle: 24, curve: 12, orangeTip: true, greenTip: stage >= 3, animClass: "cc-f2" },
-    { x: 410, y: 300, length: 138, width: 17, angle: 20, curve: 12, orangeTip: true, animClass: "cc-f3" },
-    { x: 440, y: 316, length: 146, width: 18, angle: 16, curve: 12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f4" },
-    { x: 470, y: 332, length: 136, width: 17, angle: 12, curve: 10, orangeTip: true, animClass: "cc-f5" },
-    { x: 500, y: 346, length: 116, width: 15, angle: 8, curve: 8, orangeTip: true, animClass: "cc-f6" },
-    { x: 530, y: 358, length: 92, width: 13, angle: 4, curve: 6, orangeTip: false, animClass: "cc-f1" },
+    { x: 356, y: 268, length: 108, width: 24, angle: 34, curve: 10, orangeTip: true, animClass: "cc-f1" },
+    { x: 382, y: 284, length: 124, width: 26, angle: 28, curve: 12, orangeTip: true, greenTip: stage >= 3, animClass: "cc-f2" },
+    { x: 410, y: 300, length: 138, width: 28, angle: 22, curve: 12, orangeTip: true, animClass: "cc-f3" },
+    { x: 440, y: 316, length: 146, width: 28, angle: 16, curve: 12, orangeTip: true, greenTip: stage >= 4, animClass: "cc-f4" },
+    { x: 470, y: 332, length: 136, width: 26, angle: 11, curve: 10, orangeTip: true, animClass: "cc-f5" },
+    { x: 500, y: 346, length: 116, width: 24, angle: 7, curve: 8, orangeTip: true, animClass: "cc-f6" },
+    { x: 530, y: 358, length: 92, width: 20, angle: 3, curve: 6, orangeTip: false, animClass: "cc-f1" },
   ].slice(0, stage === 1 ? 3 : stage === 2 ? 5 : 7);
 
   return `
@@ -994,31 +931,31 @@ function renderMantaSide(
 
         <g class="cc-wing-far" style="transform-origin: 336px 176px;">
           ${farWingFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
-          <path d="M 288 182 C 354 118, 456 66, 588 46 L 548 86 C 468 112, 396 150, 336 196 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.6" stroke-linejoin="round" />
-          <path d="M 326 164 L 548 64" stroke="${p.seamStroke}" stroke-width="1.2" opacity="0.7" />
-          <path d="M 526 62 L 588 46 L 564 74 L 516 84 Z" fill="${p.accentDeep}" stroke="${p.seamStroke}" stroke-width="1.1" />
+          <path d="M 288 182 C 354 118, 456 66, 588 46 L 548 86 C 468 112, 396 150, 336 196 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M 326 164 L 548 64" stroke="${p.seamStroke}" stroke-width="1.1" opacity="0.7" />
+          <path d="M 526 62 L 588 46 L 564 74 L 516 84 Z" fill="${p.accentDeep}" stroke="${p.seamStroke}" stroke-width="1" />
         </g>
 
         <g>
-          <path d="M 192 214 C 266 254, 380 264, 512 238 L 496 202 C 386 194, 276 192, 192 214 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
+          <path d="M 192 214 C 266 254, 380 264, 512 238 L 496 202 C 386 194, 276 192, 192 214 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
           <g class="cc-pulse">
-            <path d="M 272 224 L 288 240 M 292 226 L 308 242 M 312 228 L 328 244 M 332 228 L 348 244" stroke="${p.energyMain}" stroke-width="2.6" stroke-linecap="round" />
+            <path d="M 272 224 L 288 240 M 292 226 L 308 242 M 312 228 L 328 244 M 332 228 L 348 244" stroke="${p.energyMain}" stroke-width="2.4" stroke-linecap="round" />
           </g>
 
-          <path d="M 204 186 C 166 170, 128 164, 102 172 C 128 186, 162 198, 198 202 Z" fill="${p.armorMid}" stroke="${p.seamStroke}" stroke-width="1.4" />
+          <path d="M 204 186 C 166 170, 128 164, 102 172 C 128 186, 162 198, 198 202 Z" fill="${p.armorMid}" stroke="${p.seamStroke}" stroke-width="1.3" />
           <path d="M 102 172 L 130 172 L 124 180 Z" fill="${p.accentDeep}" />
 
-          <path d="M 178 202 C 216 154, 326 150, 446 186 L 522 214 L 468 238 C 362 246, 250 232, 178 202 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.7" stroke-linejoin="round" />
-          <path d="M 232 176 L 268 224 M 302 166 L 336 234 M 378 172 L 404 238" stroke="${p.seamStroke}" stroke-width="1.25" opacity="0.8" />
+          <path d="M 178 202 C 216 154, 326 150, 446 186 L 522 214 L 468 238 C 362 246, 250 232, 178 202 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.6" stroke-linejoin="round" />
+          <path d="M 232 176 L 268 224 M 302 166 L 336 234 M 378 172 L 404 238" stroke="${p.seamStroke}" stroke-width="1.15" opacity="0.8" />
           <path d="M 218 190 C 292 178, 376 192, 466 218" fill="none" stroke="${p.armorHighlight}" stroke-width="3" stroke-linecap="round" opacity="0.75" />
 
           <g transform="translate(342, 198)">
-            <polygon points="0,-12 24,0 0,12 -24,0" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.3" />
+            <polygon points="0,-12 24,0 0,12 -24,0" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
             <polygon class="cc-pulse" points="0,-7 15,0 0,7 -15,0" fill="${p.energyMain}" />
             <circle cx="0" cy="0" r="14" fill="url(#${idPrefix}-energy-glow)" class="cc-pulse" />
           </g>
 
-          <path d="M 216 210 C 168 214, 118 208, 86 226 C 122 238, 172 238, 224 228 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
+          <path d="M 216 210 C 168 214, 118 208, 86 226 C 122 238, 172 238, 224 228 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.4" stroke-linejoin="round" />
           <path d="M 86 226 L 118 220 L 114 232 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.9" />
           <path class="cc-pulse" d="M 124 224 L 196 220" stroke="${p.energyMain}" stroke-width="2" stroke-linecap="round" />
 
@@ -1031,13 +968,13 @@ function renderMantaSide(
 
         <g class="cc-wing-near" style="transform-origin: 318px 226px;">
           ${nearWingFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
-          <path d="M 278 224 C 362 232, 476 286, 616 378 L 538 366 C 436 334, 338 286, 266 240 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.7" stroke-linejoin="round" />
-          <path d="M 328 242 L 368 294 M 398 268 L 438 326 M 468 302 L 504 352" stroke="${p.seamStroke}" stroke-width="1.25" opacity="0.8" />
-          <path class="cc-pulse" d="M 304 238 C 392 266, 480 310, 566 360" fill="none" stroke="${p.energyMain}" stroke-width="2.4" stroke-dasharray="14 6" />
-          <circle cx="318" cy="238" r="16" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.4" />
+          <path d="M 278 224 C 362 232, 476 286, 616 378 L 538 366 C 436 334, 338 286, 266 240 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" stroke-linejoin="round" />
+          <path d="M 328 242 L 368 294 M 398 268 L 438 326 M 468 302 L 504 352" stroke="${p.seamStroke}" stroke-width="1.15" opacity="0.8" />
+          <path class="cc-pulse" d="M 304 238 C 392 266, 480 310, 566 360" fill="none" stroke="${p.energyMain}" stroke-width="2.2" />
+          <circle cx="318" cy="238" r="16" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.3" />
           <circle cx="318" cy="238" r="9" fill="${p.frameDark}" stroke="${p.accentMain}" stroke-width="2.4" />
           <circle class="cc-pulse" cx="318" cy="238" r="3.5" fill="${p.energyBright}" />
-          <path d="M 548 342 L 616 378 L 574 374 L 532 354 Z" fill="url(#${idPrefix}-accent-v)" stroke="${p.seamStroke}" stroke-width="1.2" />
+          <path d="M 548 342 L 616 378 L 574 374 L 532 354 Z" fill="url(#${idPrefix}-accent-v)" stroke="${p.seamStroke}" stroke-width="1.1" />
         </g>
       </g>
     </g>
@@ -1050,7 +987,7 @@ function renderMantaDive(
   stage: number
 ): string {
   return `
-    <g transform="translate(460, 200) rotate(-14) scale(0.90) translate(-460, -210)">
+    <g transform="translate(460, 198) rotate(-14) scale(0.88) translate(-460, -210)">
       ${renderMantaSide(p, idPrefix, stage)}
     </g>
   `;
@@ -1064,25 +1001,22 @@ function renderMantaTop(
   return `
     <g transform="${getStageScaleTransform(stage)}">
       <g class="cc-float">
-        ${renderCable({ d: "M 510 198 C 620 184, 730 162, 856 176", tipX: 856, tipY: 176, variant: "white-rib", width: 3.2, tipColor: "orange", animClass: "cc-c1", originX: 510, originY: 198 }, p)}
-        ${renderCable({ d: "M 510 214 C 620 228, 730 250, 856 236", tipX: 856, tipY: 236, variant: "ribbed", width: 3.4, tipColor: "green", animClass: "cc-c2", originX: 510, originY: 214 }, p)}
+        ${renderCable({ d: "M 510 198 C 620 184, 730 162, 856 176", tipX: 856, tipY: 176, tipAngle: 8, variant: "ceramic", width: 3.2, tipColor: "orange", animClass: "cc-c1", originX: 510, originY: 198 }, p)}
+        ${renderCable({ d: "M 510 214 C 620 228, 730 250, 856 236", tipX: 856, tipY: 236, tipAngle: -8, variant: "armored", width: 3.4, tipColor: "green", animClass: "cc-c2", originX: 510, originY: 214 }, p)}
 
-        <!-- Symmetric Manta Delta Wings -->
         <g class="cc-wing-far" style="transform-origin: 310px 180px;">
-          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 332 + i * 36, y: 152 - i * 24, length: 102, width: 15, angle: -24 + i * 5, curve: -8, orangeTip: true, greenTip: i === 2, animClass: `cc-f${i + 1}` }, p, idPrefix)).join("")}
+          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 332 + i * 36, y: 152 - i * 24, length: 102, width: 22, angle: -24 + i * 5, curve: -8, orangeTip: true, greenTip: i === 2, animClass: `cc-f${i + 1}` }, p, idPrefix)).join("")}
           <path d="M 220 184 C 280 120, 390 66, 512 44 L 460 126 L 348 184 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
           <path d="M 456 62 L 512 44 L 494 74 L 444 86 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
         </g>
 
         <g class="cc-wing-near" style="transform-origin: 310px 232px;">
-          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 332 + i * 36, y: 260 + i * 24, length: 102, width: 15, angle: 24 - i * 5, curve: 8, orangeTip: true, greenTip: i === 2, animClass: `cc-f${i + 2}` }, p, idPrefix)).join("")}
+          ${[0, 1, 2, 3].slice(0, stage <= 2 ? 2 : 4).map((i) => renderFeather({ x: 332 + i * 36, y: 260 + i * 24, length: 102, width: 22, angle: 24 - i * 5, curve: 8, orangeTip: true, greenTip: i === 2, animClass: `cc-f${i + 2}` }, p, idPrefix)).join("")}
           <path d="M 220 228 C 280 292, 390 346, 512 368 L 460 286 L 348 228 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.6" />
           <path d="M 456 350 L 512 368 L 494 338 L 444 326 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
         </g>
 
-        <!-- Central Manta Fuselage (Top View) -->
-        <path d="M 140 206 L 236 160 L 512 192 L 512 220 L 236 252 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.7" />
-        <!-- Twin Cephalic Prongs -->
+        <path d="M 140 206 L 236 160 L 512 192 L 512 220 L 236 252 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.6" />
         <path d="M 184 182 L 96 168 L 128 194 L 194 196 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.3" />
         <path d="M 184 230 L 96 244 L 128 218 L 194 216 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.3" />
         <polygon class="cc-pulse" points="296,194 330,206 296,218 262,206" fill="${p.energyMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
@@ -1092,7 +1026,7 @@ function renderMantaTop(
 }
 
 /* -------------------------------------------------------------------------- */
-/* 2-ROW HUD TELEMETRY BAR (NO COLLISIONS, LANGUAGE CHIPS + STAGE TRACK)      */
+/* 2-ROW HUD TELEMETRY BAR                                                    */
 /* -------------------------------------------------------------------------- */
 
 function renderHudBarWithPrefix(
@@ -1188,7 +1122,7 @@ export function buildCreatureInnerSvg(
       : "";
 
   const creatureBody = renderCreatureGeometryOnly(config, idPrefix);
-  const yOffset = config.showHud ? -6 : 14;
+  const yOffset = config.showHud ? -8 : 12;
   const hud = renderHudBarWithPrefix(config, p, idPrefix);
 
   return `
