@@ -1,19 +1,23 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import { SVG_HEIGHT, SVG_WIDTH, buildCreatureInnerSvg } from "@/lib/creatureArt";
-import { getCreatureMeta } from "@/lib/themes";
-import type { CreatureConfig } from "@/types/creature";
+import type { CreatureConfig } from "@/domain/creature/entities";
+import { getCreatureMeta } from "@/domain/creature/services";
+import {
+  SVG_HEIGHT,
+  SVG_WIDTH,
+  buildCreatureInnerSvg,
+} from "@/domain/creature/svgRenderer";
 
-interface CyberCreatureSvgProps {
+interface CreatureSvgViewProps {
   config: CreatureConfig;
   className?: string;
 }
 
-export function CyberCreatureSvg({
+export function CreatureSvgView({
   config,
   className = "",
-}: CyberCreatureSvgProps) {
+}: CreatureSvgViewProps) {
   const rawId = useId();
   const idPrefix = useMemo(
     () => `cc-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`,

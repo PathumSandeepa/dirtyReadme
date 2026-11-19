@@ -1,13 +1,19 @@
 import {
+  STAGE_DEFINITIONS,
+  type CreatureConfig,
+  type DerivedPalette,
+} from "@/domain/creature/entities";
+import {
   derivePalette,
   formatHudLabel,
   getCreatureMeta,
   getEvolutionStage,
-} from "@/lib/themes";
-import type { CreatureConfig, DerivedPalette } from "@/types/creature";
+} from "@/domain/creature/services";
 
 export const SVG_WIDTH = 920;
 export const SVG_HEIGHT = 460;
+export const SHARE_CARD_WIDTH = 1280;
+export const SHARE_CARD_HEIGHT = 640;
 
 export function escapeXml(input: string): string {
   return input
@@ -32,11 +38,6 @@ interface FeatherSpec {
   animClass?: string;
 }
 
-/**
- * Renders a broad, aerodynamic overlapping mechanical feather blade
- * with upper specular bevel, shaded lower vane, structural spine,
- * safety-orange tip chevron, and optional cyber-green optical filament.
- */
 function renderFeather(
   spec: FeatherSpec,
   p: DerivedPalette,
@@ -70,7 +71,6 @@ function renderFeather(
   const tipX = length;
   const tipY = curve;
 
-  // Broad asymmetrical airfoil feather silhouette
   const upperW = width * 0.52;
   const lowerW = width * 0.48;
 
@@ -88,7 +88,6 @@ function renderFeather(
     `Z`,
   ].join(" ");
 
-  // Safety orange angled tip blade
   const tipStart = 0.74;
   const tx1 = length * tipStart;
   const ty1 = curve * 0.56 - upperW * 0.34;
@@ -99,7 +98,6 @@ function renderFeather(
       ? `<path d="M ${tx1.toFixed(1)} ${ty1.toFixed(1)} Q ${(length * 0.88).toFixed(1)} ${(curve * 0.8 - upperW * 0.15).toFixed(1)}, ${tipX.toFixed(1)} ${tipY.toFixed(1)} Q ${(length * 0.89).toFixed(1)} ${(curve * 0.86 + lowerW * 0.16).toFixed(1)}, ${tx2.toFixed(1)} ${ty2.toFixed(1)} Z" fill="${far ? p.accentDeep : p.accentMain}" stroke="${strokeCol}" stroke-width="0.9" stroke-linejoin="round" />`
       : "";
 
-  // Subtle internal panel notch & specular edge
   const highlightEdge = !far
     ? `<path d="M 8 ${(-upperW * 0.38).toFixed(1)} Q ${(length * 0.4).toFixed(1)} ${(-upperW * 0.76 + curve * 0.2).toFixed(1)}, ${(length * 0.72).toFixed(1)} ${(-upperW * 0.32 + curve * 0.56).toFixed(1)}" fill="none" stroke="${p.armorHighlight}" stroke-width="1.3" stroke-linecap="round" opacity="0.7" />`
     : "";
@@ -136,11 +134,6 @@ interface CableSpec {
   originY: number;
 }
 
-/**
- * Renders sleek, continuous robotic conduits & fiber-optic tendrils
- * (no ugly dashed marching-ants boxes!) with metallic gradient highlights
- * and sharp lancet emitter tips.
- */
 function renderCable(spec: CableSpec, p: DerivedPalette): string {
   const {
     d,
@@ -200,7 +193,7 @@ function renderCable(spec: CableSpec, p: DerivedPalette): string {
     </g>`;
 }
 
-function buildAnimationStyles(speed: number): string {
+export function buildAnimationStyles(speed: number): string {
   const safeSpeed = Math.max(0.5, Math.min(2.5, speed || 1));
   const dur = (base: number) => `${(base / safeSpeed).toFixed(2)}s`;
 
@@ -296,7 +289,7 @@ function buildAnimationStyles(speed: number): string {
   `;
 }
 
-function buildDefs(p: DerivedPalette, idPrefix: string): string {
+export function buildDefs(p: DerivedPalette, idPrefix: string): string {
   return `
     <defs>
       <linearGradient id="${idPrefix}-armor-v" x1="0%" y1="0%" x2="10%" y2="100%">
@@ -354,16 +347,11 @@ function getStageScaleTransform(stage: number): string {
   return `translate(${cx}, ${cy}) scale(${s}) translate(${-cx}, ${-cy})`;
 }
 
-/* -------------------------------------------------------------------------- */
-/* CREATURE 1: CYBER-TULKUN (ARMORED LEVIATHAN)                               */
-/* -------------------------------------------------------------------------- */
-
 function renderTulkunSide(
   p: DerivedPalette,
   idPrefix: string,
   stage: number
 ): string {
-  // Trailing tail robotic cables & fiber-optic whips (anchored at tail peduncle)
   const rawTailCables: CableSpec[] = [
     { d: "M 648 158 C 722 146, 782 118, 846 130", tipX: 846, tipY: 130, tipAngle: 10, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c1", originX: 648, originY: 158 },
     { d: "M 642 166 C 722 184, 786 196, 868 158", tipX: 868, tipY: 158, tipAngle: -16, variant: "ceramic", width: 3.8, tipColor: "orange", animClass: "cc-c2", originX: 642, originY: 166 },
@@ -376,7 +364,6 @@ function renderTulkunSide(
   const cableLimit = stage === 1 ? 2 : stage === 2 ? 4 : stage === 3 ? 5 : 7;
   const tailCables = rawTailCables.slice(0, cableLimit);
 
-  // Cranial neural whips (Stage 2+)
   const headTendrils: CableSpec[] =
     stage >= 2
       ? [
@@ -391,7 +378,6 @@ function renderTulkunSide(
         ]
       : [];
 
-  // Far-side pectoral wing: broad fanned mechanical feathers
   const rawFarFeathers: FeatherSpec[] = [
     { x: 224, y: 238, length: 92, width: 24, angle: 112, curve: -8, far: true, orangeTip: true, animClass: "cc-f5" },
     { x: 234, y: 248, length: 106, width: 26, angle: 98, curve: -6, far: true, orangeTip: true, animClass: "cc-f4" },
@@ -401,7 +387,6 @@ function renderTulkunSide(
   ];
   const farFeathers = rawFarFeathers.slice(0, stage <= 2 ? 3 : 5);
 
-  // Dorsal spine feather crest (Stage 3+): broad curved swept blades
   const dorsalFeathers: FeatherSpec[] =
     stage >= 3
       ? [
@@ -417,7 +402,6 @@ function renderTulkunSide(
         ]
       : [];
 
-  // Hero near pectoral wing: broad overlapping fanned feather vanes (drawn outer-to-inner for clean overlap!)
   const allNearFeathers: FeatherSpec[] = [
     { x: 334, y: 226, length: 116, width: 25, angle: 56, curve: 10, orangeTip: true, animClass: "cc-f6" },
     { x: 350, y: 240, length: 132, width: 27, angle: 49, curve: 11, orangeTip: true, greenTip: stage >= 3, animClass: "cc-f5" },
@@ -433,7 +417,6 @@ function renderTulkunSide(
     stage === 1 ? 4 : stage === 2 ? 5 : stage === 3 ? 6 : 8
   );
 
-  // Stage 5 Ascended Crown Plumes & Battle Energy Scars
   const ascendedCrown =
     stage === 5
       ? `
@@ -444,7 +427,6 @@ function renderTulkunSide(
       </g>`
       : "";
 
-  // Stage 3+ Pelvic Ventral Paddle
   const ventralPaddle =
     stage >= 3
       ? `
@@ -457,10 +439,8 @@ function renderTulkunSide(
   return `
     <g transform="${getStageScaleTransform(stage)}">
       <g class="cc-float">
-        <!-- Head Dorsal Neural Whips -->
         <g>${headTendrils.map((c) => renderCable(c, p)).join("")}</g>
 
-        <!-- Far Pectoral Wing-Fin -->
         <g class="cc-wing-far" style="transform-origin: 235px 226px;">
           ${farFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
           <path d="M 222 216 L 246 274 L 266 322 L 246 328 L 214 248 Z" fill="${p.armorShadow}" stroke="${p.seamStroke}" stroke-width="1.3" stroke-linejoin="round" />
@@ -468,32 +448,24 @@ function renderTulkunSide(
           <circle cx="228" cy="230" r="7.5" fill="${p.accentDeep}" />
         </g>
 
-        <!-- Animated Tail Peduncle + Fluke + Trailing Cables -->
         <g class="cc-tail-swim" style="transform-origin: 430px 168px;">
           ${ventralPaddle}
           <g>${tailCables.map((c) => renderCable(c, p)).join("")}</g>
           <g>${dorsalFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
 
-          <!-- Sculpted Tapered Mechanical Tail Under-Frame -->
           <path d="M 418 134 C 498 130, 578 142, 650 156 L 646 184 C 574 196, 496 212, 412 224 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.4" />
-
-          <!-- Continuous Contoured Interlocking Tail Armor Plates (No Boxy Rects!) -->
           <path d="M 416 122 C 496 126, 576 138, 646 152 L 642 180 C 572 192, 492 204, 412 214 C 402 184, 404 150, 416 122 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.45" stroke-linejoin="round" />
-          <!-- Curved Anatomical Segment Seams & Orange Trim Ticks -->
           <path d="M 454 125 C 446 154, 444 184, 452 209" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
           <path d="M 494 129 C 486 156, 484 182, 492 203" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
           <path d="M 532 134 C 525 157, 524 179, 530 197" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
           <path d="M 568 139 C 562 158, 561 176, 566 192" fill="none" stroke="${p.seamStroke}" stroke-width="1.25" />
           <path d="M 604 144 C 599 160, 598 174, 602 186" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
-          <!-- Dorsal Ridge Highlight Ribbon -->
           <path d="M 424 129 C 498 134, 572 145, 636 157" fill="none" stroke="${p.armorHighlight}" stroke-width="3" stroke-linecap="round" opacity="0.75" />
-          <!-- Subtle Energy & Accent Micro-Ports along Tail -->
           ${stage >= 3 ? `<rect x="466" y="164" width="12" height="5" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.7" />` : ""}
           ${stage >= 3 ? `<rect x="542" y="162" width="10" height="5" rx="1.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="0.7" />` : ""}
           <circle class="cc-pulse" cx="512" cy="166" r="2.6" fill="${p.energyMain}" />
           <circle class="cc-pulse" cx="585" cy="165" r="2.4" fill="${p.energyMain}" />
 
-          <!-- Rear Tail Stabilizer Fluke -->
           <g class="cc-fluke-wave" style="transform-origin: 642px 164px;">
             <path d="M 636 156 L 732 130 L 762 140 L 704 166 L 638 174 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.4" stroke-linejoin="round" />
             <path d="M 708 136 L 732 130 L 762 140 L 736 150 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
@@ -502,7 +474,6 @@ function renderTulkunSide(
           </g>
         </g>
 
-        <!-- Mid-Torso Sculpted Under-Frame & Hydraulic Belly Ribs -->
         <path d="M 278 124 C 338 112, 390 116, 424 126 L 418 220 C 374 234, 326 244, 286 248 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
         ${
           stage >= 2
@@ -511,19 +482,15 @@ function renderTulkunSide(
         }
         <path d="M 340 236 L 352 212 M 362 232 L 374 206 M 384 226 L 395 201" stroke="${p.frameLight}" stroke-width="2.2" stroke-linecap="round" />
 
-        <!-- Mid-Torso Modular Armor Carapace -->
         <path d="M 284 90 C 344 96, 396 110, 428 126 C 416 158, 412 188, 418 216 C 374 230, 324 240, 288 240 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
         <path d="M 326 102 C 332 144, 338 186, 346 226 M 374 114 C 378 150, 382 184, 388 214" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" opacity="0.82" />
         <rect x="336" y="138" width="24" height="9" rx="2.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="0.9" />
         <rect class="cc-pulse" x="340" y="140.5" width="16" height="4" rx="1" fill="${p.energyMain}" />
 
-        <!-- Massive Volumetric Cyber-Tulkun Head -->
         <g>
-          <!-- Recessed Mechanical Mouth Line & Precision Baleen Louvers -->
           <path d="M 74 148 C 142 157, 224 162, 306 154 L 310 168 C 222 174, 140 169, 74 161 Z" fill="${p.frameDark}" stroke="${p.seamStroke}" stroke-width="1.2" />
           <path d="M 96 153 L 98 162 M 114 155 L 116 164 M 132 157 L 134 166 M 150 158 L 152 167 M 168 159 L 170 168 M 186 160 L 188 168" stroke="${p.frameLight}" stroke-width="1.2" opacity="0.85" />
 
-          <!-- Sculpted Lower Jaw Modular Plates -->
           <path d="M 76 161 C 102 226, 198 265, 322 250 L 332 198 C 258 187, 165 172, 76 161 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.55" stroke-linejoin="round" />
           <path d="M 88 180 C 148 212, 232 230, 314 230" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
           <path d="M 106 200 C 166 230, 240 244, 318 242" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
@@ -535,7 +502,6 @@ function renderTulkunSide(
           <circle cx="116" cy="174" r="6" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
           <circle class="cc-pulse" cx="116" cy="174" r="2.8" fill="${p.energyBright}" />
 
-          <!-- Upper Cranium Dome -->
           <path d="M 70 149 C 66 82, 152 58, 258 74 L 328 102 L 308 159 C 224 165, 138 157, 70 149 Z" fill="url(#${idPrefix}-head-vol)" stroke="${p.seamStroke}" stroke-width="1.65" stroke-linejoin="round" />
           <path d="M 84 114 C 144 92, 230 94, 316 116" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
           <path d="M 118 76 C 122 104, 128 130, 136 154" fill="none" stroke="${p.seamStroke}" stroke-width="1.1" />
@@ -543,7 +509,6 @@ function renderTulkunSide(
           <path d="M 262 76 L 248 156" fill="none" stroke="${p.seamStroke}" stroke-width="1.15" />
           <path d="M 92 103 C 144 74, 214 70, 268 84" fill="none" stroke="${p.armorHighlight}" stroke-width="3.8" stroke-linecap="round" opacity="0.85" />
 
-          <!-- Precision Circuit Trace Decals (Refined, Non-Boxy) -->
           ${
             stage >= 3
               ? `<g opacity="0.9">
@@ -557,7 +522,6 @@ function renderTulkunSide(
 
           ${ascendedCrown}
 
-          <!-- Primary Brow Sensor Eye -->
           <g>
             <circle cx="144" cy="143" r="8.5" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
             <circle cx="144" cy="143" r="12" fill="url(#${idPrefix}-energy-glow)" class="cc-pulse" />
@@ -565,7 +529,6 @@ function renderTulkunSide(
             <circle cx="142.5" cy="141.5" r="1.5" fill="${p.energyBright}" />
           </g>
 
-          <!-- Circular Cheek Gyro / Optic Ear Assembly -->
           <g transform="translate(268, 174)">
             <circle cx="0" cy="0" r="${stage >= 4 ? 27 : 22}" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.5" />
             ${stage >= 4 ? `<circle cx="0" cy="0" r="21" fill="none" stroke="${p.energyMain}" stroke-width="1.5" stroke-dasharray="12 6" class="cc-pulse" />` : ""}
@@ -575,23 +538,16 @@ function renderTulkunSide(
             <circle cx="0" cy="0" r="2.1" fill="${p.energyBright}" />
           </g>
 
-          <!-- Crown Tendril Socket -->
           <circle cx="248" cy="78" r="10" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.2" />
           <circle cx="248" cy="78" r="5" fill="${p.accentMain}" />
         </g>
 
-        <!-- Hero Near Pectoral Wing-Fin (Broad Overlapping Feathered Wing) -->
         <g class="cc-wing-near" style="transform-origin: 330px 212px;">
-          <!-- Broad Fanned Mechanical Feathers -->
           ${nearFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}
-
-          <!-- Shoulder Ball Joint -->
           <circle cx="330" cy="212" r="25" fill="${p.frameMain}" stroke="${p.seamStroke}" stroke-width="1.6" />
           <circle cx="330" cy="212" r="17" fill="${p.frameDark}" stroke="${p.armorMid}" stroke-width="2" stroke-dasharray="16 6" />
           <circle cx="330" cy="212" r="8.5" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1.1" />
           <circle class="cc-pulse" cx="330" cy="212" r="3.8" fill="${p.energyBright}" />
-
-          <!-- Sculpted Robotic Pectoral Arm Strut -->
           <path d="M 326 212 L 408 266 L 484 328 L 460 344 L 384 284 L 314 232 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
           <path d="M 340 226 L 466 326" fill="none" stroke="${p.armorHighlight}" stroke-width="2.2" stroke-linecap="round" opacity="0.7" />
           <path d="M 380 260 L 398 248 L 406 258 L 388 272 Z" fill="${p.accentMain}" stroke="${p.seamStroke}" stroke-width="1" />
@@ -670,8 +626,6 @@ function renderTulkunTop(
           </g>
 
           <path d="M 332 172 L 642 192 L 642 220 L 332 240 Z" fill="url(#${idPrefix}-frame-v)" stroke="${p.seamStroke}" stroke-width="1.4" />
-
-          <!-- Continuous Sculpted Dorsal Spine Armor -->
           <path d="M 336 160 C 446 164, 548 176, 636 192 L 636 220 C 548 236, 446 248, 336 252 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.4" />
           <path d="M 392 163 L 392 249 M 446 167 L 446 245 M 498 172 L 498 240 M 548 178 L 548 234 M 594 184 L 594 228" stroke="${p.seamStroke}" stroke-width="1.2" />
           <circle class="cc-pulse" cx="420" cy="206" r="3" fill="${p.energyMain}" />
@@ -712,10 +666,6 @@ function renderTulkunTop(
   `;
 }
 
-/* -------------------------------------------------------------------------- */
-/* CREATURE 2: CYBER-SERPENT (MECHA SKY-DRAGON)                               */
-/* -------------------------------------------------------------------------- */
-
 function renderSerpentSide(
   p: DerivedPalette,
   idPrefix: string,
@@ -727,7 +677,10 @@ function renderSerpentSide(
     { x: 278, y: 234, length: 185, width: 26, angle: 168, curve: -16, orangeTip: true, greenTip: stage >= 4, animClass: "cc-c3" },
     { x: 266, y: 246, length: 165, width: 24, angle: 152, curve: -14, orangeTip: false, animClass: "cc-c4" },
   ];
-  const tailRibbons = rawTailRibbons.slice(0, stage === 1 ? 2 : stage === 2 ? 3 : 4);
+  const tailRibbons = rawTailRibbons.slice(
+    0,
+    stage === 1 ? 2 : stage === 2 ? 3 : 4
+  );
 
   const rawTailCables: CableSpec[] = [
     { d: "M 290 236 C 210 310, 128 332, 68 292", tipX: 68, tipY: 292, tipAngle: -145, variant: "armored", width: 3.8, tipColor: "orange", animClass: "cc-c1", originX: 290, originY: 236 },
@@ -735,7 +688,10 @@ function renderSerpentSide(
     { d: "M 322 246 C 254 342, 185 366, 122 362", tipX: 122, tipY: 362, tipAngle: 175, variant: "fiber", width: 2.3, tipColor: "green", animClass: "cc-c3", originX: 322, originY: 246 },
     { d: "M 272 200 C 202 146, 146 95, 92 78", tipX: 92, tipY: 78, tipAngle: -155, variant: "fiber", width: 2.1, tipColor: "orange", animClass: "cc-c4", originX: 272, originY: 200 },
   ];
-  const tailCables = rawTailCables.slice(0, stage === 1 ? 1 : stage === 2 ? 2 : 4);
+  const tailCables = rawTailCables.slice(
+    0,
+    stage === 1 ? 1 : stage === 2 ? 2 : 4
+  );
 
   const spineFeathers: FeatherSpec[] =
     stage >= 2
@@ -784,7 +740,6 @@ function renderSerpentSide(
 
         <g>${spineFeathers.map((f) => renderFeather(f, p, idPrefix)).join("")}</g>
 
-        <!-- Continuous Sculpted S-Curve Carapace Body -->
         <path d="M 278 214 C 344 182, 434 128, 558 118 C 624 114, 676 126, 714 146 L 704 198 C 652 204, 592 206, 514 202 C 424 198, 344 228, 282 232 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" stroke-linejoin="round" />
         <path d="M 342 184 C 344 198, 346 212, 348 224 M 396 160 C 398 178, 400 196, 404 210 M 456 138 C 458 162, 462 184, 466 202 M 520 124 C 522 152, 526 178, 530 202 M 586 120 C 588 148, 592 174, 596 200 M 648 124 C 650 150, 654 174, 656 198" fill="none" stroke="${p.seamStroke}" stroke-width="1.2" />
         <path d="M 312 204 C 388 170, 474 134, 578 128 C 628 126, 668 134, 698 146" fill="none" stroke="${p.armorHighlight}" stroke-width="3" stroke-linecap="round" opacity="0.75" />
@@ -869,7 +824,6 @@ function renderSerpentTop(
           <path d="M 596 228 L 542 304 L 474 350 L 456 332 L 520 280 L 566 220 Z" fill="url(#${idPrefix}-armor-v)" stroke="${p.seamStroke}" stroke-width="1.5" />
         </g>
 
-        <!-- Continuous Undulating Spine Carapace -->
         <path d="M 262 184 C 340 144, 440 226, 536 184 C 608 156, 668 182, 720 184 L 720 228 C 668 226, 608 200, 536 228 C 440 270, 340 188, 262 228 Z" fill="url(#${idPrefix}-armor-d)" stroke="${p.seamStroke}" stroke-width="1.5" />
         ${[0, 1, 2, 3, 4, 5, 6].map((i) => {
           const x = 316 + i * 56;
@@ -885,10 +839,6 @@ function renderSerpentTop(
     </g>
   `;
 }
-
-/* -------------------------------------------------------------------------- */
-/* CREATURE 3: CYBER-MANTA (AETHER RAY)                                       */
-/* -------------------------------------------------------------------------- */
 
 function renderMantaSide(
   p: DerivedPalette,
@@ -1025,10 +975,6 @@ function renderMantaTop(
   `;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 2-ROW HUD TELEMETRY BAR                                                    */
-/* -------------------------------------------------------------------------- */
-
 function renderHudBarWithPrefix(
   config: CreatureConfig,
   p: DerivedPalette,
@@ -1136,4 +1082,112 @@ export function buildCreatureInnerSvg(
   `.trim();
 }
 
-export { buildAnimationStyles, buildDefs };
+export function generateCreatureSvgDocument(config: CreatureConfig): string {
+  const meta = getCreatureMeta(config.creature);
+  const inner = buildCreatureInnerSvg(config, "cc");
+  const ariaLabel = escapeXml(`${meta.name} - ${meta.subtitle}`);
+
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" role="img" aria-label="${ariaLabel}">`,
+    `  <title>${ariaLabel}</title>`,
+    `  ${inner}`,
+    `</svg>`,
+  ].join("\n");
+}
+
+export function buildShareCardInnerSvg(
+  config: CreatureConfig,
+  idPrefix = "sc"
+): string {
+  const p = derivePalette(config);
+  const styles = buildAnimationStyles(config.animationSpeed);
+  const defs = buildDefs(p, idPrefix);
+  const stageInfo = getEvolutionStage(config.commits);
+  const meta = getCreatureMeta(config.creature);
+  const geometry = renderCreatureGeometryOnly(config, idPrefix);
+
+  const safeUser = escapeXml(config.username.trim() || "PathumSandeepa");
+  const titleText = config.customTitle.trim()
+    ? escapeXml(config.customTitle.trim().toUpperCase())
+    : escapeXml(`${stageInfo.rank} ${meta.name.toUpperCase()}`);
+  const formattedCommits = Math.max(
+    0,
+    Math.floor(config.commits || 0)
+  ).toLocaleString("en-US");
+  const windowLabel = config.windowMode === "annual" ? "ANNUAL" : "365D ROLLING";
+
+  const langChips = (config.languages ?? []).slice(0, 3);
+  const langMarkup = langChips
+    .map((lang, idx) => {
+      const x = 44 + idx * 146;
+      return `
+        <rect x="${x}" y="592" width="10" height="10" rx="2" fill="${escapeXml(lang.color)}" />
+        <text x="${x + 16}" y="601" fill="#C9D1D9" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="13" font-weight="600">${escapeXml(lang.name.toUpperCase().slice(0, 12))}</text>
+      `;
+    })
+    .join("");
+
+  const stageRail = STAGE_DEFINITIONS.map((st, idx) => {
+    const x = 768 + idx * 96;
+    const isActive = st.stage === stageInfo.stage;
+    const isUnlocked = st.stage <= stageInfo.stage;
+    return `
+      <rect x="${x}" y="576" width="84" height="28" rx="6" fill="${isActive ? p.accentMain : isUnlocked ? "#1F2937" : "#0D1117"}" fill-opacity="${isActive ? "0.22" : "0.9"}" stroke="${isActive ? p.accentMain : isUnlocked ? p.energyMain : "#30363D"}" stroke-width="${isActive ? "1.6" : "1"}" />
+      <text x="${x + 42}" y="594" fill="${isActive ? "#FFFFFF" : isUnlocked ? p.energyBright : "#6E7681"}" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="${isActive ? "700" : "600"}" text-anchor="middle">${st.shortCode}</text>
+    `;
+  }).join("");
+
+  return `
+    <style>${styles}</style>
+    ${defs}
+    <rect x="0" y="0" width="1280" height="640" fill="#070B12" />
+    <g stroke="#162032" stroke-width="1" opacity="0.55">
+      <line x1="0" y1="160" x2="1280" y2="160" />
+      <line x1="0" y1="320" x2="1280" y2="320" />
+      <line x1="0" y1="480" x2="1280" y2="480" />
+      <line x1="320" y1="0" x2="320" y2="640" />
+      <line x1="640" y1="0" x2="640" y2="640" />
+      <line x1="960" y1="0" x2="960" y2="640" />
+    </g>
+
+    <rect x="20" y="20" width="1240" height="600" rx="14" fill="none" stroke="#1F6FEB" stroke-opacity="0.7" stroke-width="2" />
+    <rect x="26" y="26" width="1228" height="588" rx="10" fill="none" stroke="#30363D" stroke-width="1" />
+
+    <rect x="28" y="28" width="1224" height="48" rx="8" fill="#0D1117" fill-opacity="0.92" />
+    <line x1="28" y1="76" x2="1252" y2="76" stroke="#21262D" stroke-width="1.5" />
+    <circle class="cc-hud-blink" cx="50" cy="52" r="5" fill="${p.energyMain}" />
+    <text x="66" y="57" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15" font-weight="700" letter-spacing="1.2">DYNAMIC-README-CREATURE // @${safeUser}</text>
+    <text x="1232" y="57" fill="${p.accentMain}" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15" font-weight="700" text-anchor="end">STAGE ${stageInfo.stage}: ${titleText}</text>
+
+    <g transform="translate(150, 72) scale(1.06)">
+      ${geometry}
+    </g>
+
+    <rect x="28" y="514" width="1224" height="98" rx="8" fill="#0D1117" fill-opacity="0.92" />
+    <line x1="28" y1="514" x2="1252" y2="514" stroke="#21262D" stroke-width="1.5" />
+    <rect x="44" y="534" width="10" height="10" rx="2" fill="${p.energyMain}" />
+    <text x="62" y="544" fill="#E6EDF3" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="15" font-weight="700">STAGE ${stageInfo.stage}: ${titleText}</text>
+    <text x="44" y="570" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="14" font-weight="600">CONTRIBUTIONS (${windowLabel}): <tspan fill="#FFFFFF">${formattedCommits}</tspan>  •  VIEW: ${config.view.toUpperCase()}</text>
+    ${langMarkup}
+
+    <text x="768" y="556" fill="#8B949E" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="12" font-weight="600" letter-spacing="0.8">EVOLUTION PROGRESSION (0 → 2,500+)</text>
+    ${stageRail}
+  `.trim();
+}
+
+export function generateShareCardSvgDocument(config: CreatureConfig): string {
+  const meta = getCreatureMeta(config.creature);
+  const inner = buildShareCardInnerSvg(config, "sc");
+  const title = escapeXml(
+    `${meta.name} Share Card - @${config.username || "PathumSandeepa"}`
+  );
+
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SHARE_CARD_WIDTH} ${SHARE_CARD_HEIGHT}" width="${SHARE_CARD_WIDTH}" height="${SHARE_CARD_HEIGHT}" role="img" aria-label="${title}">`,
+    `  <title>${title}</title>`,
+    `  ${inner}`,
+    `</svg>`,
+  ].join("\n");
+}

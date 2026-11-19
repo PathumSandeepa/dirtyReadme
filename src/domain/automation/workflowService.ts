@@ -1,13 +1,7 @@
-import { getCreatureMeta } from "@/lib/themes";
-import type { CreatureConfig } from "@/types/creature";
-
-export interface ScheduleOption {
-  cron: string;
-  label: string;
-}
+import type { CreatureConfig } from "@/domain/creature/entities";
+import { getCreatureMeta } from "@/domain/creature/services";
 
 export function getMidnightCronForTimezone(offsetMinutesEast: number): string {
-  // offsetMinutesEast = -new Date().getTimezoneOffset() (e.g. +330 for UTC+5:30)
   let utcMinutes = (24 * 60 - offsetMinutesEast) % (24 * 60);
   if (utcMinutes < 0) utcMinutes += 24 * 60;
   const hour = Math.floor(utcMinutes / 60);
@@ -23,7 +17,6 @@ export function generateEvolveWorkflowYaml(
 
 on:
   schedule:
-    # Runs daily at 12:00 AM
     - cron: "${cronExpression}"
   workflow_dispatch:
   push:
@@ -48,8 +41,8 @@ jobs:
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           GITHUB_USERNAME: \${{ github.repository_owner }}
-          CREATURE_WINDOW: "${config.windowMode}" # annual | rolling
-          CREATURE_VIEW: "${config.view}" # side | dive | top
+          CREATURE_WINDOW: "${config.windowMode}"
+          CREATURE_VIEW: "${config.view}"
         run: node scripts/evolve-creature.mjs
 
       - name: Commit updated creature.svg and README.md
@@ -216,14 +209,11 @@ function updateReadmeMarkers(username, stage, rank, commits, topLanguages) {
   const updated =
     raw.slice(0, startIdx) + replacement + raw.slice(endIdx + endMarker.length);
   fs.writeFileSync(README_PATH, updated, "utf8");
-  console.log("Updated README.md profile telemetry between CYBER-CREATURE markers.");
 }
 
 async function main() {
   if (!fs.existsSync(SVG_PATH)) {
-    throw new Error(
-      "creature.svg not found in repository root. Push or upload it from the studio first."
-    );
+    throw new Error("creature.svg not found in repository root.");
   }
 
   const { commits, topLanguages } = await fetchProfileTelemetry(
@@ -254,8 +244,6 @@ async function main() {
   }
 
   fs.writeFileSync(SVG_PATH, svg, "utf8");
-  console.log(\`Updated creature.svg -> \${hudLabel}\`);
-
   updateReadmeMarkers(USERNAME, stage, rank, commits, topLanguages);
 }
 

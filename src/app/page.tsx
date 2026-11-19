@@ -1,5 +1,5 @@
-import { CreatureStudio } from "@/components/CreatureStudio";
+import { StudioApp } from "@/presentation/StudioApp";
 
 export default function HomePage() {
-  return <CreatureStudio />;
+  return <StudioApp />;
 }

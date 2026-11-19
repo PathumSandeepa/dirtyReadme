@@ -13,18 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dynamic README Creature Studio | Cybernetic SVG & Profile Builder",
+  title: "Dynamic Cybernetic Creature Studio | GitHub Profile README Generator",
   description:
-    "Customize animated cybernetic creatures, build your GitHub Profile README, and push directly to your GitHub profile repository.",
+    "Design an animated cybernetic creature and customize your entire GitHub profile README with drag-and-drop tech stack badges and 12:00 AM daily automation.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-zinc-950 font-sans text-zinc-50">
+      <body className="min-h-full bg-slate-50 font-sans text-slate-900">
         {children}
       </body>
     </html>

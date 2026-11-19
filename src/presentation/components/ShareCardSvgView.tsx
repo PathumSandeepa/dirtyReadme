@@ -1,20 +1,23 @@
 "use client";
 
 import { useId, useMemo } from "react";
+import type { CreatureConfig } from "@/domain/creature/entities";
+import { getCreatureMeta } from "@/domain/creature/services";
 import {
   SHARE_CARD_HEIGHT,
   SHARE_CARD_WIDTH,
   buildShareCardInnerSvg,
-} from "@/lib/generateShareCardSvg";
-import { getCreatureMeta } from "@/lib/themes";
-import type { CreatureConfig } from "@/types/creature";
+} from "@/domain/creature/svgRenderer";
 
-interface ShareCardSvgProps {
+interface ShareCardSvgViewProps {
   config: CreatureConfig;
   className?: string;
 }
 
-export function ShareCardSvg({ config, className = "" }: ShareCardSvgProps) {
+export function ShareCardSvgView({
+  config,
+  className = "",
+}: ShareCardSvgViewProps) {
   const rawId = useId();
   const idPrefix = useMemo(
     () => `sc-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`,

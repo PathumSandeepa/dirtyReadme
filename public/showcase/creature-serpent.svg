@@ -383,7 +383,6 @@
       </g>
     </g></g>
 
-        <!-- Continuous Sculpted S-Curve Carapace Body -->
         <path d="M 278 214 C 344 182, 434 128, 558 118 C 624 114, 676 126, 714 146 L 704 198 C 652 204, 592 206, 514 202 C 424 198, 344 228, 282 232 Z" fill="url(#cc-armor-d)" stroke="#1F242D" stroke-width="1.5" stroke-linejoin="round" />
         <path d="M 342 184 C 344 198, 346 212, 348 224 M 396 160 C 398 178, 400 196, 404 210 M 456 138 C 458 162, 462 184, 466 202 M 520 124 C 522 152, 526 178, 530 202 M 586 120 C 588 148, 592 174, 596 200 M 648 124 C 650 150, 654 174, 656 198" fill="none" stroke="#1F242D" stroke-width="1.2" />
         <path d="M 312 204 C 388 170, 474 134, 578 128 C 628 126, 668 134, 698 146" fill="none" stroke="#F8F7F8" stroke-width="3" stroke-linecap="round" opacity="0.75" />

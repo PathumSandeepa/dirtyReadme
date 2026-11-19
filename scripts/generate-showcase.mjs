@@ -48,13 +48,15 @@ function loadTsModule(relPath) {
   return mod.exports;
 }
 
-const { DEFAULT_CONFIG, STAGE_DEFINITIONS, THEME_PRESETS } = loadTsModule(
-  "src/lib/themes.ts"
-);
-const { generateSvgString } = loadTsModule("src/lib/generateSvgString.ts");
-const { generateShareCardSvgString } = loadTsModule(
-  "src/lib/generateShareCardSvg.ts"
-);
+const {
+  DEFAULT_CREATURE_CONFIG: DEFAULT_CONFIG,
+  STAGE_DEFINITIONS,
+  THEME_PRESETS,
+} = loadTsModule("src/domain/creature/entities.ts");
+const {
+  generateCreatureSvgDocument: generateSvgString,
+  generateShareCardSvgDocument: generateShareCardSvgString,
+} = loadTsModule("src/domain/creature/svgRenderer.ts");
 
 const outDir = path.resolve(rootDir, "public/showcase");
 fs.mkdirSync(outDir, { recursive: true });

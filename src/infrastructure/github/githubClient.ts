@@ -1,4 +1,4 @@
-import type { LanguageStat } from "@/types/creature";
+import type { LanguageStat } from "@/domain/creature/entities";
 
 export const GITHUB_LANGUAGE_COLORS: Record<string, string> = {
   TypeScript: "#3178C6",
@@ -65,14 +65,16 @@ interface GitHubUserResponse {
 }
 
 interface GitHubRepoResponse {
-  name: string;
-  description: string | null;
-  html_url: string;
   language: string | null;
   stargazers_count: number;
   fork: boolean;
   size: number;
-  updated_at: string;
+}
+
+export interface PublishFileInput {
+  path: string;
+  content: string;
+  message: string;
 }
 
 export function getLanguageColor(language: string): string {
@@ -87,17 +89,30 @@ function normalizeWebsiteUrl(raw: string | null): string {
   return `https://${trimmed}`;
 }
 
+function encodeBase64Utf8(str: string): string {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 export async function fetchGitHubProfileSnapshot(
-  rawUsername: string
+  rawUsername: string,
+  authToken?: string
 ): Promise<GitHubProfileSnapshot> {
   const username = rawUsername.trim().replace(/^@/, "");
   if (!username) {
     throw new Error("Please enter a valid GitHub username.");
   }
 
-  const headers = {
+  const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
   };
+  if (authToken && authToken.trim()) {
+    headers.Authorization = `Bearer ${authToken.trim()}`;
+  }
   const currentYear = String(new Date().getUTCFullYear());
 
   const [userRes, reposRes, profileRepoRes, contribAllRes, contribLastRes] =
@@ -161,7 +176,6 @@ export async function fetchGitHubProfileSnapshot(
           : 33,
     }));
 
-  // Check special profile repo (<username>/<username>)
   let profileRepoExists = false;
   let profileRepoBranch = "main";
   let existingProfileReadme: string | null = null;
@@ -181,11 +195,10 @@ export async function fetchGitHubProfileSnapshot(
         existingProfileReadme = await readmeRes.text();
       }
     } catch {
-      // Ignore if README.md doesn't exist yet
+      existingProfileReadme = null;
     }
   }
 
-  // Parse public contribution calendar (Annual & Rolling 365d)
   let annualCommits = 0;
   let rollingCommits = 0;
   let sourceNote = "Public contributions via GitHub calendar";
@@ -199,7 +212,7 @@ export async function fetchGitHubProfileSnapshot(
         annualCommits = data.total[currentYear];
       }
     } catch {
-      // Fallback below
+      annualCommits = 0;
     }
   }
 
@@ -212,7 +225,7 @@ export async function fetchGitHubProfileSnapshot(
         rollingCommits = data.total.lastYear;
       }
     } catch {
-      // Fallback below
+      rollingCommits = 0;
     }
   }
 
@@ -235,7 +248,7 @@ export async function fetchGitHubProfileSnapshot(
         }
       }
     } catch {
-      // Keep repo estimate
+      sourceNote = "Estimated from public repositories & stars";
     }
     annualCommits = commitFallback;
     rollingCommits = commitFallback;
@@ -270,21 +283,6 @@ export async function fetchGitHubProfileSnapshot(
   };
 }
 
-function encodeBase64Utf8(str: string): string {
-  const bytes = new TextEncoder().encode(str);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-export interface PublishFileInput {
-  path: string;
-  content: string;
-  message: string;
-}
-
 export async function publishFilesToProfileRepo(params: {
   token: string;
   owner: string;
@@ -295,7 +293,7 @@ export async function publishFilesToProfileRepo(params: {
   const { token, owner, repo, branch, files } = params;
   const cleanToken = token.trim();
   if (!cleanToken) {
-    throw new Error("Please enter a GitHub Personal Access Token.");
+    throw new Error("A Personal Access Token is required before pushing.");
   }
 
   const headers = {
@@ -317,7 +315,11 @@ export async function publishFilesToProfileRepo(params: {
     if (getRes.ok) {
       const existing = (await getRes.json()) as { sha?: string };
       existingSha = existing.sha;
-    } else if (getRes.status !== 404) {
+    } else if (getRes.status === 404 && file.path === "README.md") {
+      existingSha = undefined;
+    } else if (getRes.status === 404) {
+      existingSha = undefined;
+    } else {
       const errBody = await getRes.text();
       throw new Error(
         `Failed checking ${file.path} (${getRes.status}): ${errBody}`
