@@ -1,0 +1,4 @@
+:HL["/dynamic-readme-creature/_next/static/chunks/412vjt_3i3kyg.css","style"]
+2:[["children",{"s":"__PAGE__","h":160}]]
+1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
+0:{"b":"WLYLk4IoRjJUNxBVNVU3S","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
