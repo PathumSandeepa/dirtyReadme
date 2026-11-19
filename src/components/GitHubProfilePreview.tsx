@@ -4,7 +4,6 @@ import {
   BookOpen,
   Building2,
   Edit3,
-  ExternalLink,
   Link2,
   MapPin,
   Users,
@@ -264,49 +263,6 @@ export function GitHubProfilePreview({
                   </tr>
                 </tbody>
               </table>
-            </div>
-          )}
-
-        {/* Optional Featured Projects Table */}
-        {readmeConfig.includeProjects &&
-          readmeConfig.templateId !== "minimal-header" &&
-          readmeConfig.templateId !== "auto-evolve-block" &&
-          readmeConfig.projects.some((p) => p.enabled && p.name.trim()) && (
-            <div className="space-y-2 border-t border-[#21262d] pt-4">
-              <h3 className="text-sm font-semibold text-[#e6edf3]">
-                Featured Projects
-              </h3>
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {readmeConfig.projects
-                  .filter((p) => p.enabled && p.name.trim())
-                  .map((proj) => (
-                    <a
-                      key={proj.id}
-                      href={resolveDynamicTokens(proj.url, creatureConfig)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex flex-col justify-between rounded-lg border border-[#30363d] bg-[#161b22]/50 p-3 transition hover:border-[#58a6ff]"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs font-semibold text-[#58a6ff]">
-                            {proj.name}
-                          </span>
-                          <ExternalLink className="h-3 w-3 text-[#8b949e]" />
-                        </div>
-                        <p className="mt-1 text-[11px] leading-relaxed text-[#8b949e]">
-                          {resolveDynamicTokens(
-                            proj.description,
-                            creatureConfig
-                          )}
-                        </p>
-                      </div>
-                      <div className="mt-2 font-mono text-[10px] text-[#00E676]">
-                        ● {proj.language}
-                      </div>
-                    </a>
-                  ))}
-              </div>
             </div>
           )}
 

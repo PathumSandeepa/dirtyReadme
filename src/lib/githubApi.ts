@@ -1,7 +1,4 @@
-import type {
-  LanguageStat,
-  ReadmeFeaturedProject,
-} from "@/types/creature";
+import type { LanguageStat } from "@/types/creature";
 
 export const GITHUB_LANGUAGE_COLORS: Record<string, string> = {
   TypeScript: "#3178C6",
@@ -48,7 +45,6 @@ export interface GitHubProfileSnapshot {
   rollingCommits: number;
   estimatedCommits: number;
   languages: LanguageStat[];
-  featuredRepos: ReadmeFeaturedProject[];
   profileRepoExists: boolean;
   profileRepoBranch: string;
   existingProfileReadme: string | null;
@@ -165,23 +161,6 @@ export async function fetchGitHubProfileSnapshot(
           : 33,
     }));
 
-  // Top non-fork repositories (excluding the special username/username repo)
-  const featuredRepos: ReadmeFeaturedProject[] = repos
-    .filter(
-      (r) => !r.fork && r.name.toLowerCase() !== user.login.toLowerCase()
-    )
-    .sort((a, b) => (b.stargazers_count ?? 0) - (a.stargazers_count ?? 0))
-    .slice(0, 4)
-    .map((r, idx) => ({
-      id: `repo-${idx}-${r.name}`,
-      name: r.name,
-      description:
-        r.description?.trim() || "Open-source project on GitHub.",
-      url: r.html_url,
-      language: r.language || "Code",
-      enabled: true,
-    }));
-
   // Check special profile repo (<username>/<username>)
   let profileRepoExists = false;
   let profileRepoBranch = "main";
@@ -284,7 +263,6 @@ export async function fetchGitHubProfileSnapshot(
       topLanguages.length > 0
         ? topLanguages
         : [{ name: "Markdown", color: "#083FA1", share: 100 }],
-    featuredRepos,
     profileRepoExists,
     profileRepoBranch,
     existingProfileReadme,

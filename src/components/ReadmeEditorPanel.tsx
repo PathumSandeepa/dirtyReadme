@@ -50,14 +50,11 @@ export function ReadmeEditorPanel({
     useState<BadgeCategoryFilter>("all");
   const [newTagInput, setNewTagInput] = useState("");
   const [newBadgeLabel, setNewBadgeLabel] = useState("");
-  const [newBadgeColor, setNewBadgeColor] = useState("#00E676");
+  const [newBadgeColor, setNewBadgeColor] = useState("#18181B");
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkText, setNewLinkText] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("https://");
-  const [newLinkColor, setNewLinkColor] = useState("#FF6B00");
-  const [newProjName, setNewProjName] = useState("");
-  const [newProjDesc, setNewProjDesc] = useState("");
-  const [newProjLang, setNewProjLang] = useState("TypeScript");
+  const [newLinkColor, setNewLinkColor] = useState("#18181B");
   const [copiedTarget, setCopiedTarget] = useState<"full" | "marker" | null>(
     null
   );
@@ -166,25 +163,6 @@ export function ReadmeEditorPanel({
     setNewLinkUrl("https://");
   }
 
-  function handleAddProject(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newProjName.trim()) return;
-    updateField("projects", [
-      ...readmeConfig.projects,
-      {
-        id: `proj-${Date.now()}`,
-        name: newProjName.trim(),
-        description:
-          newProjDesc.trim() || "Open-source project built with clean craft.",
-        url: `https://github.com/${safeUser}/${newProjName.trim()}`,
-        language: newProjLang.trim() || "TypeScript",
-        enabled: true,
-      },
-    ]);
-    setNewProjName("");
-    setNewProjDesc("");
-  }
-
   function insertToken(token: string) {
     const base =
       readmeConfig.rawOverride !== null
@@ -227,15 +205,15 @@ export function ReadmeEditorPanel({
   return (
     <div className="space-y-4 p-4 sm:p-5">
       {/* Top Action Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#30363d] bg-[#161b22] px-3.5 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-900/50 px-3.5 py-2.5">
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-[#00E676]" />
-          <span className="text-xs font-semibold text-white">
-            Customizable GitHub Profile README.md Builder
+          <FileText className="h-4 w-4 text-zinc-200" />
+          <span className="text-xs font-semibold text-zinc-50">
+            Profile README.md Builder
           </span>
           {readmeConfig.rawOverride !== null && (
-            <span className="rounded-full border border-[#FF6B00]/50 bg-[#FF6B00]/15 px-2 py-0.5 font-mono text-[10px] text-[#FF6B00]">
-              CUSTOM RAW MODE
+            <span className="rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 font-mono text-[10px] text-zinc-200">
+              CUSTOM RAW
             </span>
           )}
         </div>
@@ -244,16 +222,16 @@ export function ReadmeEditorPanel({
           <button
             type="button"
             onClick={() => void copyMarkdown("marker")}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-[11px] font-medium text-[#e6edf3] transition hover:border-[#8b949e]"
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-medium text-zinc-200 transition hover:bg-zinc-900"
           >
             {copiedTarget === "marker" ? (
               <>
-                <Check className="h-3 w-3 text-[#00E676]" />
-                Copied Marker Block
+                <Check className="h-3 w-3" />
+                Copied Marker
               </>
             ) : (
               <>
-                <Code2 className="h-3 w-3 text-[#FF6B00]" />
+                <Code2 className="h-3 w-3" />
                 Copy Marker Block
               </>
             )}
@@ -262,11 +240,11 @@ export function ReadmeEditorPanel({
           <button
             type="button"
             onClick={() => void copyMarkdown("full")}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#21262d] px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#30363d]"
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-medium text-zinc-100 transition hover:bg-zinc-800"
           >
             {copiedTarget === "full" ? (
               <>
-                <Check className="h-3 w-3 text-[#00E676]" />
+                <Check className="h-3 w-3" />
                 Copied README.md
               </>
             ) : (
@@ -280,7 +258,7 @@ export function ReadmeEditorPanel({
           <button
             type="button"
             onClick={downloadReadme}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#FF6B00] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-[#ff7f24]"
+            className="inline-flex items-center gap-1.5 rounded-md bg-zinc-50 px-3 py-1.5 text-[11px] font-semibold text-zinc-950 transition hover:bg-zinc-200"
           >
             <Download className="h-3 w-3" />
             Download README.md
@@ -290,25 +268,24 @@ export function ReadmeEditorPanel({
             href={`https://github.com/${encodeURIComponent(safeUser)}/${encodeURIComponent(safeUser)}/edit/main/README.md`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded-md border border-[#00E676]/40 bg-[#00E676]/10 px-2.5 py-1.5 text-[11px] font-medium text-[#00E676] transition hover:bg-[#00E676]/20"
+            className="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-zinc-50"
           >
-            Open on GitHub
+            Edit on GitHub
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
       </div>
 
-      {/* Layout: Form Controls + Raw Markdown Editor */}
+      {/* Form Controls + Raw Markdown Editor */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-        {/* Form Controls */}
         <div className="space-y-3 xl:col-span-6">
           {/* Sub-section Tabs */}
-          <div className="grid grid-cols-4 gap-1 rounded-lg border border-[#30363d] bg-[#0d1117] p-1 text-[11px]">
+          <div className="grid grid-cols-4 gap-1 rounded-md border border-zinc-800 bg-zinc-900 p-1 text-[11px]">
             {(
               [
                 { id: "identity", label: "Identity", icon: UserCircle2 },
                 { id: "badges", label: "Tech Stack", icon: Tag },
-                { id: "links", label: "Links & Repos", icon: Link2 },
+                { id: "links", label: "CTA Links", icon: Link2 },
                 { id: "layout", label: "Layout", icon: FolderGit2 },
               ] as const
             ).map((item) => {
@@ -319,13 +296,13 @@ export function ReadmeEditorPanel({
                   key={item.id}
                   type="button"
                   onClick={() => setSection(item.id)}
-                  className={`inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 font-medium transition ${
+                  className={`inline-flex items-center justify-center gap-1 rounded px-2 py-1.5 font-medium transition ${
                     active
-                      ? "bg-[#21262d] text-white"
-                      : "text-[#8b949e] hover:text-white"
+                      ? "bg-zinc-950 text-zinc-50 shadow-sm"
+                      : "text-zinc-400 hover:text-zinc-100"
                   }`}
                 >
-                  <Icon className="h-3 w-3 text-[#FF6B00]" />
+                  <Icon className="h-3 w-3" />
                   <span>{item.label}</span>
                 </button>
               );
@@ -333,10 +310,10 @@ export function ReadmeEditorPanel({
           </div>
 
           {section === "identity" && (
-            <div className="space-y-3 rounded-lg border border-[#30363d] bg-[#161b22]/50 p-3">
+            <div className="space-y-3 rounded-md border border-zinc-800 bg-zinc-900/30 p-3.5">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#c9d1d9]">
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-300">
                     Display Name (Sidebar)
                   </label>
                   <input
@@ -345,11 +322,11 @@ export function ReadmeEditorPanel({
                     onChange={(e) =>
                       updateField("profileDisplayName", e.target.value)
                     }
-                    className="w-full rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-xs text-white focus:border-[#00E676] focus:outline-none"
+                    className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-50 focus:border-zinc-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#c9d1d9]">
+                  <label className="mb-1 block text-[11px] font-medium text-zinc-300">
                     Location
                   </label>
                   <input
@@ -358,39 +335,38 @@ export function ReadmeEditorPanel({
                     onChange={(e) =>
                       updateField("profileLocation", e.target.value)
                     }
-                    className="w-full rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-xs text-white focus:border-[#00E676] focus:outline-none"
+                    className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-50 focus:border-zinc-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#c9d1d9]">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-300">
                   README Main Headline
                 </label>
                 <input
                   type="text"
                   value={readmeConfig.headline}
                   onChange={(e) => updateField("headline", e.target.value)}
-                  className="w-full rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 font-mono text-xs text-white focus:border-[#00E676] focus:outline-none"
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 font-mono text-xs text-zinc-50 focus:border-zinc-500 focus:outline-none"
                 />
               </div>
 
-              {/* Uppercase Pipe-Separated Specialty Tags */}
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#c9d1d9]">
-                  Specialty Tagline Chips (Pipe-separated)
+                <label className="mb-1 block text-[11px] font-medium text-zinc-300">
+                  Specialty Tagline Chips
                 </label>
                 <div className="mb-2 flex flex-wrap gap-1.5">
                   {readmeConfig.subtitleTags.map((tag, idx) => (
                     <span
                       key={`${tag}-${idx}`}
-                      className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#0d1117] px-2 py-0.5 font-mono text-[10px] text-[#e6edf3]"
+                      className="inline-flex items-center gap-1 rounded border border-zinc-800 bg-zinc-950 px-2 py-0.5 font-mono text-[10px] text-zinc-200"
                     >
                       {tag}
                       <button
                         type="button"
                         onClick={() => handleRemoveSubtitleTag(idx)}
-                        className="text-[#8b949e] hover:text-red-400"
+                        className="text-zinc-500 hover:text-zinc-100"
                       >
                         ×
                       </button>
@@ -403,11 +379,11 @@ export function ReadmeEditorPanel({
                     value={newTagInput}
                     onChange={(e) => setNewTagInput(e.target.value)}
                     placeholder="Add specialty (e.g. AI SYSTEMS)"
-                    className="flex-1 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-xs text-white placeholder-[#6e7681] focus:border-[#00E676] focus:outline-none"
+                    className="flex-1 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-xs text-zinc-50 placeholder-zinc-500 focus:border-zinc-500 focus:outline-none"
                   />
                   <button
                     type="submit"
-                    className="rounded-md bg-[#21262d] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#30363d]"
+                    className="rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-100 hover:bg-zinc-800"
                   >
                     Add
                   </button>
@@ -415,33 +391,33 @@ export function ReadmeEditorPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#c9d1d9]">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-300">
                   Bio / Story Paragraph
                 </label>
                 <textarea
                   rows={3}
                   value={readmeConfig.bio}
                   onChange={(e) => updateField("bio", e.target.value)}
-                  className="w-full rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-xs text-white focus:border-[#00E676] focus:outline-none"
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-50 focus:border-zinc-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#c9d1d9]">
+                <label className="mb-1 block text-[11px] font-medium text-zinc-300">
                   Call-To-Action Line
                 </label>
                 <input
                   type="text"
                   value={readmeConfig.ctaLine}
                   onChange={(e) => updateField("ctaLine", e.target.value)}
-                  className="w-full rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-xs text-white focus:border-[#00E676] focus:outline-none"
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-xs text-zinc-50 focus:border-zinc-500 focus:outline-none"
                 />
               </div>
             </div>
           )}
 
           {section === "badges" && (
-            <div className="space-y-3 rounded-lg border border-[#30363d] bg-[#161b22]/50 p-3">
+            <div className="space-y-3 rounded-md border border-zinc-800 bg-zinc-900/30 p-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap gap-1">
                   {(
@@ -460,8 +436,8 @@ export function ReadmeEditorPanel({
                       onClick={() => setBadgeCategory(cat)}
                       className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase transition ${
                         badgeCategory === cat
-                          ? "bg-[#FF6B00] text-white"
-                          : "bg-[#0d1117] text-[#8b949e] hover:text-white"
+                          ? "bg-zinc-50 text-zinc-950"
+                          : "bg-zinc-950 text-zinc-400 hover:text-zinc-100"
                       }`}
                     >
                       {cat}
@@ -471,7 +447,7 @@ export function ReadmeEditorPanel({
                 <button
                   type="button"
                   onClick={handleSyncTopLanguagesToBadges}
-                  className="font-mono text-[10px] font-semibold text-[#00E676] hover:underline"
+                  className="font-mono text-[10px] font-semibold text-zinc-200 underline underline-offset-2 hover:text-white"
                 >
                   Enable GitHub Top Langs
                 </button>
@@ -483,8 +459,8 @@ export function ReadmeEditorPanel({
                     key={badge.id}
                     className={`inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] transition ${
                       badge.enabled
-                        ? "border-[#00E676]/50 bg-[#0d1117] text-white"
-                        : "border-[#21262d] bg-[#0d1117]/40 text-[#6e7681]"
+                        ? "border-zinc-500 bg-zinc-900 text-zinc-50"
+                        : "border-zinc-800 bg-zinc-950/60 text-zinc-500"
                     }`}
                   >
                     <button
@@ -502,7 +478,7 @@ export function ReadmeEditorPanel({
                       <button
                         type="button"
                         onClick={() => handleDeleteBadge(badge.id)}
-                        className="text-[#8b949e] hover:text-red-400"
+                        className="text-zinc-500 hover:text-zinc-100"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
@@ -517,18 +493,18 @@ export function ReadmeEditorPanel({
                   value={newBadgeLabel}
                   onChange={(e) => setNewBadgeLabel(e.target.value)}
                   placeholder="Custom tech badge (e.g. GraphQL)"
-                  className="flex-1 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-xs text-white placeholder-[#6e7681] focus:border-[#00E676] focus:outline-none"
+                  className="flex-1 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-xs text-zinc-50 placeholder-zinc-500 focus:border-zinc-500 focus:outline-none"
                 />
                 <input
                   type="color"
                   value={newBadgeColor}
                   onChange={(e) => setNewBadgeColor(e.target.value)}
                   aria-label="Custom badge color"
-                  className="h-7 w-9 cursor-pointer rounded border border-[#30363d] bg-transparent"
+                  className="h-7 w-9 cursor-pointer rounded border border-zinc-800 bg-transparent"
                 />
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-1 rounded-md bg-[#21262d] px-2.5 py-1 text-xs font-medium text-white hover:bg-[#30363d]"
+                  className="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-100 hover:bg-zinc-800"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Add
@@ -538,189 +514,101 @@ export function ReadmeEditorPanel({
           )}
 
           {section === "links" && (
-            <div className="space-y-3 rounded-lg border border-[#30363d] bg-[#161b22]/50 p-3">
-              <div>
-                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#8b949e]">
-                  CTA &amp; Social Pills (Above Creature)
-                </div>
-                <div className="space-y-1.5">
-                  {readmeConfig.actionLinks.map((link) => (
-                    <div
-                      key={link.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-xs"
-                    >
-                      <label className="flex cursor-pointer items-center gap-2 truncate">
-                        <input
-                          type="checkbox"
-                          checked={link.enabled}
-                          onChange={() =>
-                            updateField(
-                              "actionLinks",
-                              readmeConfig.actionLinks.map((l) =>
-                                l.id === link.id
-                                  ? { ...l, enabled: !l.enabled }
-                                  : l
-                              )
-                            )
-                          }
-                          className="accent-[#00E676]"
-                        />
-                        <span className="font-mono font-bold text-[#e6edf3]">
-                          {link.label}
-                        </span>
-                        <span className="truncate text-[11px] text-[#8b949e]">
-                          {link.valueText}
-                        </span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() =>
+            <div className="space-y-3 rounded-md border border-zinc-800 bg-zinc-900/30 p-3.5">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                CTA &amp; Social Pills (Above Creature)
+              </div>
+              <div className="space-y-1.5">
+                {readmeConfig.actionLinks.map((link) => (
+                  <div
+                    key={link.id}
+                    className="flex items-center justify-between gap-2 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-xs"
+                  >
+                    <label className="flex cursor-pointer items-center gap-2 truncate">
+                      <input
+                        type="checkbox"
+                        checked={link.enabled}
+                        onChange={() =>
                           updateField(
                             "actionLinks",
-                            readmeConfig.actionLinks.filter(
-                              (l) => l.id !== link.id
+                            readmeConfig.actionLinks.map((l) =>
+                              l.id === link.id
+                                ? { ...l, enabled: !l.enabled }
+                                : l
                             )
                           )
                         }
-                        className="text-[#8b949e] hover:text-red-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <form
-                  onSubmit={handleAddActionLink}
-                  className="mt-2 grid grid-cols-2 gap-1.5"
-                >
-                  <input
-                    type="text"
-                    value={newLinkLabel}
-                    onChange={(e) => setNewLinkLabel(e.target.value)}
-                    placeholder="Label (PORTFOLIO)"
-                    className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-1 text-xs text-white"
-                  />
-                  <input
-                    type="text"
-                    value={newLinkText}
-                    onChange={(e) => setNewLinkText(e.target.value)}
-                    placeholder="Display text (VISIT)"
-                    className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-1 text-xs text-white"
-                  />
-                  <input
-                    type="url"
-                    value={newLinkUrl}
-                    onChange={(e) => setNewLinkUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-1 text-xs text-white"
-                  />
-                  <div className="flex gap-1.5">
-                    <input
-                      type="color"
-                      value={newLinkColor}
-                      onChange={(e) => setNewLinkColor(e.target.value)}
-                      className="h-7 w-9 rounded border border-[#30363d] bg-transparent"
-                    />
+                        className="accent-zinc-100"
+                      />
+                      <span className="font-mono font-bold text-zinc-100">
+                        {link.label}
+                      </span>
+                      <span className="truncate text-[11px] text-zinc-400">
+                        {link.valueText}
+                      </span>
+                    </label>
                     <button
-                      type="submit"
-                      className="flex-1 rounded bg-[#21262d] px-2 py-1 text-xs font-medium text-white hover:bg-[#30363d]"
-                    >
-                      + Add Link
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div className="border-t border-[#21262d] pt-3">
-                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#8b949e]">
-                  Featured Projects
-                </div>
-                <div className="space-y-1.5">
-                  {readmeConfig.projects.map((proj) => (
-                    <div
-                      key={proj.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-xs"
-                    >
-                      <label className="flex cursor-pointer items-center gap-2 truncate">
-                        <input
-                          type="checkbox"
-                          checked={proj.enabled}
-                          onChange={() =>
-                            updateField(
-                              "projects",
-                              readmeConfig.projects.map((p) =>
-                                p.id === proj.id
-                                  ? { ...p, enabled: !p.enabled }
-                                  : p
-                              )
-                            )
-                          }
-                          className="accent-[#00E676]"
-                        />
-                        <span className="font-mono font-semibold text-[#58a6ff]">
-                          {proj.name}
-                        </span>
-                        <span className="text-[10px] text-[#8b949e]">
-                          ({proj.language})
-                        </span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          updateField(
-                            "projects",
-                            readmeConfig.projects.filter(
-                              (p) => p.id !== proj.id
-                            )
+                      type="button"
+                      onClick={() =>
+                        updateField(
+                          "actionLinks",
+                          readmeConfig.actionLinks.filter(
+                            (l) => l.id !== link.id
                           )
-                        }
-                        className="text-[#8b949e] hover:text-red-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <form
-                  onSubmit={handleAddProject}
-                  className="mt-2 grid grid-cols-3 gap-1.5"
-                >
-                  <input
-                    type="text"
-                    value={newProjName}
-                    onChange={(e) => setNewProjName(e.target.value)}
-                    placeholder="Repo name"
-                    className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-1 text-xs text-white"
-                  />
-                  <input
-                    type="text"
-                    value={newProjDesc}
-                    onChange={(e) => setNewProjDesc(e.target.value)}
-                    placeholder="Short description"
-                    className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-1 text-xs text-white"
-                  />
-                  <div className="flex gap-1">
-                    <input
-                      type="text"
-                      value={newProjLang}
-                      onChange={(e) => setNewProjLang(e.target.value)}
-                      placeholder="Stack"
-                      className="w-16 rounded border border-[#30363d] bg-[#0d1117] px-1.5 py-1 text-xs text-white"
-                    />
-                    <button
-                      type="submit"
-                      className="flex-1 rounded bg-[#21262d] px-2 py-1 text-xs font-medium text-white hover:bg-[#30363d]"
+                        )
+                      }
+                      className="text-zinc-500 hover:text-zinc-100"
                     >
-                      +
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                </form>
+                ))}
               </div>
+              <form
+                onSubmit={handleAddActionLink}
+                className="mt-2 grid grid-cols-2 gap-1.5"
+              >
+                <input
+                  type="text"
+                  value={newLinkLabel}
+                  onChange={(e) => setNewLinkLabel(e.target.value)}
+                  placeholder="Label (PORTFOLIO)"
+                  className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-50"
+                />
+                <input
+                  type="text"
+                  value={newLinkText}
+                  onChange={(e) => setNewLinkText(e.target.value)}
+                  placeholder="Display text (VISIT)"
+                  className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-50"
+                />
+                <input
+                  type="url"
+                  value={newLinkUrl}
+                  onChange={(e) => setNewLinkUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="rounded-md border border-zinc-800 bg-zinc-950 px-2 py-1 text-xs text-zinc-50"
+                />
+                <div className="flex gap-1.5">
+                  <input
+                    type="color"
+                    value={newLinkColor}
+                    onChange={(e) => setNewLinkColor(e.target.value)}
+                    className="h-7 w-9 rounded border border-zinc-800 bg-transparent"
+                  />
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs font-medium text-zinc-100 hover:bg-zinc-800"
+                  >
+                    + Add Link
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
           {section === "layout" && (
-            <div className="space-y-3 rounded-lg border border-[#30363d] bg-[#161b22]/50 p-3">
+            <div className="space-y-3 rounded-md border border-zinc-800 bg-zinc-900/30 p-3.5">
               <div className="grid grid-cols-2 gap-2">
                 {README_TEMPLATES.map((tpl) => {
                   const active = readmeConfig.templateId === tpl.id;
@@ -731,14 +619,14 @@ export function ReadmeEditorPanel({
                       onClick={() => updateField("templateId", tpl.id)}
                       className={`rounded-md border p-2 text-left transition ${
                         active
-                          ? "border-[#FF6B00] bg-[#FF6B00]/10"
-                          : "border-[#30363d] bg-[#0d1117] hover:border-[#484f58]"
+                          ? "border-zinc-50 bg-zinc-900"
+                          : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
                       }`}
                     >
-                      <div className="text-xs font-semibold text-white">
+                      <div className="text-xs font-semibold text-zinc-50">
                         {tpl.name}
                       </div>
-                      <div className="mt-0.5 text-[10px] text-[#8b949e]">
+                      <div className="mt-0.5 text-[10px] text-zinc-400">
                         {tpl.description}
                       </div>
                     </button>
@@ -747,7 +635,7 @@ export function ReadmeEditorPanel({
               </div>
 
               <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-medium text-[#e6edf3]">
+                <span className="text-xs font-medium text-zinc-200">
                   Creature Width ({readmeConfig.imageWidth}px)
                 </span>
                 <input
@@ -759,7 +647,7 @@ export function ReadmeEditorPanel({
                   onChange={(e) =>
                     updateField("imageWidth", parseInt(e.target.value, 10))
                   }
-                  className="w-40 cursor-pointer accent-[#FF6B00]"
+                  className="w-40 cursor-pointer accent-zinc-100"
                 />
               </div>
 
@@ -772,10 +660,10 @@ export function ReadmeEditorPanel({
                       readmeConfig.align === "center" ? "left" : "center"
                     )
                   }
-                  className="rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-left text-[#c9d1d9]"
+                  className="rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-left text-zinc-300"
                 >
                   Badges Align:{" "}
-                  <span className="font-mono font-semibold text-[#FF6B00]">
+                  <span className="font-mono font-semibold text-zinc-50">
                     {readmeConfig.align}
                   </span>
                 </button>
@@ -787,10 +675,10 @@ export function ReadmeEditorPanel({
                       !readmeConfig.useOutputBranchUrl
                     )
                   }
-                  className="rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-left text-[#c9d1d9]"
+                  className="rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-left text-zinc-300"
                 >
                   Src:{" "}
-                  <span className="font-mono font-semibold text-[#00E676]">
+                  <span className="font-mono font-semibold text-zinc-50">
                     {readmeConfig.useOutputBranchUrl
                       ? "output branch"
                       : "./creature.svg"}
@@ -807,19 +695,18 @@ export function ReadmeEditorPanel({
                       label: "Telemetry Caption",
                     },
                     { key: "includeStatsTable", label: "Stats Table" },
-                    { key: "includeProjects", label: "Featured Projects" },
                     { key: "includeShareCard", label: "Include Share Card" },
                   ] as const
                 ).map((opt) => (
                   <label
                     key={opt.key}
-                    className="flex cursor-pointer items-center gap-2 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-[#c9d1d9]"
+                    className="flex cursor-pointer items-center gap-2 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 text-zinc-200"
                   >
                     <input
                       type="checkbox"
                       checked={readmeConfig[opt.key]}
                       onChange={(e) => updateField(opt.key, e.target.checked)}
-                      className="accent-[#00E676]"
+                      className="accent-zinc-100"
                     />
                     <span>{opt.label}</span>
                   </label>
@@ -827,7 +714,7 @@ export function ReadmeEditorPanel({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-[#e6edf3]">
+                <label className="mb-1 block text-xs font-medium text-zinc-200">
                   Custom Footer Markdown (Optional)
                 </label>
                 <textarea
@@ -837,7 +724,7 @@ export function ReadmeEditorPanel({
                     updateField("customFooterMarkdown", e.target.value)
                   }
                   placeholder="Add custom sections or contact links..."
-                  className="w-full rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 font-mono text-xs text-white placeholder-[#6e7681]"
+                  className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 font-mono text-xs text-zinc-50 placeholder-zinc-500"
                 />
               </div>
             </div>
@@ -845,16 +732,16 @@ export function ReadmeEditorPanel({
         </div>
 
         {/* Live Raw Markdown Editor */}
-        <div className="flex flex-col rounded-lg border border-[#30363d] bg-[#090c10] xl:col-span-6">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#21262d] bg-[#161b22] px-3 py-2">
-            <span className="font-mono text-[11px] font-semibold text-[#e6edf3]">
+        <div className="flex flex-col rounded-md border border-zinc-800 bg-black xl:col-span-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 bg-zinc-900/50 px-3 py-2">
+            <span className="font-mono text-[11px] font-semibold text-zinc-100">
               README.md (Dynamic Tokens + Live Markdown)
             </span>
             {readmeConfig.rawOverride !== null && (
               <button
                 type="button"
                 onClick={() => onChange({ ...readmeConfig, rawOverride: null })}
-                className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#0d1117] px-2 py-0.5 text-[10px] font-medium text-[#00E676] hover:border-[#00E676]"
+                className="inline-flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] font-medium text-zinc-100 hover:bg-zinc-800"
               >
                 <RefreshCw className="h-3 w-3" />
                 Resync from Form
@@ -862,8 +749,8 @@ export function ReadmeEditorPanel({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 border-b border-[#21262d] bg-[#0d1117] px-3 py-2">
-            <span className="text-[10px] font-semibold uppercase text-[#8b949e]">
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800 bg-zinc-950 px-3 py-2">
+            <span className="text-[10px] font-semibold uppercase text-zinc-500">
               Insert token:
             </span>
             {DYNAMIC_TOKENS.map((t) => (
@@ -872,7 +759,7 @@ export function ReadmeEditorPanel({
                 type="button"
                 title={t.description}
                 onClick={() => insertToken(t.token)}
-                className="rounded border border-[#30363d] bg-[#161b22] px-1.5 py-0.5 font-mono text-[10px] text-[#79c0ff] transition hover:border-[#58a6ff]"
+                className="rounded border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] text-zinc-200 transition hover:border-zinc-600"
               >
                 {t.token}
               </button>
@@ -886,7 +773,7 @@ export function ReadmeEditorPanel({
             }
             aria-label="Raw README Markdown editor"
             spellCheck={false}
-            className="min-h-[380px] flex-1 resize-y bg-[#090c10] p-3 font-mono text-xs leading-relaxed text-[#c9d1d9] focus:outline-none"
+            className="min-h-[380px] flex-1 resize-y bg-black p-3 font-mono text-xs leading-relaxed text-zinc-300 focus:outline-none"
           />
         </div>
       </div>

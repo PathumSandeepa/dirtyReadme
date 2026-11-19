@@ -1,13 +1,30 @@
 import { getCreatureMeta } from "@/lib/themes";
 import type { CreatureConfig } from "@/types/creature";
 
-export function generateEvolveWorkflowYaml(config: CreatureConfig): string {
-  return `name: Evolve Cyber Creature
+export interface ScheduleOption {
+  cron: string;
+  label: string;
+}
+
+export function getMidnightCronForTimezone(offsetMinutesEast: number): string {
+  // offsetMinutesEast = -new Date().getTimezoneOffset() (e.g. +330 for UTC+5:30)
+  let utcMinutes = (24 * 60 - offsetMinutesEast) % (24 * 60);
+  if (utcMinutes < 0) utcMinutes += 24 * 60;
+  const hour = Math.floor(utcMinutes / 60);
+  const minute = utcMinutes % 60;
+  return `${minute} ${hour} * * *`;
+}
+
+export function generateEvolveWorkflowYaml(
+  config: CreatureConfig,
+  cronExpression = "0 0 * * *"
+): string {
+  return `name: Evolve Cyber Creature & Profile Details
 
 on:
   schedule:
-    # Runs daily at 00:00 UTC
-    - cron: "0 0 * * *"
+    # Runs daily at 12:00 AM
+    - cron: "${cronExpression}"
   workflow_dispatch:
   push:
     branches: [main]
@@ -27,7 +44,7 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Update Cyber Creature SVG & README Markers
+      - name: Update Creature SVG & Profile README Telemetry
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
           GITHUB_USERNAME: \${{ github.repository_owner }}
@@ -35,37 +52,16 @@ jobs:
           CREATURE_VIEW: "${config.view}" # side | dive | top
         run: node scripts/evolve-creature.mjs
 
-      - name: Commit README.md marker updates (if present on main)
+      - name: Commit updated creature.svg and README.md
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if [ -f README.md ] && ! git diff --quiet README.md; then
-            git add README.md
-            git commit -m "chore: sync dynamic README creature telemetry"
-            git push
-          fi
-
-      - name: Publish creature.svg to orphan output branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p /tmp/creature-out
-          cp creature.svg /tmp/creature-out/
-          [ -f share-card.svg ] && cp share-card.svg /tmp/creature-out/ || true
-          if git ls-remote --exit-code --heads origin output >/dev/null 2>&1; then
-            git fetch origin output
-            git checkout -B output origin/output
-          else
-            git checkout --orphan output
-            git rm -rf . >/dev/null 2>&1 || true
-          fi
-          cp /tmp/creature-out/* .
-          git add creature.svg share-card.svg 2>/dev/null || git add creature.svg
+          git add creature.svg README.md 2>/dev/null || true
           if ! git diff --cached --quiet; then
-            git commit -m "chore: evolve cyber creature SVG"
-            git push -u origin output
+            git commit -m "chore: 12AM daily profile & creature telemetry update"
+            git push
           else
-            echo "No SVG telemetry changes detected."
+            echo "No profile telemetry changes detected."
           fi
 `;
 }
@@ -114,7 +110,7 @@ function escapeXml(str) {
     .replace(/'/g, "&apos;");
 }
 
-async function fetchContributions(username, token, windowMode) {
+async function fetchProfileTelemetry(username, token, windowMode) {
   if (!username || !token) {
     throw new Error("Missing GITHUB_USERNAME or GITHUB_TOKEN");
   }
@@ -131,6 +127,14 @@ async function fetchContributions(username, token, windowMode) {
         contributionsCollection(from: $from, to: $to) {
           contributionCalendar {
             totalContributions
+          }
+        }
+        repositories(first: 30, ownerAffiliations: OWNER, isFork: false, orderBy: { field: UPDATED_AT, direction: DESC }) {
+          nodes {
+            primaryLanguage {
+              name
+              color
+            }
           }
         }
       }
@@ -155,18 +159,30 @@ async function fetchContributions(username, token, windowMode) {
   }
 
   const payload = await response.json();
-  const total =
-    payload?.data?.user?.contributionsCollection?.contributionCalendar
-      ?.totalContributions;
+  const user = payload?.data?.user;
+  const total = user?.contributionsCollection?.contributionCalendar?.totalContributions;
 
   if (typeof total !== "number") {
     throw new Error("Unable to read totalContributions from GitHub API");
   }
 
-  return total;
+  const langCounts = new Map();
+  for (const repo of user?.repositories?.nodes || []) {
+    const lang = repo?.primaryLanguage;
+    if (!lang?.name) continue;
+    const prev = langCounts.get(lang.name) || { name: lang.name, color: lang.color || "#8B949E", count: 0 };
+    prev.count += 1;
+    langCounts.set(lang.name, prev);
+  }
+
+  const topLanguages = Array.from(langCounts.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  return { commits: total, topLanguages };
 }
 
-function updateReadmeMarkers(username, stage, rank, commits) {
+function updateReadmeMarkers(username, stage, rank, commits, topLanguages) {
   if (!fs.existsSync(README_PATH)) return;
   const startMarker = "<!-- CYBER-CREATURE:START -->";
   const endMarker = "<!-- CYBER-CREATURE:END -->";
@@ -179,33 +195,42 @@ function updateReadmeMarkers(username, stage, rank, commits) {
   }
 
   const formattedCommits = commits.toLocaleString("en-US");
-  const imgUrl = \`https://raw.githubusercontent.com/\${username}/\${username}/output/creature.svg\`;
+  const langsSummary =
+    topLanguages.length > 0
+      ? \` · Top Stack: \${topLanguages.map((l) => \`<code>\${l.name}</code>\`).join(" ")}\`
+      : "";
+  const updatedDate = new Date().toISOString().slice(0, 10);
+
   const replacement = [
     startMarker,
     \`<p align="center">\`,
     \`  <a href="https://github.com/PathumSandeepa/dynamic-readme-creature">\`,
-    \`    <img src="\${imgUrl}" width="760" alt="\${CREATURE_DISPLAY} - Stage \${stage} \${rank}" />\`,
+    \`    <img src="./creature.svg" width="760" alt="\${CREATURE_DISPLAY} - Stage \${stage} \${rank}" />\`,
     \`  </a>\`,
     \`</p>\`,
     \`\`,
-    \`<p align="center"><sub>Live <code>dynamic-readme-creature</code> for <strong>@\${username}</strong> — <strong>Stage \${stage}: \${rank} \${CREATURE_DISPLAY}</strong> · <code>\${formattedCommits} commits</code> · View: <code>\${VIEW_MODE}</code></sub></p>\`,
+    \`<p align="center"><sub>Live <code>dynamic-readme-creature</code> for <strong>@\${username}</strong> — <strong>Stage \${stage}: \${rank} \${CREATURE_DISPLAY}</strong> · <code>\${formattedCommits} commits</code> · View: <code>\${VIEW_MODE}</code>\${langsSummary} · Synced \${updatedDate}</sub></p>\`,
     endMarker,
   ].join("\\n");
 
   const updated =
     raw.slice(0, startIdx) + replacement + raw.slice(endIdx + endMarker.length);
   fs.writeFileSync(README_PATH, updated, "utf8");
-  console.log("Updated README.md between CYBER-CREATURE markers.");
+  console.log("Updated README.md profile telemetry between CYBER-CREATURE markers.");
 }
 
 async function main() {
   if (!fs.existsSync(SVG_PATH)) {
     throw new Error(
-      "creature.svg not found in repository root. Download it from the studio first."
+      "creature.svg not found in repository root. Push or upload it from the studio first."
     );
   }
 
-  const commits = await fetchContributions(USERNAME, TOKEN, WINDOW_MODE);
+  const { commits, topLanguages } = await fetchProfileTelemetry(
+    USERNAME,
+    TOKEN,
+    WINDOW_MODE
+  );
   const { stage, rank } = getEvolutionStage(commits);
   const title = CUSTOM_TITLE
     ? CUSTOM_TITLE.toUpperCase()
@@ -231,7 +256,7 @@ async function main() {
   fs.writeFileSync(SVG_PATH, svg, "utf8");
   console.log(\`Updated creature.svg -> \${hudLabel}\`);
 
-  updateReadmeMarkers(USERNAME, stage, rank, commits);
+  updateReadmeMarkers(USERNAME, stage, rank, commits, topLanguages);
 }
 
 main().catch((error) => {

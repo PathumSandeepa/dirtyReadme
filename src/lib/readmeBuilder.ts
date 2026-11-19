@@ -122,7 +122,7 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
   ],
   bio: "I'm @{{USERNAME}}, a software engineer and creative builder sitting at the intersection of systems engineering and visual craft. You'll usually find me shipping open-source developer tools, generative SVG engines, and high-performance full-stack applications.",
   ctaLine:
-    "Curious to see what I've been up to? Check out my featured projects & live cybernetic guardian below 👇",
+    "Curious to see what I've been up to? Check out my live cybernetic profile guardian below 👇",
   align: "left",
   imageWidth: 760,
   useOutputBranchUrl: false,
@@ -130,7 +130,6 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
   includeTelemetryCaption: true,
   includeShareCard: false,
   includeStatsTable: false,
-  includeProjects: true,
   customFooterMarkdown: "",
   badges: TECH_STACK_CATALOG.map((b) => ({
     ...b,
@@ -162,17 +161,6 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
       url: "https://github.com/PathumSandeepa/dynamic-readme-creature",
       color: "00E676",
       logo: "githubsponsors",
-      enabled: true,
-    },
-  ],
-  projects: [
-    {
-      id: "proj-1",
-      name: "dynamic-readme-creature",
-      description:
-        "Procedural pure-CSS animated cybernetic creatures & customizable GitHub profile README studio.",
-      url: "https://github.com/PathumSandeepa/dynamic-readme-creature",
-      language: "TypeScript",
       enabled: true,
     },
   ],
@@ -376,29 +364,6 @@ export function buildGeneratedReadmeMarkdown(
         `| **Top Languages** | ${langList} |`,
       ].join("\n")
     );
-  }
-
-  if (readme.includeProjects && readme.templateId !== "minimal-header") {
-    const activeProjects = readme.projects.filter(
-      (p) => p.enabled && p.name.trim()
-    );
-    if (activeProjects.length > 0) {
-      const projectRows = activeProjects
-        .map(
-          (p) =>
-            `| **[${p.name}](${resolveDynamicTokens(p.url, creature)})** | ${resolveDynamicTokens(p.description, creature)} | \`${p.language}\` |`
-        )
-        .join("\n");
-      parts.push(
-        [
-          `### Featured Projects`,
-          ``,
-          `| Project | Description | Stack |`,
-          `| --- | --- | --- |`,
-          projectRows,
-        ].join("\n")
-      );
-    }
   }
 
   if (readme.includeShareCard) {

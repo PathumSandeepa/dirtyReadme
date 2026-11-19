@@ -11,6 +11,7 @@ import {
   Cpu,
   Download,
   Edit3,
+  ExternalLink,
   Eye,
   FileText,
   GitCommitHorizontal,
@@ -75,6 +76,8 @@ type WorkspaceTab =
   | "comparator"
   | "evolution";
 
+type CustomizeGroup = "github" | "chassis" | "palette" | "motion";
+
 interface ColorControlProps {
   label: string;
   sublabel: string;
@@ -89,16 +92,16 @@ function ColorControl({
   onChange,
 }: ColorControlProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#30363d]/80 bg-[#0d1117] px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2">
       <div className="min-w-0">
-        <div className="text-xs font-medium text-[#e6edf3]">{label}</div>
-        <div className="truncate text-[11px] text-[#8b949e]">{sublabel}</div>
+        <div className="text-xs font-medium text-zinc-100">{label}</div>
+        <div className="truncate text-[11px] text-zinc-400">{sublabel}</div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="font-mono text-[11px] uppercase text-[#8b949e]">
+        <span className="font-mono text-[11px] uppercase text-zinc-400">
           {value}
         </span>
-        <label className="relative flex h-7 w-7 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-[#30363d] shadow-inner">
+        <label className="relative flex h-7 w-7 cursor-pointer items-center justify-center overflow-hidden rounded-md border border-zinc-700 shadow-inner">
           <input
             type="color"
             value={normalizeHex(value)}
@@ -130,6 +133,7 @@ function triggerFileDownload(
 
 export function CreatureStudio() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("studio");
+  const [customizeTab, setCustomizeTab] = useState<CustomizeGroup>("chassis");
   const [config, setConfig] = useState<CreatureConfig>(DEFAULT_CONFIG);
   const [readmeConfig, setReadmeConfig] = useState<ReadmeConfig>(
     DEFAULT_README_CONFIG
@@ -212,7 +216,7 @@ export function CreatureStudio() {
                   .replace(/\/$/, "")
                   .toUpperCase(),
                 url: snap.website,
-                color: "FF6B00",
+                color: "27272A",
                 logo: "googlechrome",
                 enabled: true,
               },
@@ -225,7 +229,7 @@ export function CreatureStudio() {
                 label: "X",
                 valueText: `@${snap.twitterUsername}`,
                 url: `https://x.com/${snap.twitterUsername}`,
-                color: "000000",
+                color: "09090B",
                 logo: "x",
                 enabled: true,
               },
@@ -242,8 +246,6 @@ export function CreatureStudio() {
         headline: `${snap.displayName} | Developer Profile`,
         bio: snap.bio,
         actionLinks: nextLinks,
-        projects:
-          snap.featuredRepos.length > 0 ? snap.featuredRepos : prev.projects,
         badges: prev.badges.map((b) =>
           langSet.has(b.label.toLowerCase()) ? { ...b, enabled: true } : b
         ),
@@ -379,33 +381,33 @@ export function CreatureStudio() {
   }
 
   return (
-    <div className="min-h-screen bg-[#07090d] text-[#e6edf3]">
-      {/* Top Studio Command Bar */}
-      <header className="sticky top-0 z-30 border-b border-[#21262d] bg-[#0d1117]/92 backdrop-blur-md">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50">
+      {/* Top Command Header (shadcn monochrome dark) */}
+      <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#FF6B00]/40 bg-gradient-to-br from-[#FF6B00]/20 to-[#00E676]/10">
-              <Cpu className="h-5 w-5 text-[#FF6B00]" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-50">
+              <Cpu className="h-4 w-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold tracking-tight text-white sm:text-lg">
+                <h1 className="text-sm font-semibold tracking-tight text-zinc-50 sm:text-base">
                   dynamic-readme-creature
                 </h1>
-                <span className="hidden rounded-full border border-[#00E676]/40 bg-[#00E676]/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-[#00E676] sm:inline-block">
+                <span className="hidden rounded-md border border-zinc-800 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-medium text-zinc-300 sm:inline-block">
                   PURE CSS SVG
                 </span>
               </div>
-              <p className="text-xs text-[#8b949e]">
-                Cybernetic creature generator &amp; profile README studio ·{" "}
-                <span className="font-mono text-[#c9d1d9]">@PathumSandeepa</span>
+              <p className="text-xs text-zinc-400">
+                Cybernetic creature &amp; GitHub Profile README generator · by{" "}
+                <span className="font-mono text-zinc-200">@PathumSandeepa</span>
               </p>
             </div>
           </div>
 
           <nav
             aria-label="Studio workspace views"
-            className="flex flex-wrap items-center gap-1 rounded-xl border border-[#21262d] bg-[#07090d] p-1"
+            className="flex flex-wrap items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900 p-1"
           >
             {(
               [
@@ -423,13 +425,13 @@ export function CreatureStudio() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition sm:px-3 ${
+                  className={`inline-flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-medium transition sm:px-3 ${
                     active
-                      ? "bg-[#21262d] text-white shadow-sm"
-                      : "text-[#8b949e] hover:text-[#e6edf3]"
+                      ? "bg-zinc-950 text-zinc-50 shadow-sm"
+                      : "text-zinc-400 hover:text-zinc-100"
                   }`}
                 >
-                  <Icon className="h-3.5 w-3.5 text-[#FF6B00]" />
+                  <Icon className="h-3.5 w-3.5" />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -440,18 +442,18 @@ export function CreatureStudio() {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#30363d] bg-[#161b22] px-3 py-1.5 text-xs font-medium text-[#c9d1d9] transition hover:border-[#8b949e] hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-800"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Reset
             </button>
             <button
               type="button"
-              onClick={() => triggerFileDownload("creature.svg", rawSvgSource)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#FF6B00] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#ff7f24]"
+              onClick={() => setPublishModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-50 px-3.5 py-1.5 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-200"
             >
-              <Download className="h-3.5 w-3.5" />
-              Export SVG
+              <UploadCloud className="h-3.5 w-3.5" />
+              Connect &amp; Push
             </button>
           </div>
         </div>
@@ -476,7 +478,7 @@ export function CreatureStudio() {
 
         {activeTab === "readme-editor" && (
           <div className="space-y-6">
-            <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117]">
+            <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
               <ReadmeEditorPanel
                 creatureConfig={config}
                 readmeConfig={readmeConfig}
@@ -486,23 +488,33 @@ export function CreatureStudio() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-semibold text-[#e6edf3]">
+                <span className="font-mono text-xs font-semibold text-zinc-200">
                   Live GitHub Profile Page Preview (@{safeUser})
                 </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    triggerFileDownload(
-                      "README.md",
-                      fullReadmeMarkdown,
-                      "text/markdown;charset=utf-8"
-                    )
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#FF6B00] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#ff7f24]"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download README.md
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPublishModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-100 hover:bg-zinc-800"
+                  >
+                    <UploadCloud className="h-3.5 w-3.5" />
+                    Push to {safeUser}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      triggerFileDownload(
+                        "README.md",
+                        fullReadmeMarkdown,
+                        "text/markdown;charset=utf-8"
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 rounded-md bg-zinc-50 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-zinc-200"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Download README.md
+                  </button>
+                </div>
               </div>
               <GitHubProfilePreview
                 creatureConfig={config}
@@ -517,16 +529,16 @@ export function CreatureStudio() {
 
         {activeTab === "share-card" && (
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#21262d] bg-[#161b22]/75 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-zinc-800 bg-zinc-950 p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1F6FEB]/50 bg-[#1F6FEB]/15 text-[#58a6ff]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 text-zinc-100">
                   <ImageIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-white">
+                  <h2 className="text-base font-semibold text-zinc-50">
                     Shareable Telemetry Card (1280×640)
                   </h2>
-                  <p className="text-xs text-[#8b949e]">
+                  <p className="text-xs text-zinc-400">
                     Ready to post on X, LinkedIn, Discord, or embed in your
                     GitHub Profile README.
                   </p>
@@ -535,19 +547,16 @@ export function CreatureStudio() {
               <button
                 type="button"
                 onClick={() =>
-                  triggerFileDownload(
-                    "share-card.svg",
-                    generateShareCardSvgString(config)
-                  )
+                  triggerFileDownload("share-card.svg", shareCardSvgSource)
                 }
-                className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B00] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#ff7f24]"
+                className="inline-flex items-center gap-2 rounded-md bg-zinc-50 px-4 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-200"
               >
                 <Download className="h-4 w-4" />
                 Download share-card.svg
               </button>
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#070b12] p-4 shadow-2xl">
+            <div className="overflow-hidden rounded-lg border border-zinc-800 bg-[#070b12] p-4">
               <ShareCardSvg
                 config={config}
                 className="mx-auto block h-auto w-full max-w-[1100px]"
@@ -558,16 +567,16 @@ export function CreatureStudio() {
 
         {activeTab === "studio" && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* LEFT PANEL — CUSTOMIZATION CONTROLS */}
+            {/* LEFT PANEL — CLEAN SHADCN CUSTOMIZER */}
             <aside className="space-y-4 lg:col-span-4 xl:col-span-4">
-              {/* 0. GitHub Profile Sync */}
-              <section className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
+              {/* Quick GitHub Account Sync Card */}
+              <section className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                 <div className="mb-2.5 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6edf3]">
-                    <Terminal className="h-4 w-4 text-[#00E676]" />
-                    GitHub Profile Sync
+                  <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-zinc-100">
+                    <Terminal className="h-3.5 w-3.5 text-zinc-400" />
+                    GitHub Account Sync
                   </h2>
-                  <div className="flex rounded-md border border-[#30363d] bg-[#0d1117] p-0.5 text-[10px]">
+                  <div className="flex rounded-md border border-zinc-800 bg-zinc-900 p-0.5 text-[10px]">
                     {(["annual", "rolling"] as const).map((win) => (
                       <button
                         key={win}
@@ -575,8 +584,8 @@ export function CreatureStudio() {
                         onClick={() => selectWindow(win)}
                         className={`rounded px-2 py-0.5 font-mono uppercase transition ${
                           config.windowMode === win
-                            ? "bg-[#21262d] text-white"
-                            : "text-[#8b949e]"
+                            ? "bg-zinc-50 font-semibold text-zinc-950"
+                            : "text-zinc-400 hover:text-zinc-100"
                         }`}
                       >
                         {win}
@@ -596,26 +605,26 @@ export function CreatureStudio() {
                         username: e.target.value,
                       }));
                     }}
-                    placeholder="GitHub username (e.g. PathumSandeepa)"
+                    placeholder="Enter any GitHub username"
                     aria-label="GitHub username"
-                    className="flex-1 rounded-lg border border-[#30363d] bg-[#0d1117] px-3 py-2 font-mono text-xs text-white placeholder-[#6e7681] focus:border-[#00E676] focus:outline-none"
+                    className="flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-zinc-50 placeholder-zinc-500 focus:border-zinc-500 focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={ghLoading}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#30363d] bg-[#21262d] px-3 py-2 text-xs font-semibold text-[#e6edf3] transition hover:border-[#00E676] hover:text-white disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-100 transition hover:bg-zinc-800 disabled:opacity-50"
                   >
                     {ghLoading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <RefreshCw className="h-3.5 w-3.5" />
                     )}
-                    Sync
+                    Fetch
                   </button>
                 </form>
 
                 {ghError && (
-                  <p className="mt-2 rounded-md border border-red-500/40 bg-red-500/10 px-2.5 py-1.5 text-[11px] text-red-300">
+                  <p className="mt-2 rounded-md border border-red-900 bg-red-950/50 px-2.5 py-1.5 text-[11px] text-red-200">
                     {ghError}
                   </p>
                 )}
@@ -625,7 +634,7 @@ export function CreatureStudio() {
                     {config.languages.map((lang) => (
                       <span
                         key={lang.name}
-                        className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#0d1117] px-2 py-0.5 font-mono text-[10px] text-[#c9d1d9]"
+                        className="inline-flex items-center gap-1 rounded border border-zinc-800 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-300"
                       >
                         <span
                           className="h-2 w-2 rounded-full"
@@ -638,34 +647,40 @@ export function CreatureStudio() {
                   <button
                     type="button"
                     onClick={handleSyncLanguageColors}
-                    className="font-mono text-[10px] font-semibold text-[#58a6ff] hover:underline"
+                    className="font-mono text-[10px] font-medium text-zinc-300 underline underline-offset-2 hover:text-white"
                   >
-                    Apply Lang Colors
+                    Sync Lang Colors
                   </button>
                 </div>
 
                 {ghSnapshot && (
-                  <div className="mt-2.5 space-y-2 border-t border-[#21262d] pt-2.5">
-                    <p className="text-[10px] text-[#8b949e]">
-                      Synced @{ghSnapshot.username}: {ghSnapshot.publicRepos}{" "}
-                      repos · {ghSnapshot.totalStars} stars ·{" "}
-                      {ghSnapshot.annualCommits} ({new Date().getUTCFullYear()}) /{" "}
-                      {ghSnapshot.rollingCommits} (365d)
-                    </p>
+                  <div className="mt-3 space-y-2 border-t border-zinc-800 pt-2.5">
+                    <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                      <span>
+                        @{ghSnapshot.username} · {ghSnapshot.publicRepos} repos ·{" "}
+                        {config.windowMode === "rolling"
+                          ? `${ghSnapshot.rollingCommits} (365d)`
+                          : `${ghSnapshot.annualCommits} (${new Date().getUTCFullYear()})`}
+                      </span>
+                    </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded px-2 py-0.5 font-mono text-[10px] font-semibold ${
-                          ghSnapshot.profileRepoExists
-                            ? "border border-[#00E676]/40 bg-[#00E676]/10 text-[#00E676]"
-                            : "border border-[#FF6B00]/40 bg-[#FF6B00]/10 text-[#FF6B00]"
-                        }`}
-                      >
-                        <CheckCircle2 className="h-3 w-3" />
-                        {ghSnapshot.profileRepoExists
-                          ? `${ghSnapshot.username}/${ghSnapshot.username} ready`
-                          : `Create ${ghSnapshot.username}/${ghSnapshot.username}`}
-                      </span>
+                      {ghSnapshot.profileRepoExists ? (
+                        <span className="inline-flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-200">
+                          <CheckCircle2 className="h-3 w-3" />
+                          {ghSnapshot.username}/{ghSnapshot.username} ready
+                        </span>
+                      ) : (
+                        <a
+                          href={`https://github.com/new?name=${encodeURIComponent(ghSnapshot.username)}&description=My+GitHub+Profile+README`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-200 hover:bg-zinc-800"
+                        >
+                          Create {ghSnapshot.username}/{ghSnapshot.username}
+                          <ExternalLink className="h-2.5 w-2.5" />
+                        </a>
+                      )}
 
                       <div className="flex items-center gap-1.5">
                         {ghSnapshot.existingProfileReadme && (
@@ -678,18 +693,18 @@ export function CreatureStudio() {
                               }));
                               setPreviewMode("edit");
                             }}
-                            className="rounded border border-[#30363d] bg-[#0d1117] px-2 py-0.5 font-mono text-[10px] text-[#c9d1d9] hover:border-[#8b949e] hover:text-white"
+                            className="rounded border border-zinc-800 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-300 hover:bg-zinc-800"
                           >
-                            Import Current README
+                            Import README
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => setPublishModalOpen(true)}
-                          className="inline-flex items-center gap-1 rounded bg-[#FF6B00] px-2 py-0.5 font-mono text-[10px] font-semibold text-white hover:bg-[#ff7f24]"
+                          className="inline-flex items-center gap-1 rounded bg-zinc-50 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-zinc-950 hover:bg-zinc-200"
                         >
                           <UploadCloud className="h-3 w-3" />
-                          Push to Repo
+                          Push PAT
                         </button>
                       </div>
                     </div>
@@ -697,384 +712,414 @@ export function CreatureStudio() {
                 )}
               </section>
 
-              {/* 1. Chassis & Camera Perspective */}
-              <section className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6edf3]">
-                    <Sparkles className="h-4 w-4 text-[#FF6B00]" />
-                    1. Chassis &amp; Perspective
-                  </h2>
-                  <span className="font-mono text-[11px] text-[#8b949e]">
-                    {meta.designation}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2">
-                  {CREATURE_CATALOG.map((item) => {
-                    const selected = config.creature === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => selectCreature(item.id)}
-                        className={`group flex flex-col items-start rounded-lg border p-2.5 text-left transition ${
-                          selected
-                            ? "border-[#FF6B00] bg-[#FF6B00]/10 shadow-[0_0_0_1px_rgba(255,107,0,0.3)]"
-                            : "border-[#30363d]/80 bg-[#0d1117] hover:border-[#484f58]"
-                        }`}
-                      >
-                        <div className="flex w-full items-center justify-between">
-                          <div>
-                            <span className="text-xs font-semibold text-white">
-                              {item.name}
-                            </span>
-                            <span className="ml-1.5 text-[11px] text-[#8b949e]">
-                              · {item.subtitle}
-                            </span>
-                          </div>
-                          <span
-                            className={`h-2 w-2 rounded-full transition ${
-                              selected
-                                ? "bg-[#00E676] shadow-[0_0_8px_#00E676]"
-                                : "bg-[#30363d] group-hover:bg-[#484f58]"
-                            }`}
-                          />
-                        </div>
-                        <p className="mt-1 text-[11px] leading-snug text-[#8b949e]">
-                          {item.description}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-3 border-t border-[#21262d] pt-3">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 text-xs font-medium text-[#e6edf3]">
-                      <Camera className="h-3.5 w-3.5 text-[#00E676]" />
-                      Camera Angle (<code className="text-[#FF6B00]">view</code>)
-                    </span>
-                    <span className="font-mono text-[10px] uppercase text-[#8b949e]">
-                      {config.view}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {CAMERA_VIEWS.map((v) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => selectView(v.id)}
-                        className={`rounded-md border px-2 py-1.5 text-xs font-medium transition ${
-                          config.view === v.id
-                            ? "border-[#00E676] bg-[#00E676]/15 text-white"
-                            : "border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-white"
-                        }`}
-                      >
-                        {v.shortLabel}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </section>
-
-              {/* 2. Color Customizer */}
-              <section className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6edf3]">
-                    <Palette className="h-4 w-4 text-[#00E676]" />
-                    2. Armor &amp; Energy Palette
-                  </h2>
-                  <span className="font-mono text-[10px] uppercase text-[#00E676]">
-                    {config.colorMode}
-                  </span>
-                </div>
-
-                <div className="mb-3 grid grid-cols-2 gap-2">
-                  {THEME_PRESETS.map((preset) => {
-                    const active =
-                      config.colorMode === "canonical" &&
-                      config.themeId === preset.id;
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => applyThemePreset(preset.id)}
-                        className={`flex flex-col rounded-lg border p-2 text-left transition ${
-                          active
-                            ? "border-[#00E676] bg-[#00E676]/10"
-                            : "border-[#30363d]/80 bg-[#0d1117] hover:border-[#484f58]"
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="h-3 w-3 rounded-full border border-white/20"
-                            style={{ backgroundColor: preset.colors.primary }}
-                          />
-                          <span
-                            className="h-3 w-3 rounded-full border border-white/20"
-                            style={{ backgroundColor: preset.colors.accent }}
-                          />
-                          <span
-                            className="h-3 w-3 rounded-full border border-white/20"
-                            style={{ backgroundColor: preset.colors.energy }}
-                          />
-                        </div>
-                        <div className="mt-1 text-[11px] font-semibold text-[#e6edf3]">
-                          {preset.name}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="space-y-2">
-                  <ColorControl
-                    label="Primary Armor (75%)"
-                    sublabel="Modular carapace & feather blades"
-                    value={config.colors.primary}
-                    onChange={(hex) => updateColor("primary", hex)}
-                  />
-                  <ColorControl
-                    label="Accent 1 (Secondary)"
-                    sublabel="Wing tips, rings & hazard stripes"
-                    value={config.colors.accent}
-                    onChange={(hex) => updateColor("accent", hex)}
-                  />
-                  <ColorControl
-                    label="Energy Glow Core"
-                    sublabel="Optic sensors, circuitry & cable tips"
-                    value={config.colors.energy}
-                    onChange={(hex) => updateColor("energy", hex)}
-                  />
-                </div>
-
-                <div className="mt-3 rounded-lg border border-[#30363d]/80 bg-[#0d1117] p-2.5">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#e6edf3]">
-                      SVG Canvas Background
-                    </span>
-                    <span className="font-mono text-[10px] text-[#8b949e]">
-                      {config.colors.background}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-4 gap-1.5">
+              {/* Clean Segmented Customizer Card */}
+              <section className="rounded-lg border border-zinc-800 bg-zinc-950">
+                <div className="border-b border-zinc-800 p-2">
+                  <div className="grid grid-cols-3 gap-1 rounded-md bg-zinc-900 p-1 text-[11px]">
                     {(
                       [
-                        { id: "transparent", label: "Transparent" },
-                        { id: "black", label: "Black" },
-                        { id: "github-dark", label: "GH Dark" },
-                        { id: "custom", label: "Custom" },
+                        { id: "chassis", label: "Creature", icon: Sparkles },
+                        { id: "palette", label: "Colors", icon: Palette },
+                        { id: "motion", label: "Motion & HUD", icon: Sliders },
                       ] as const
-                    ).map((bg) => (
-                      <button
-                        key={bg.id}
-                        type="button"
-                        onClick={() => setBackgroundMode(bg.id)}
-                        className={`rounded-md border px-1.5 py-1 text-[11px] font-medium transition ${
-                          config.backgroundMode === bg.id
-                            ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
-                            : "border-[#30363d] bg-[#161b22] text-[#8b949e] hover:text-[#e6edf3]"
-                        }`}
-                      >
-                        {bg.label}
-                      </button>
-                    ))}
-                  </div>
-                  {config.backgroundMode === "custom" && (
-                    <div className="mt-2 flex items-center justify-between border-t border-[#21262d] pt-2">
-                      <span className="text-[11px] text-[#8b949e]">
-                        Custom background hex
-                      </span>
-                      <input
-                        type="color"
-                        value={customBgHex}
-                        onChange={(e) => handleCustomBgChange(e.target.value)}
-                        aria-label="Custom SVG background color"
-                        className="h-7 w-12 cursor-pointer rounded border border-[#30363d] bg-transparent"
-                      />
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* 3. Evolution Stage, Motion & HUD Controls */}
-              <section className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#e6edf3]">
-                    <Sliders className="h-4 w-4 text-[#FF6B00]" />
-                    3. Evolution, Motion &amp; HUD
-                  </h2>
-                  <span className="font-mono text-[11px] text-[#00E676]">
-                    STAGE {evolution.stage}/5
-                  </span>
-                </div>
-
-                <div className="mb-3 rounded-lg border border-[#30363d]/80 bg-[#0d1117] p-2.5">
-                  <div className="mb-1.5 flex items-center justify-between text-xs">
-                    <span className="font-medium text-[#e6edf3]">
-                      Evolution Stage
-                    </span>
-                    <span className="font-mono text-[10px] text-[#FF6B00]">
-                      {evolution.rank} ({evolution.rangeLabel})
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-5 gap-1">
-                    {STAGE_DEFINITIONS.map((st) => (
-                      <button
-                        key={st.stage}
-                        type="button"
-                        onClick={() =>
-                          setConfig((prev) => ({
-                            ...prev,
-                            commits: st.sampleCommits,
-                          }))
-                        }
-                        className={`rounded border py-1 font-mono text-[10px] font-semibold transition ${
-                          evolution.stage === st.stage
-                            ? "border-[#00E676] bg-[#00E676]/20 text-[#00E676]"
-                            : "border-[#30363d] bg-[#161b22] text-[#8b949e] hover:text-white"
-                        }`}
-                      >
-                        S{st.stage}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="rounded-lg border border-[#30363d]/80 bg-[#0d1117] p-3">
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <label
-                        htmlFor="speed-slider"
-                        className="flex items-center gap-1.5 text-xs font-medium text-[#e6edf3]"
-                      >
-                        <Activity className="h-3.5 w-3.5 text-[#00E676]" />
-                        Animation Speed
-                      </label>
-                      <span className="rounded bg-[#161b22] px-2 py-0.5 font-mono text-xs font-semibold text-[#FF6B00]">
-                        {config.animationSpeed.toFixed(1)}x
-                      </span>
-                    </div>
-                    <input
-                      id="speed-slider"
-                      type="range"
-                      min={0.5}
-                      max={2.5}
-                      step={0.1}
-                      value={config.animationSpeed}
-                      onChange={(e) =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          animationSpeed: parseFloat(e.target.value),
-                        }))
-                      }
-                      className="w-full cursor-pointer accent-[#FF6B00]"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-lg border border-[#30363d]/80 bg-[#0d1117] px-3 py-2.5">
-                    <div>
-                      <div className="text-xs font-medium text-[#e6edf3]">
-                        Bottom HUD Telemetry Bar
-                      </div>
-                      <div className="text-[11px] text-[#8b949e]">
-                        Show stage, languages &amp; commit readout
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={config.showHud}
-                      onClick={() =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          showHud: !prev.showHud,
-                        }))
-                      }
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition ${
-                        config.showHud
-                          ? "border-[#00E676] bg-[#00E676]/25"
-                          : "border-[#30363d] bg-[#21262d]"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full transition ${
-                          config.showHud
-                            ? "translate-x-5.5 bg-[#00E676]"
-                            : "translate-x-1 bg-[#8b949e]"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  <div className="space-y-2.5 rounded-lg border border-[#30363d]/80 bg-[#0d1117] p-3">
-                    <div>
-                      <label
-                        htmlFor="custom-title"
-                        className="mb-1 block text-xs font-medium text-[#e6edf3]"
-                      >
-                        Custom Title / Tag
-                      </label>
-                      <input
-                        id="custom-title"
-                        type="text"
-                        maxLength={42}
-                        placeholder={`${evolution.rank} ${meta.name.toUpperCase()}`}
-                        value={config.customTitle}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
-                            ...prev,
-                            customTitle: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-md border border-[#30363d] bg-[#161b22] px-3 py-1.5 font-mono text-xs text-[#e6edf3] placeholder-[#6e7681] focus:border-[#FF6B00] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <div className="mb-1 flex items-center justify-between">
-                        <label
-                          htmlFor="commits-input"
-                          className="flex items-center gap-1.5 text-xs font-medium text-[#e6edf3]"
+                    ).map((grp) => {
+                      const Icon = grp.icon;
+                      const active = customizeTab === grp.id;
+                      return (
+                        <button
+                          key={grp.id}
+                          type="button"
+                          onClick={() => setCustomizeTab(grp.id)}
+                          className={`inline-flex items-center justify-center gap-1.5 rounded px-2 py-1.5 font-medium transition ${
+                            active
+                              ? "bg-zinc-950 text-zinc-50 shadow-sm"
+                              : "text-zinc-400 hover:text-zinc-100"
+                          }`}
                         >
-                          <GitCommitHorizontal className="h-3.5 w-3.5 text-[#00E676]" />
-                          Simulated Commits
-                        </label>
-                        <span className="font-mono text-[10px] text-[#8b949e]">
-                          {evolution.rank} (S{evolution.stage})
+                          <Icon className="h-3 w-3" />
+                          <span>{grp.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  {customizeTab === "chassis" && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-zinc-200">
+                          Select Cyber-Animal
+                        </span>
+                        <span className="font-mono text-[10px] text-zinc-400">
+                          {meta.designation}
                         </span>
                       </div>
-                      <input
-                        id="commits-input"
-                        type="number"
-                        min={0}
-                        max={999999}
-                        value={config.commits}
-                        onChange={(e) =>
-                          setConfig((prev) => ({
-                            ...prev,
-                            commits: Math.max(
-                              0,
-                              parseInt(e.target.value || "0", 10)
-                            ),
-                          }))
-                        }
-                        className="w-full rounded-md border border-[#30363d] bg-[#161b22] px-3 py-1.5 font-mono text-xs text-[#e6edf3] focus:border-[#00E676] focus:outline-none"
-                      />
+
+                      <div className="space-y-2">
+                        {CREATURE_CATALOG.map((item) => {
+                          const selected = config.creature === item.id;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => selectCreature(item.id)}
+                              className={`flex w-full flex-col items-start rounded-md border p-3 text-left transition ${
+                                selected
+                                  ? "border-zinc-50 bg-zinc-900"
+                                  : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                              }`}
+                            >
+                              <div className="flex w-full items-center justify-between">
+                                <div>
+                                  <span className="text-xs font-semibold text-zinc-50">
+                                    {item.name}
+                                  </span>
+                                  <span className="ml-1.5 text-[11px] text-zinc-400">
+                                    · {item.subtitle}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`h-2 w-2 rounded-full ${
+                                    selected ? "bg-zinc-50" : "bg-zinc-700"
+                                  }`}
+                                />
+                              </div>
+                              <p className="mt-1 text-[11px] leading-snug text-zinc-400">
+                                {item.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="border-t border-zinc-800 pt-3">
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 text-xs font-medium text-zinc-200">
+                            <Camera className="h-3.5 w-3.5 text-zinc-400" />
+                            Camera Angle
+                          </span>
+                          <span className="font-mono text-[10px] uppercase text-zinc-400">
+                            {config.view}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {CAMERA_VIEWS.map((v) => (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => selectView(v.id)}
+                              className={`rounded-md border px-2 py-1.5 text-xs font-medium transition ${
+                                config.view === v.id
+                                  ? "border-zinc-50 bg-zinc-50 font-semibold text-zinc-950"
+                                  : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-zinc-100"
+                              }`}
+                            >
+                              {v.shortLabel}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {customizeTab === "palette" && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-zinc-200">
+                          Theme Presets
+                        </span>
+                        <span className="font-mono text-[10px] uppercase text-zinc-400">
+                          {config.colorMode}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {THEME_PRESETS.map((preset) => {
+                          const active =
+                            config.colorMode === "canonical" &&
+                            config.themeId === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => applyThemePreset(preset.id)}
+                              className={`flex flex-col rounded-md border p-2.5 text-left transition ${
+                                active
+                                  ? "border-zinc-50 bg-zinc-900"
+                                  : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="h-3 w-3 rounded-full border border-white/20"
+                                  style={{
+                                    backgroundColor: preset.colors.primary,
+                                  }}
+                                />
+                                <span
+                                  className="h-3 w-3 rounded-full border border-white/20"
+                                  style={{
+                                    backgroundColor: preset.colors.accent,
+                                  }}
+                                />
+                                <span
+                                  className="h-3 w-3 rounded-full border border-white/20"
+                                  style={{
+                                    backgroundColor: preset.colors.energy,
+                                  }}
+                                />
+                              </div>
+                              <div className="mt-1.5 text-[11px] font-semibold text-zinc-100">
+                                {preset.name}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="space-y-2 pt-1">
+                        <ColorControl
+                          label="Primary Armor (75%)"
+                          sublabel="Modular carapace & feather blades"
+                          value={config.colors.primary}
+                          onChange={(hex) => updateColor("primary", hex)}
+                        />
+                        <ColorControl
+                          label="Accent 1 (Secondary)"
+                          sublabel="Wing tips, rings & hazard stripes"
+                          value={config.colors.accent}
+                          onChange={(hex) => updateColor("accent", hex)}
+                        />
+                        <ColorControl
+                          label="Energy Glow Core"
+                          sublabel="Optic sensors, circuitry & cable tips"
+                          value={config.colors.energy}
+                          onChange={(hex) => updateColor("energy", hex)}
+                        />
+                      </div>
+
+                      <div className="rounded-md border border-zinc-800 bg-zinc-900/50 p-2.5">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <span className="text-xs font-medium text-zinc-200">
+                            SVG Canvas Background
+                          </span>
+                          <span className="font-mono text-[10px] text-zinc-400">
+                            {config.colors.background}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {(
+                            [
+                              { id: "transparent", label: "Transparent" },
+                              { id: "black", label: "Black" },
+                              { id: "github-dark", label: "GH Dark" },
+                              { id: "custom", label: "Custom" },
+                            ] as const
+                          ).map((bg) => (
+                            <button
+                              key={bg.id}
+                              type="button"
+                              onClick={() => setBackgroundMode(bg.id)}
+                              className={`rounded border px-1.5 py-1 text-[11px] font-medium transition ${
+                                config.backgroundMode === bg.id
+                                  ? "border-zinc-50 bg-zinc-50 text-zinc-950"
+                                  : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-100"
+                              }`}
+                            >
+                              {bg.label}
+                            </button>
+                          ))}
+                        </div>
+                        {config.backgroundMode === "custom" && (
+                          <div className="mt-2 flex items-center justify-between border-t border-zinc-800 pt-2">
+                            <span className="text-[11px] text-zinc-400">
+                              Custom background hex
+                            </span>
+                            <input
+                              type="color"
+                              value={customBgHex}
+                              onChange={(e) =>
+                                handleCustomBgChange(e.target.value)
+                              }
+                              aria-label="Custom SVG background color"
+                              className="h-7 w-12 cursor-pointer rounded border border-zinc-700 bg-transparent"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {customizeTab === "motion" && (
+                    <div className="space-y-3">
+                      <div className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3">
+                        <div className="mb-2 flex items-center justify-between text-xs">
+                          <span className="font-medium text-zinc-200">
+                            Evolution Stage
+                          </span>
+                          <span className="font-mono text-[10px] text-zinc-300">
+                            {evolution.rank} ({evolution.rangeLabel})
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-5 gap-1">
+                          {STAGE_DEFINITIONS.map((st) => (
+                            <button
+                              key={st.stage}
+                              type="button"
+                              onClick={() =>
+                                setConfig((prev) => ({
+                                  ...prev,
+                                  commits: st.sampleCommits,
+                                }))
+                              }
+                              className={`rounded border py-1 font-mono text-[10px] font-semibold transition ${
+                                evolution.stage === st.stage
+                                  ? "border-zinc-50 bg-zinc-50 text-zinc-950"
+                                  : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-100"
+                              }`}
+                            >
+                              S{st.stage}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="rounded-md border border-zinc-800 bg-zinc-900/50 p-3">
+                        <div className="mb-1.5 flex items-center justify-between">
+                          <label
+                            htmlFor="speed-slider"
+                            className="flex items-center gap-1.5 text-xs font-medium text-zinc-200"
+                          >
+                            <Activity className="h-3.5 w-3.5 text-zinc-400" />
+                            Animation Speed
+                          </label>
+                          <span className="rounded border border-zinc-800 bg-zinc-950 px-2 py-0.5 font-mono text-xs font-semibold text-zinc-100">
+                            {config.animationSpeed.toFixed(1)}x
+                          </span>
+                        </div>
+                        <input
+                          id="speed-slider"
+                          type="range"
+                          min={0.5}
+                          max={2.5}
+                          step={0.1}
+                          value={config.animationSpeed}
+                          onChange={(e) =>
+                            setConfig((prev) => ({
+                              ...prev,
+                              animationSpeed: parseFloat(e.target.value),
+                            }))
+                          }
+                          className="w-full cursor-pointer accent-zinc-100"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-2.5">
+                        <div>
+                          <div className="text-xs font-medium text-zinc-100">
+                            Bottom HUD Telemetry Bar
+                          </div>
+                          <div className="text-[11px] text-zinc-400">
+                            Show stage, languages &amp; commit readout
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={config.showHud}
+                          onClick={() =>
+                            setConfig((prev) => ({
+                              ...prev,
+                              showHud: !prev.showHud,
+                            }))
+                          }
+                          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border transition ${
+                            config.showHud
+                              ? "border-zinc-50 bg-zinc-50"
+                              : "border-zinc-700 bg-zinc-800"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full transition ${
+                              config.showHud
+                                ? "translate-x-5.5 bg-zinc-950"
+                                : "translate-x-1 bg-zinc-400"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2.5 rounded-md border border-zinc-800 bg-zinc-900/50 p-3">
+                        <div>
+                          <label
+                            htmlFor="custom-title"
+                            className="mb-1 block text-xs font-medium text-zinc-200"
+                          >
+                            Custom Title / Tag
+                          </label>
+                          <input
+                            id="custom-title"
+                            type="text"
+                            maxLength={42}
+                            placeholder={`${evolution.rank} ${meta.name.toUpperCase()}`}
+                            value={config.customTitle}
+                            onChange={(e) =>
+                              setConfig((prev) => ({
+                                ...prev,
+                                customTitle: e.target.value,
+                              }))
+                            }
+                            className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-mono text-xs text-zinc-50 placeholder-zinc-500 focus:border-zinc-500 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center justify-between">
+                            <label
+                              htmlFor="commits-input"
+                              className="flex items-center gap-1.5 text-xs font-medium text-zinc-200"
+                            >
+                              <GitCommitHorizontal className="h-3.5 w-3.5 text-zinc-400" />
+                              Simulated Commits
+                            </label>
+                            <span className="font-mono text-[10px] text-zinc-400">
+                              {evolution.rank} (S{evolution.stage})
+                            </span>
+                          </div>
+                          <input
+                            id="commits-input"
+                            type="number"
+                            min={0}
+                            max={999999}
+                            value={config.commits}
+                            onChange={(e) =>
+                              setConfig((prev) => ({
+                                ...prev,
+                                commits: Math.max(
+                                  0,
+                                  parseInt(e.target.value || "0", 10)
+                                ),
+                              }))
+                            }
+                            className="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 font-mono text-xs text-zinc-50 focus:border-zinc-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             </aside>
 
             {/* CENTER / RIGHT PANEL — LIVE GITHUB PROFILE PREVIEW, EDITOR & EXPORT */}
-            <section className="flex flex-col gap-5 lg:col-span-8 xl:col-span-8">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="flex flex-col gap-4 lg:col-span-8 xl:col-span-8">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
                 <button
                   type="button"
                   onClick={() =>
                     triggerFileDownload("creature.svg", rawSvgSource)
                   }
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#FF6B00]/60 bg-[#FF6B00] px-3.5 py-3 text-xs font-semibold text-white shadow-lg shadow-[#FF6B00]/15 transition hover:bg-[#ff7f24] sm:text-sm"
+                  className="flex items-center justify-center gap-2 rounded-md bg-zinc-50 px-3.5 py-2.5 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-200"
                 >
                   <Download className="h-4 w-4 shrink-0" />
                   Download SVG
@@ -1083,16 +1128,16 @@ export function CreatureStudio() {
                 <button
                   type="button"
                   onClick={() => void handleCopy("readme")}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#30363d] bg-[#161b22] px-3.5 py-3 text-xs font-semibold text-[#e6edf3] transition hover:border-[#8b949e] hover:bg-[#21262d] sm:text-sm"
+                  className="flex items-center justify-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3.5 py-2.5 text-xs font-medium text-zinc-100 transition hover:bg-zinc-800"
                 >
                   {copiedSnippet === "readme" ? (
                     <>
-                      <Check className="h-4 w-4 shrink-0 text-[#00E676]" />
+                      <Check className="h-4 w-4 shrink-0" />
                       Copied README!
                     </>
                   ) : (
                     <>
-                      <FileText className="h-4 w-4 shrink-0 text-[#8b949e]" />
+                      <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
                       Copy README.md
                     </>
                   )}
@@ -1101,7 +1146,7 @@ export function CreatureStudio() {
                 <button
                   type="button"
                   onClick={() => setPublishModalOpen(true)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#58a6ff]/40 bg-[#58a6ff]/10 px-3.5 py-3 text-xs font-semibold text-[#58a6ff] transition hover:border-[#58a6ff] hover:bg-[#58a6ff]/20 sm:text-sm"
+                  className="flex items-center justify-center gap-2 rounded-md border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs font-semibold text-zinc-50 transition hover:bg-zinc-800"
                 >
                   <UploadCloud className="h-4 w-4 shrink-0" />
                   Push to {safeUser}
@@ -1110,23 +1155,23 @@ export function CreatureStudio() {
                 <button
                   type="button"
                   onClick={() => setEvolveModalOpen(true)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[#00E676]/40 bg-[#00E676]/10 px-3.5 py-3 text-xs font-semibold text-[#00E676] transition hover:border-[#00E676] hover:bg-[#00E676]/20 sm:text-sm"
+                  className="flex items-center justify-center gap-2 rounded-md border border-zinc-800 bg-zinc-950 px-3.5 py-2.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-900"
                 >
-                  <Zap className="h-4 w-4 shrink-0" />
-                  Auto-Evolve Action
+                  <Zap className="h-4 w-4 shrink-0 text-zinc-400" />
+                  12AM Auto-Evolve
                 </button>
               </div>
 
-              {/* Controls Bar for Preview / Edit README / SVG Code */}
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-2.5">
-                <div className="flex overflow-hidden rounded-md border border-[#30363d] bg-[#0d1117] text-xs">
+              {/* Preview Mode Toolbar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-2">
+                <div className="flex overflow-hidden rounded-md border border-zinc-800 bg-zinc-900 p-0.5 text-xs">
                   <button
                     type="button"
                     onClick={() => setPreviewMode("preview")}
-                    className={`px-3 py-1 font-medium transition ${
+                    className={`rounded px-3 py-1 font-medium transition ${
                       previewMode === "preview"
-                        ? "bg-[#21262d] text-white"
-                        : "text-[#8b949e] hover:text-white"
+                        ? "bg-zinc-950 text-zinc-50 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-100"
                     }`}
                   >
                     GitHub Preview
@@ -1134,10 +1179,10 @@ export function CreatureStudio() {
                   <button
                     type="button"
                     onClick={() => setPreviewMode("edit")}
-                    className={`inline-flex items-center gap-1 border-l border-[#30363d] px-3 py-1 font-medium transition ${
+                    className={`inline-flex items-center gap-1 rounded px-3 py-1 font-medium transition ${
                       previewMode === "edit"
-                        ? "bg-[#21262d] text-[#00E676]"
-                        : "text-[#8b949e] hover:text-white"
+                        ? "bg-zinc-950 text-zinc-50 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-100"
                     }`}
                   >
                     <Edit3 className="h-3 w-3" />
@@ -1146,10 +1191,10 @@ export function CreatureStudio() {
                   <button
                     type="button"
                     onClick={() => setPreviewMode("code")}
-                    className={`border-l border-[#30363d] px-3 py-1 font-medium transition ${
+                    className={`rounded px-3 py-1 font-medium transition ${
                       previewMode === "code"
-                        ? "bg-[#21262d] text-white"
-                        : "text-[#8b949e] hover:text-white"
+                        ? "bg-zinc-950 text-zinc-50 shadow-sm"
+                        : "text-zinc-400 hover:text-zinc-100"
                     }`}
                   >
                     SVG XML
@@ -1162,20 +1207,20 @@ export function CreatureStudio() {
                     onClick={() => setShowProfileSidebar((v) => !v)}
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition ${
                       showProfileSidebar
-                        ? "border-[#00E676]/50 bg-[#00E676]/10 text-[#00E676]"
-                        : "border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-white"
+                        ? "border-zinc-600 bg-zinc-900 text-zinc-100"
+                        : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-100"
                     }`}
                   >
                     <UserSquare2 className="h-3 w-3" />
-                    {showProfileSidebar ? "Full Profile" : "README Only"}
+                    {showProfileSidebar ? "Sidebar: ON" : "Sidebar: OFF"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowGridBackdrop((v) => !v)}
                     className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium transition ${
                       showGridBackdrop
-                        ? "border-[#FF6B00]/60 bg-[#FF6B00]/15 text-[#FF6B00]"
-                        : "border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-[#e6edf3]"
+                        ? "border-zinc-600 bg-zinc-900 text-zinc-100"
+                        : "border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-zinc-100"
                     }`}
                   >
                     <Eye className="h-3 w-3" />
@@ -1184,7 +1229,7 @@ export function CreatureStudio() {
                   <button
                     type="button"
                     onClick={() => setActiveTab("share-card")}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-[11px] font-medium text-[#58a6ff] transition hover:border-[#58a6ff]"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-[11px] font-medium text-zinc-300 transition hover:bg-zinc-900 hover:text-zinc-100"
                   >
                     <Share2 className="h-3 w-3" />
                     1280×640 Card
@@ -1204,7 +1249,7 @@ export function CreatureStudio() {
               )}
 
               {previewMode === "edit" && (
-                <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] shadow-2xl">
+                <div className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950">
                   <ReadmeEditorPanel
                     creatureConfig={config}
                     readmeConfig={readmeConfig}
@@ -1214,19 +1259,19 @@ export function CreatureStudio() {
               )}
 
               {previewMode === "code" && (
-                <div className="overflow-hidden rounded-xl border border-[#30363d] bg-[#090c10] shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-[#21262d] bg-[#161b22] px-4 py-2 text-xs">
-                    <span className="font-mono text-[#8b949e]">
+                <div className="overflow-hidden rounded-lg border border-zinc-800 bg-black">
+                  <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-2 text-xs">
+                    <span className="font-mono text-zinc-400">
                       creature.svg ({rawSvgSource.length.toLocaleString()} bytes)
                     </span>
                     <button
                       type="button"
                       onClick={() => void handleCopy("svg")}
-                      className="inline-flex items-center gap-1 rounded border border-[#30363d] bg-[#0d1117] px-2.5 py-1 text-[11px] text-white hover:bg-[#21262d]"
+                      className="inline-flex items-center gap-1 rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] text-zinc-100 hover:bg-zinc-800"
                     >
                       {copiedSnippet === "svg" ? (
                         <>
-                          <Check className="h-3 w-3 text-[#00E676]" />
+                          <Check className="h-3 w-3" />
                           Copied SVG
                         </>
                       ) : (
@@ -1238,29 +1283,29 @@ export function CreatureStudio() {
                     </button>
                   </div>
                   <div className="max-h-[540px] overflow-auto p-4">
-                    <pre className="font-mono text-[11px] leading-relaxed text-[#79c0ff]">
+                    <pre className="font-mono text-[11px] leading-relaxed text-zinc-300">
                       <code>{rawSvgSource}</code>
                     </pre>
                   </div>
                 </div>
               )}
 
-              {/* Bottom Quick Snippets */}
+              {/* Bottom Snippets */}
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <div className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-xs font-semibold text-[#e6edf3]">
-                      <Code2 className="h-4 w-4 text-[#00E676]" />
+                    <span className="flex items-center gap-2 text-xs font-semibold text-zinc-100">
+                      <Code2 className="h-4 w-4 text-zinc-400" />
                       Simple Markdown Embed
                     </span>
                     <button
                       type="button"
                       onClick={() => void handleCopy("md")}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#30363d] bg-[#21262d] px-2.5 py-1 text-[11px] font-medium text-[#e6edf3] hover:bg-[#30363d]"
+                      className="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-100 hover:bg-zinc-800"
                     >
                       {copiedSnippet === "md" ? (
                         <>
-                          <Check className="h-3 w-3 text-[#00E676]" />
+                          <Check className="h-3 w-3" />
                           Copied
                         </>
                       ) : (
@@ -1271,25 +1316,25 @@ export function CreatureStudio() {
                       )}
                     </button>
                   </div>
-                  <code className="block overflow-x-auto rounded-lg border border-[#30363d] bg-[#0d1117] px-3 py-2.5 font-mono text-xs text-[#79c0ff]">
+                  <code className="block overflow-x-auto rounded-md border border-zinc-800 bg-black px-3 py-2.5 font-mono text-xs text-zinc-300">
                     {markdownSnippet}
                   </code>
                 </div>
 
-                <div className="rounded-xl border border-[#21262d] bg-[#161b22]/75 p-4">
+                <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="flex items-center gap-2 text-xs font-semibold text-[#e6edf3]">
-                      <Terminal className="h-4 w-4 text-[#FF6B00]" />
+                    <span className="flex items-center gap-2 text-xs font-semibold text-zinc-100">
+                      <Terminal className="h-4 w-4 text-zinc-400" />
                       Auto-Update Marker Block
                     </span>
                     <button
                       type="button"
                       onClick={() => void handleCopy("html")}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#30363d] bg-[#21262d] px-2.5 py-1 text-[11px] font-medium text-[#e6edf3] hover:bg-[#30363d]"
+                      className="inline-flex items-center gap-1 rounded-md border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-100 hover:bg-zinc-800"
                     >
                       {copiedSnippet === "html" ? (
                         <>
-                          <Check className="h-3 w-3 text-[#00E676]" />
+                          <Check className="h-3 w-3" />
                           Copied
                         </>
                       ) : (
@@ -1300,7 +1345,7 @@ export function CreatureStudio() {
                       )}
                     </button>
                   </div>
-                  <pre className="max-h-24 overflow-auto rounded-lg border border-[#30363d] bg-[#0d1117] px-3 py-2 font-mono text-[11px] leading-relaxed text-[#79c0ff]">
+                  <pre className="max-h-24 overflow-auto rounded-md border border-zinc-800 bg-black px-3 py-2 font-mono text-[11px] leading-relaxed text-zinc-300">
                     <code>{markerSnippet}</code>
                   </pre>
                 </div>
@@ -1321,6 +1366,7 @@ export function CreatureStudio() {
         onClose={() => setPublishModalOpen(false)}
         username={safeUser}
         snapshot={ghSnapshot}
+        creatureConfig={config}
         creatureSvg={rawSvgSource}
         shareCardSvg={shareCardSvgSource}
         readmeMarkdown={fullReadmeMarkdown}

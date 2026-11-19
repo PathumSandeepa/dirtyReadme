@@ -16,21 +16,21 @@ A procedural, pure-CSS animated cybernetic creature generator for your GitHub pr
 
 ## Quick Start (2-Step Setup)
 
-1. Generate your custom `creature.svg` (and optionally compose your entire profile `README.md` inside the built-in **README Editor**) in the **[Interactive Creature Studio & Comparator](https://pathumsandeepa.github.io/dynamic-readme-creature/)**, then add this embed block to your profile repository (`YOUR_USERNAME/YOUR_USERNAME`):
+1. Open the **[Interactive Creature Studio](https://pathumsandeepa.github.io/dynamic-readme-creature/)**, sync your GitHub username, customize your cybernetic creature & Profile `README.md`, and either click **Connect & Push** (with a fine-grained PAT held strictly in ephemeral browser memory with copy/cut disabled, under the [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)) or embed this block in your profile repo (`YOUR_USERNAME/YOUR_USERNAME`):
 
 ```html
 <!-- CYBER-CREATURE:START -->
 <p align="center">
   <a href="https://github.com/PathumSandeepa/dynamic-readme-creature">
-    <img src="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_USERNAME/output/creature.svg" width="760" alt="dynamic-readme-creature" />
+    <img src="./creature.svg" width="760" alt="dynamic-readme-creature" />
   </a>
 </p>
 <!-- CYBER-CREATURE:END -->
 ```
 
-> If your `README.md` includes `<!-- CYBER-CREATURE:START -->` and `<!-- CYBER-CREATURE:END -->`, the auto-evolve script automatically updates the live stage, commit count, and telemetry caption between those markers on every scheduled run.
+> If your `README.md` includes `<!-- CYBER-CREATURE:START -->` and `<!-- CYBER-CREATURE:END -->`, the auto-evolve script automatically updates the live stage, commit count, top languages, and sync date between those markers every day at **12:00 AM**.
 
-2. Create `.github/workflows/evolve-creature.yml` and `scripts/evolve-creature.mjs` (copyable directly from the Studio's **Copy Auto-Evolve Action** modal). The action pushes updates to an orphan `output` branch automatically so daily runs never bloat your `main` commit history:
+2. Create `.github/workflows/evolve-creature.yml` and `scripts/evolve-creature.mjs` (copyable from the Studio's **12AM Auto-Evolve** modal with your local timezone's 12:00 AM cron, or installed via **Connect & Push**):
 
 ```yaml
 name: Evolve Cyber Creature

@@ -133,15 +133,6 @@ export interface ReadmeActionLink {
   enabled: boolean;
 }
 
-export interface ReadmeFeaturedProject {
-  id: string;
-  name: string;
-  description: string;
-  url: string;
-  language: string;
-  enabled: boolean;
-}
-
 export interface ReadmeConfig {
   templateId: ReadmeTemplateId;
   headline: string;
@@ -155,11 +146,9 @@ export interface ReadmeConfig {
   includeTelemetryCaption: boolean;
   includeShareCard: boolean;
   includeStatsTable: boolean;
-  includeProjects: boolean;
   customFooterMarkdown: string;
   badges: ReadmeBadge[];
   actionLinks: ReadmeActionLink[];
-  projects: ReadmeFeaturedProject[];
   /** Optional profile sidebar display metadata for realistic GitHub preview */
   profileDisplayName: string;
   profileLocation: string;
