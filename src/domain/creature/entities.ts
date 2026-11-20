@@ -1,4 +1,4 @@
-export type CreatureId = "tulkun" | "serpent" | "manta";
+export type CreatureId = "tulkun" | "serpent" | "manta" | "jellyfish";
 
 export type CameraView = "side" | "dive" | "top";
 
@@ -124,6 +124,15 @@ export const CREATURE_CATALOG: CreatureMeta[] = [
     description:
       "Aerodynamic gliding manta frame with wide articulated feathered wings, forward sensor prongs, and dual cyber-tendrils.",
     defaultTitle: "AETHER CYBER-MANTA",
+  },
+  {
+    id: "jellyfish",
+    name: "Cyber-Jellyfish",
+    subtitle: "Pelagic Biolume",
+    designation: "UNIT-04 // MEDUSA-BIO",
+    description:
+      "Bioluminescent drifting jellyfish with gently rippling currents, glowing bell telemetry, and trailing tentacles.",
+    defaultTitle: "PELAGIC BIO-MEDUSA",
   },
 ];
 

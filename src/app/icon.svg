@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#1E1B4B" />
+    </linearGradient>
+    <linearGradient id="armor" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="60%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+    <linearGradient id="wing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#4338CA" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)" />
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="none" stroke="#4F46E5" stroke-opacity="0.45" stroke-width="1.5" />
+  <path d="M 14 29 C 14 17, 25 12, 37 14 C 46 16, 51 22, 50 30 C 47 26, 40 25, 34 27 C 28 29, 20 33, 14 29 Z" fill="url(#armor)" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round" />
+  <path d="M 27 29 L 47 45 L 39 49 L 22 33 Z" fill="url(#armor)" stroke="#1E293B" stroke-width="1.4" stroke-linejoin="round" />
+  <path d="M 41 40 L 47 45 L 43 47 L 38 43 Z" fill="#FF6B00" />
+  <path d="M 18 35 C 26 39, 36 39, 49 34" fill="none" stroke="url(#wing)" stroke-width="2.6" stroke-linecap="round" />
+  <path d="M 20 42 C 28 48, 40 50, 52 43" fill="none" stroke="#00E676" stroke-width="1.8" stroke-linecap="round" opacity="0.9" />
+  <circle cx="24" cy="23" r="4.2" fill="#0F172A" stroke="#FF6B00" stroke-width="1.5" />
+  <circle cx="24" cy="23" r="1.8" fill="#00E676" />
+  <circle cx="52" cy="43" r="2.2" fill="#00E676" />
+</svg>

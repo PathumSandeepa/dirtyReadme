@@ -63,9 +63,9 @@ export function ShowcaseGalleryView({
               <Sparkles className="h-3.5 w-3.5" />
               Pure CSS Animated SVG + Profile Template Studio
             </span>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
               Explore Cybernetic Creatures &amp; Profile README Designs
-            </h2>
+            </h1>
             <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
               Browse the animated creatures, color palettes, evolution stages, and
               customizable README template below. Click{" "}

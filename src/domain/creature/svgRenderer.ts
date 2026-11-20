@@ -1,8 +1,13 @@
 import {
   STAGE_DEFINITIONS,
+  type CameraView,
   type CreatureConfig,
   type DerivedPalette,
 } from "@/domain/creature/entities";
+import {
+  JELLYFISH_BELL_PNG_URI,
+  JELLYFISH_TENTACLES_PNG_URI,
+} from "@/domain/creature/jellyfishAssets";
 import {
   derivePalette,
   formatHudLabel,
@@ -1030,6 +1035,80 @@ function renderHudBarWithPrefix(
   `;
 }
 
+function renderJellyfish(
+  p: DerivedPalette,
+  idPrefix: string,
+  view: CameraView,
+  stage: number,
+  animationSpeed: number
+): string {
+  const safeSpeed = Math.max(0.25, Math.min(3, animationSpeed || 1));
+  const rippleDuration = (18 / safeSpeed).toFixed(1);
+
+  const viewTransform =
+    view === "dive"
+      ? "translate(460, 206) rotate(-10) scale(0.95) translate(-412.5, -232.5)"
+      : view === "top"
+        ? "translate(460, 202) scale(1.06, 0.96) translate(-412.5, -232.5)"
+        : "translate(47.5, -14)";
+
+  const stageNodes =
+    stage >= 2
+      ? `
+        <g class="cc-pulse" opacity="0.8">
+          <circle cx="235" cy="112" r="3" fill="${p.energyBright}" />
+          <circle cx="290" cy="310" r="2.5" fill="${p.energyMain}" />
+          <circle cx="670" cy="108" r="3" fill="${p.accentMain}" />
+          <circle cx="515" cy="336" r="2.2" fill="${p.energyBright}" />
+        </g>
+      `
+      : "";
+
+  const stageArcs =
+    stage >= 3
+      ? `
+        <g opacity="${stage >= 4 ? "0.7" : "0.45"}">
+          <path d="M 640 120 A 118 118 0 0 1 655 312" fill="none" stroke="${p.accentMain}" stroke-width="1.6" stroke-dasharray="6 6" />
+          <circle cx="640" cy="120" r="3.2" fill="${p.accentMain}" />
+          <circle cx="655" cy="312" r="3.2" fill="${p.energyBright}" />
+        </g>
+      `
+      : "";
+
+  const stageAscended =
+    stage >= 5
+      ? `
+        <g class="cc-pulse" opacity="0.55">
+          <circle cx="548" cy="215" r="142" fill="none" stroke="${p.energyMain}" stroke-width="1.2" stroke-dasharray="3 9" />
+        </g>
+      `
+      : "";
+
+  return `
+    <g>
+      <defs>
+        <filter id="${idPrefix}-gentle-current" x="-4%" y="-5%" width="108%" height="110%" color-interpolation-filters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.008 0.026" numOctaves="1" seed="7" result="current">
+            <animate attributeName="baseFrequency" values="0.008 0.026;0.010 0.022;0.008 0.026" dur="${rippleDuration}s" repeatCount="indefinite" />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="current" scale="2.2" xChannelSelector="R" yChannelSelector="G">
+            <animate attributeName="scale" values="1.8;3.8;1.8" dur="${rippleDuration}s" repeatCount="indefinite" />
+          </feDisplacementMap>
+        </filter>
+      </defs>
+      <g class="cc-body-float" style="transform-origin: 460px 210px;">
+        ${stageNodes}
+        ${stageArcs}
+        ${stageAscended}
+        <g transform="${viewTransform}">
+          <image x="0" y="0" width="825" height="465" href="${JELLYFISH_BELL_PNG_URI}" xlink:href="${JELLYFISH_BELL_PNG_URI}" />
+          <image x="0" y="0" width="825" height="465" href="${JELLYFISH_TENTACLES_PNG_URI}" xlink:href="${JELLYFISH_TENTACLES_PNG_URI}" filter="url(#${idPrefix}-gentle-current)" />
+        </g>
+      </g>
+    </g>
+  `;
+}
+
 export function renderCreatureGeometryOnly(
   config: CreatureConfig,
   idPrefix = "cc"
@@ -1047,6 +1126,16 @@ export function renderCreatureGeometryOnly(
     if (config.view === "dive") return renderSerpentDive(p, idPrefix, stage);
     if (config.view === "top") return renderSerpentTop(p, idPrefix, stage);
     return renderSerpentSide(p, idPrefix, stage);
+  }
+
+  if (config.creature === "jellyfish") {
+    return renderJellyfish(
+      p,
+      idPrefix,
+      config.view,
+      stage,
+      config.animationSpeed
+    );
   }
 
   if (config.view === "dive") return renderMantaDive(p, idPrefix, stage);
@@ -1089,7 +1178,7 @@ export function generateCreatureSvgDocument(config: CreatureConfig): string {
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" role="img" aria-label="${ariaLabel}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" role="img" aria-label="${ariaLabel}">`,
     `  <title>${ariaLabel}</title>`,
     `  ${inner}`,
     `</svg>`,
@@ -1185,7 +1274,7 @@ export function generateShareCardSvgDocument(config: CreatureConfig): string {
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SHARE_CARD_WIDTH} ${SHARE_CARD_HEIGHT}" width="${SHARE_CARD_WIDTH}" height="${SHARE_CARD_HEIGHT}" role="img" aria-label="${title}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${SHARE_CARD_WIDTH} ${SHARE_CARD_HEIGHT}" width="${SHARE_CARD_WIDTH}" height="${SHARE_CARD_HEIGHT}" role="img" aria-label="${title}">`,
     `  <title>${title}</title>`,
     `  ${inner}`,
     `</svg>`,

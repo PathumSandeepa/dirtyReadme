@@ -153,3 +153,15 @@ writeSvg(
     username: "PathumSandeepa",
   })
 );
+
+writeSvg(
+  "creature-jellyfish.svg",
+  generateSvgString({
+    ...DEFAULT_CONFIG,
+    creature: "jellyfish",
+    colors: { ...THEME_PRESETS[4].colors, background: "transparent" },
+    themeId: THEME_PRESETS[4].id,
+    commits: 1680,
+    username: "PathumSandeepa",
+  })
+);
