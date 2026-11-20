@@ -197,7 +197,7 @@ function updateReadmeMarkers(username, stage, rank, commits, topLanguages) {
   const replacement = [
     startMarker,
     \`<p align="center">\`,
-    \`  <a href="https://github.com/PathumSandeepa/dynamic-readme-creature">\`,
+    \`  <a href="https://github.com/\${username}/\${username}">\`,
     \`    <img src="./creature.svg" width="760" alt="\${CREATURE_DISPLAY} - Stage \${stage} \${rank}" />\`,
     \`  </a>\`,
     \`</p>\`,

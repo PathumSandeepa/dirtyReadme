@@ -41,7 +41,7 @@ export function resolveDynamicTokens(
   text: string,
   creature: CreatureConfig
 ): string {
-  const safeUser = creature.username.trim() || "PathumSandeepa";
+  const safeUser = creature.username.trim() || "your-username";
   const meta = getCreatureMeta(creature.creature);
   const stage = getEvolutionStage(creature.commits);
   const commitsText = Math.max(
@@ -65,7 +65,7 @@ export function getCreatureImageSrc(
   readme: ReadmeConfig,
   filename = "creature.svg"
 ): string {
-  const safeUser = creature.username.trim() || "PathumSandeepa";
+  const safeUser = creature.username.trim() || "your-username";
   return readme.useOutputBranchUrl
     ? `https://raw.githubusercontent.com/${safeUser}/${safeUser}/output/${filename}`
     : `./${filename}`;
@@ -108,6 +108,7 @@ export function buildMarkerSection(
 ): string {
   const meta = getCreatureMeta(creature.creature);
   const stage = getEvolutionStage(creature.commits);
+  const safeUser = creature.username.trim() || "your-username";
   const imgSrc = getCreatureImageSrc(creature, readme, "creature.svg");
 
   const lines: string[] = [];
@@ -117,7 +118,7 @@ export function buildMarkerSection(
 
   lines.push(`<p align="center">`);
   lines.push(
-    `  <a href="https://github.com/PathumSandeepa/dynamic-readme-creature">`
+    `  <a href="https://github.com/${safeUser}/${safeUser}">`
   );
   lines.push(
     `    <img src="${imgSrc}" width="${readme.imageWidth}" alt="${meta.name} - Stage ${stage.stage} ${stage.rank}" />`
@@ -147,7 +148,7 @@ export function buildGeneratedReadmeMarkdown(
   creature: CreatureConfig,
   readme: ReadmeConfig
 ): string {
-  const safeUser = creature.username.trim() || "PathumSandeepa";
+  const safeUser = creature.username.trim() || "your-username";
   const meta = getCreatureMeta(creature.creature);
   const stage = getEvolutionStage(creature.commits);
   const commitsText = Math.max(

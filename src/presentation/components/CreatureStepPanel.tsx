@@ -47,14 +47,14 @@ export function CreatureStepPanel({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
         <div className="mb-4 flex items-center gap-2.5">
-          <Sparkles className="h-5 w-5 text-slate-700 dark:text-zinc-300" />
+          <Sparkles className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-50">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Choose Your Cyber Creature
             </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Pick the animated guardian that will appear on your GitHub profile.
             </p>
           </div>
@@ -70,28 +70,28 @@ export function CreatureStepPanel({
                 onClick={() => onSelectCreature(item.id)}
                 className={`flex w-full items-start justify-between gap-4 rounded-xl border p-4 text-left transition ${
                   selected
-                    ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900 dark:border-zinc-100 dark:bg-zinc-900 dark:ring-zinc-100"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700"
+                    ? "border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600 dark:border-indigo-400 dark:bg-[#272c36] dark:ring-indigo-400"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 dark:border-[#363d4a] dark:bg-[#272c36] dark:hover:border-slate-500"
                 }`}
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-900 dark:text-zinc-50">
+                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {item.name}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-[#313744] dark:text-slate-300">
                       {item.subtitle}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-zinc-400">
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
                     {item.description}
                   </p>
                 </div>
                 <span
                   className={`mt-1 h-4 w-4 shrink-0 rounded-full border-2 ${
                     selected
-                      ? "border-slate-900 bg-slate-900 dark:border-zinc-50 dark:bg-zinc-50"
-                      : "border-slate-300 dark:border-zinc-700"
+                      ? "border-indigo-600 bg-indigo-600 dark:border-indigo-400 dark:bg-indigo-400"
+                      : "border-slate-300 dark:border-[#454e5e]"
                   }`}
                 />
               </button>
@@ -99,8 +99,8 @@ export function CreatureStepPanel({
           })}
         </div>
 
-        <div className="mt-6 border-t border-slate-100 pt-5 dark:border-zinc-800">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+        <div className="mt-6 border-t border-slate-100 pt-5 dark:border-[#363d4a]">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
             <Camera className="h-4 w-4 text-slate-500" />
             Camera Perspective
           </div>
@@ -112,8 +112,8 @@ export function CreatureStepPanel({
                 onClick={() => onSelectView(v.id)}
                 className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
                   config.view === v.id
-                    ? "border-slate-900 bg-slate-900 text-white dark:border-zinc-50 dark:bg-zinc-50 dark:text-zinc-950"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                    ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-300"
                 }`}
               >
                 {v.shortLabel}
@@ -123,14 +123,14 @@ export function CreatureStepPanel({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
         <div className="mb-4 flex items-center gap-2.5">
-          <Palette className="h-5 w-5 text-slate-700 dark:text-zinc-300" />
+          <Palette className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-50">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Colors &amp; Canvas Background
             </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Start with a preset or customize each armor and glow color.
             </p>
           </div>
@@ -147,8 +147,8 @@ export function CreatureStepPanel({
                 onClick={() => onApplyPreset(preset.id)}
                 className={`flex flex-col rounded-xl border p-3.5 text-left transition ${
                   active
-                    ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900 dark:border-zinc-100 dark:bg-zinc-900 dark:ring-zinc-100"
-                    : "border-slate-200 bg-white hover:border-slate-300 dark:border-zinc-800 dark:bg-zinc-950"
+                    ? "border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600 dark:border-indigo-400 dark:bg-[#272c36] dark:ring-indigo-400"
+                    : "border-slate-200 bg-white hover:border-slate-300 dark:border-[#363d4a] dark:bg-[#1e222a]"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function CreatureStepPanel({
                     style={{ backgroundColor: preset.colors.energy }}
                   />
                 </div>
-                <span className="mt-2 text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                <span className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {preset.name}
                 </span>
               </button>
@@ -183,13 +183,13 @@ export function CreatureStepPanel({
           ).map((item) => (
             <label
               key={item.key}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900/50"
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 dark:border-[#363d4a] dark:bg-[#272c36]"
             >
               <div>
-                <div className="text-xs font-medium text-slate-700 dark:text-zinc-200">
+                <div className="text-xs font-medium text-slate-700 dark:text-slate-200">
                   {item.label}
                 </div>
-                <div className="font-mono text-xs text-slate-500 dark:text-zinc-400">
+                <div className="font-mono text-xs text-slate-500 dark:text-slate-400">
                   {config.colors[item.key]}
                 </div>
               </div>
@@ -204,7 +204,7 @@ export function CreatureStepPanel({
         </div>
 
         <div className="mt-4">
-          <div className="mb-2 text-xs font-medium text-slate-600 dark:text-zinc-400">
+          <div className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-400">
             SVG Background
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -222,8 +222,8 @@ export function CreatureStepPanel({
                 onClick={() => onSetBackgroundMode(bg.id)}
                 className={`rounded-lg border px-2 py-2 text-xs font-medium transition ${
                   config.backgroundMode === bg.id
-                    ? "border-slate-900 bg-slate-900 text-white dark:border-zinc-50 dark:bg-zinc-50 dark:text-zinc-950"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                    ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-300"
                 }`}
               >
                 {bg.label}
@@ -231,8 +231,8 @@ export function CreatureStepPanel({
             ))}
           </div>
           {config.backgroundMode === "custom" && (
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 dark:border-zinc-800 dark:bg-zinc-900">
-              <span className="text-xs font-medium text-slate-600 dark:text-zinc-300">
+            <div className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 dark:border-[#363d4a] dark:bg-[#272c36]">
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                 Custom Background Hex
               </span>
               <input
@@ -246,14 +246,14 @@ export function CreatureStepPanel({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
         <div className="mb-4 flex items-center gap-2.5">
-          <Sliders className="h-5 w-5 text-slate-700 dark:text-zinc-300" />
+          <Sliders className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-50">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Evolution Stage, Motion &amp; HUD
             </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Preview growth stages, swim speed, and bottom telemetry text.
             </p>
           </div>
@@ -261,7 +261,7 @@ export function CreatureStepPanel({
 
         <div className="space-y-4">
           <div>
-            <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
               <span>Evolution Stage Preview</span>
               <span className="font-mono text-slate-500">
                 Stage {evolution.stage}: {evolution.rank} ({evolution.rangeLabel})
@@ -280,8 +280,8 @@ export function CreatureStepPanel({
                   }
                   className={`rounded-lg border py-2 text-xs font-semibold transition ${
                     evolution.stage === st.stage
-                      ? "border-slate-900 bg-slate-900 text-white dark:border-zinc-50 dark:bg-zinc-50 dark:text-zinc-950"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+                      ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-300"
                   }`}
                 >
                   Stage {st.stage}
@@ -292,7 +292,7 @@ export function CreatureStepPanel({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
                 <label htmlFor="speed-input">Animation Speed</label>
                 <span className="font-mono">{config.animationSpeed.toFixed(1)}x</span>
               </div>
@@ -309,14 +309,14 @@ export function CreatureStepPanel({
                     animationSpeed: parseFloat(e.target.value),
                   }))
                 }
-                className="w-full cursor-pointer accent-slate-900 dark:accent-zinc-100"
+                className="w-full cursor-pointer accent-slate-900 dark:accent-indigo-400"
               />
             </div>
 
             <div>
               <label
                 htmlFor="commits-preview-input"
-                className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300"
+                className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300"
               >
                 Commits Counter Preview
               </label>
@@ -332,17 +332,17 @@ export function CreatureStepPanel({
                     commits: Math.max(0, parseInt(e.target.value || "0", 10)),
                   }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/50">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#363d4a] dark:bg-[#272c36]">
             <div>
-              <div className="text-sm font-medium text-slate-900 dark:text-zinc-100">
+              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
                 Show Bottom HUD Bar
               </div>
-              <div className="text-xs text-slate-500 dark:text-zinc-400">
+              <div className="text-xs text-slate-500 dark:text-slate-400">
                 Displays stage, custom title, and commit count inside the SVG
               </div>
             </div>
@@ -355,12 +355,12 @@ export function CreatureStepPanel({
               }
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition ${
                 config.showHud
-                  ? "bg-slate-900 dark:bg-zinc-100"
-                  : "bg-slate-300 dark:bg-zinc-700"
+                  ? "bg-indigo-600 dark:bg-indigo-500"
+                  : "bg-slate-300 dark:bg-[#454e5e]"
               }`}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition dark:bg-zinc-950 ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
                   config.showHud ? "translate-x-6" : "translate-x-1"
                 }`}
               />
@@ -371,7 +371,7 @@ export function CreatureStepPanel({
             <div>
               <label
                 htmlFor="hud-title-input"
-                className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300"
+                className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300"
               >
                 Custom SVG HUD Title
               </label>
@@ -387,7 +387,7 @@ export function CreatureStepPanel({
                     customTitle: e.target.value,
                   }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
           )}
@@ -397,7 +397,7 @@ export function CreatureStepPanel({
       <button
         type="button"
         onClick={onNextStep}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400"
       >
         Next: Customize Profile README
         <ArrowRight className="h-4 w-4" />

@@ -33,7 +33,7 @@ import { CreatureSvgView } from "./CreatureSvgView";
 import { EvolutionPanel } from "./EvolutionPanel";
 import { ShareCardSvgView } from "./ShareCardSvgView";
 
-type PreviewTab = "profile" | "creature" | "share-card" | "compare" | "stages";
+type PreviewTab = "profile" | "share-card" | "compare" | "stages";
 type CodeSubTab = "visual" | "markdown" | "svg";
 
 interface PreviewWorkspaceProps {
@@ -69,7 +69,7 @@ export function PreviewWorkspace({
 
   const stage = getEvolutionStage(creatureConfig.commits);
   const meta = getCreatureMeta(creatureConfig.creature);
-  const username = creatureConfig.username.trim() || "PathumSandeepa";
+  const username = creatureConfig.username.trim() || "your-username";
   const enabledBadges = readmeConfig.badges.filter((b) => b.enabled);
   const enabledLinks = readmeConfig.actionLinks.filter((l) => l.enabled);
 
@@ -93,8 +93,7 @@ export function PreviewWorkspace({
   };
 
   const tabs: { id: PreviewTab; label: string; icon: React.ReactNode }[] = [
-    { id: "profile", label: "GitHub Profile", icon: <Eye className="h-4 w-4" /> },
-    { id: "creature", label: "Creature Only", icon: <Layers className="h-4 w-4" /> },
+    { id: "profile", label: "README Profile", icon: <Eye className="h-4 w-4" /> },
     { id: "share-card", label: "Social Card", icon: <Share2 className="h-4 w-4" /> },
     { id: "compare", label: "Compare Users", icon: <Users className="h-4 w-4" /> },
     { id: "stages", label: "All Stages", icon: <Clock className="h-4 w-4" /> },
@@ -106,67 +105,95 @@ export function PreviewWorkspace({
   const isAlignedLeft = readmeConfig.align === "left";
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {tabs.map((tab) => {
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
-                  active
-                    ? "bg-slate-900 text-white shadow-sm dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-                }`}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+    <div className="space-y-5">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-[#363d4a]">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+              <Layers className="h-4 w-4" />
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Live Creature Canvas — {meta.name}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Stage {stage.stage} ({stage.rank}) · View: {creatureConfig.view.toUpperCase()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                downloadTextFile("creature.svg", creatureSvg, "image/svg+xml")
+              }
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download SVG
+            </button>
+            <button
+              type="button"
+              onClick={() => handleCopy("readme", readmeMarkdown)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
+            >
+              {copiedId === "readme" ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {copiedId === "readme" ? "Copied" : "Copy README"}
+            </button>
+            <button
+              type="button"
+              onClick={onOpenAutoEvolve}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              12:00 AM Action
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() =>
-              downloadTextFile("creature.svg", creatureSvg, "image/svg+xml")
-            }
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            <Download className="h-4 w-4" />
-            Download SVG
-          </button>
-          <button
-            type="button"
-            onClick={() => handleCopy("readme", readmeMarkdown)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            {copiedId === "readme" ? (
-              <Check className="h-4 w-4 text-emerald-600" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-            {copiedId === "readme" ? "Copied README" : "Copy README.md"}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenAutoEvolve}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-slate-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-          >
-            <Clock className="h-4 w-4" />
-            12:00 AM Action
-          </button>
+        <div
+          className={`p-4 ${
+            creatureConfig.backgroundMode === "transparent"
+              ? "transparency-grid"
+              : "bg-[#0d1117]"
+          }`}
+        >
+          <div className="mx-auto max-w-2xl">
+            <CreatureSvgView config={creatureConfig} className="w-full" />
+          </div>
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
+        {tabs.map((tab) => {
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium transition ${
+                active
+                  ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-500"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#272c36] dark:hover:text-slate-100"
+              }`}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {activeTab === "profile" && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-[#363d4a] dark:bg-[#272c36]">
               {(
                 [
                   { id: "visual", label: "Visual Preview" },
@@ -180,8 +207,8 @@ export function PreviewWorkspace({
                   onClick={() => setCodeSubTab(sub.id)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                     codeSubTab === sub.id
-                      ? "bg-white text-slate-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100"
-                      : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                      ? "bg-white text-slate-900 shadow-sm dark:bg-[#1e222a] dark:text-slate-100"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-slate-100"
                   }`}
                 >
                   {sub.label}
@@ -194,7 +221,7 @@ export function PreviewWorkspace({
                 <button
                   type="button"
                   onClick={() => setShowSidebar((prev) => !prev)}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
                 >
                   {showSidebar ? "Hide Profile Sidebar" : "Show Profile Sidebar"}
                 </button>
@@ -205,17 +232,17 @@ export function PreviewWorkspace({
                       prev === "dark" ? "light" : "dark"
                     )
                   }
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
                 >
                   GitHub Canvas: {githubTheme === "dark" ? "Dark" : "Light"}
                 </button>
                 <button
                   type="button"
                   onClick={onEditReadme}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 transition hover:bg-indigo-100 dark:border-indigo-500/40 dark:bg-indigo-500/15 dark:text-indigo-300"
                 >
                   <Edit3 className="h-3.5 w-3.5" />
-                  Customize Text & Badges
+                  Edit README Text &amp; Stack
                 </button>
               </div>
             )}
@@ -231,7 +258,7 @@ export function PreviewWorkspace({
             >
               <div
                 className={`grid gap-6 ${
-                  showSidebar ? "lg:grid-cols-[220px_1fr]" : "grid-cols-1"
+                  showSidebar ? "lg:grid-cols-[200px_1fr]" : "grid-cols-1"
                 }`}
               >
                 {showSidebar && (
@@ -240,7 +267,7 @@ export function PreviewWorkspace({
                       <img
                         src={snapshot.avatarUrl}
                         alt={displayName}
-                        className={`h-24 w-24 rounded-full border object-cover ${
+                        className={`h-20 w-20 rounded-full border object-cover ${
                           githubTheme === "dark"
                             ? "border-[#30363d]"
                             : "border-[#d0d7de]"
@@ -248,7 +275,7 @@ export function PreviewWorkspace({
                       />
                     ) : (
                       <div
-                        className={`flex h-24 w-24 items-center justify-center rounded-full border text-2xl font-bold ${
+                        className={`flex h-20 w-20 items-center justify-center rounded-full border text-xl font-bold ${
                           githubTheme === "dark"
                             ? "border-[#30363d] bg-[#161b22] text-[#e6edf3]"
                             : "border-[#d0d7de] bg-[#f6f8fa] text-[#1f2328]"
@@ -259,11 +286,11 @@ export function PreviewWorkspace({
                     )}
 
                     <div>
-                      <div className="text-lg font-semibold leading-tight">
+                      <div className="text-base font-semibold leading-tight">
                         {displayName}
                       </div>
                       <div
-                        className={`text-sm ${
+                        className={`text-xs ${
                           githubTheme === "dark"
                             ? "text-[#8b949e]"
                             : "text-[#656d76]"
@@ -327,12 +354,14 @@ export function PreviewWorkspace({
                     <span className="font-mono">
                       {username} / README.md
                     </span>
-                    <span>{meta.name} · Stage {stage.stage}</span>
+                    <span>
+                      {meta.name} · Stage {stage.stage}
+                    </span>
                   </div>
 
                   {readmeConfig.rawOverride !== null ? (
                     <pre
-                      className={`max-h-[480px] overflow-auto rounded-lg border p-4 font-mono text-xs leading-relaxed ${
+                      className={`max-h-[420px] overflow-auto rounded-lg border p-4 font-mono text-xs leading-relaxed ${
                         githubTheme === "dark"
                           ? "border-[#30363d] bg-[#161b22] text-[#e6edf3]"
                           : "border-[#d0d7de] bg-[#f6f8fa] text-[#1f2328]"
@@ -600,24 +629,24 @@ export function PreviewWorkspace({
           {codeSubTab === "markdown" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 dark:text-zinc-400">
-                  Exact Markdown that will be published to{" "}
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Markdown to be published to{" "}
                   <code>{username}/{username}/README.md</code>
                 </span>
                 <button
                   type="button"
                   onClick={() => handleCopy("md-tab", readmeMarkdown)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
                 >
                   {copiedId === "md-tab" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
                   {copiedId === "md-tab" ? "Copied" : "Copy Markdown"}
                 </button>
               </div>
-              <pre className="max-h-[540px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              <pre className="max-h-[500px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200">
                 {readmeMarkdown}
               </pre>
             </div>
@@ -626,23 +655,24 @@ export function PreviewWorkspace({
           {codeSubTab === "svg" && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 dark:text-zinc-400">
-                  Self-contained pure CSS animated SVG ({creatureSvg.length.toLocaleString("en-US")} bytes)
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Self-contained pure CSS animated SVG (
+                  {creatureSvg.length.toLocaleString("en-US")} bytes)
                 </span>
                 <button
                   type="button"
                   onClick={() => handleCopy("svg-tab", creatureSvg)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
                 >
                   {copiedId === "svg-tab" ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
                   {copiedId === "svg-tab" ? "Copied" : "Copy SVG XML"}
                 </button>
               </div>
-              <pre className="max-h-[540px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-200">
+              <pre className="max-h-[500px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200">
                 {creatureSvg}
               </pre>
             </div>
@@ -650,43 +680,15 @@ export function PreviewWorkspace({
         </div>
       )}
 
-      {activeTab === "creature" && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100">
-                {meta.name} — Stage {stage.stage} ({stage.rank})
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Pure CSS animated SVG ready for transparent or dark READMEs
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                downloadTextFile("creature.svg", creatureSvg, "image/svg+xml")
-              }
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              <Download className="h-4 w-4" />
-              Download creature.svg
-            </button>
-          </div>
-          <div className="transparency-grid overflow-hidden rounded-xl border border-slate-200 p-4 dark:border-zinc-800">
-            <CreatureSvgView config={creatureConfig} className="w-full" />
-          </div>
-        </div>
-      )}
-
       {activeTab === "share-card" && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-zinc-100">
-                Social & Repository Banner (1280×640)
+              <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                Social &amp; Repository Banner (1280×640)
               </h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Great for social previews, portfolio headers, or optional README footer banners
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Optional exportable banner synced with your creature colors
               </p>
             </div>
             <button
@@ -694,13 +696,13 @@ export function PreviewWorkspace({
               onClick={() =>
                 downloadTextFile("share-card.svg", shareCardSvg, "image/svg+xml")
               }
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
             >
               <Download className="h-4 w-4" />
               Download share-card.svg
             </button>
           </div>
-          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-800">
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-[#363d4a]">
             <ShareCardSvgView config={creatureConfig} className="w-full" />
           </div>
         </div>

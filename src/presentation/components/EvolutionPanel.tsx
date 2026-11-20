@@ -22,19 +22,19 @@ export function EvolutionPanel({
   onApplyCommits,
 }: EvolutionPanelProps) {
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
       <div>
-        <div className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-zinc-100">
-          <Clock className="h-5 w-5" />
-          <h2>All 5 Evolution Stages & Camera Perspectives</h2>
+        <div className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+          <Clock className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+          <h2>All 5 Evolution Stages &amp; Camera Perspectives</h2>
         </div>
-        <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           Click any stage or camera perspective below to apply it directly to your creature.
         </p>
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-zinc-200">
+        <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
           Camera Angles
         </h3>
         <div className="grid gap-4 md:grid-cols-3">
@@ -47,8 +47,8 @@ export function EvolutionPanel({
                 onClick={() => onSelectView(view.id)}
                 className={`overflow-hidden rounded-xl border text-left transition ${
                   active
-                    ? "border-slate-900 ring-2 ring-slate-900/10 dark:border-zinc-100 dark:ring-zinc-100/20"
-                    : "border-slate-200 hover:border-slate-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                    ? "border-indigo-600 ring-2 ring-indigo-600/20 dark:border-indigo-400"
+                    : "border-slate-200 hover:border-slate-400 dark:border-[#363d4a] dark:hover:border-slate-500"
                 }`}
               >
                 <div className="bg-[#0d1117] p-2">
@@ -57,11 +57,11 @@ export function EvolutionPanel({
                     className="w-full"
                   />
                 </div>
-                <div className="p-3">
-                  <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                <div className="p-3 dark:bg-[#272c36]">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {view.name}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-zinc-400">
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
                     {view.description}
                   </div>
                 </div>
@@ -72,8 +72,8 @@ export function EvolutionPanel({
       </div>
 
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-zinc-200">
-          Evolution Progression (Commits → Armor & Feather Growth)
+        <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          Evolution Progression (Commits → Armor &amp; Feather Growth)
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           {STAGE_DEFINITIONS.map((stage) => {
@@ -89,8 +89,8 @@ export function EvolutionPanel({
                 onClick={() => onApplyCommits(stage.sampleCommits)}
                 className={`overflow-hidden rounded-xl border text-left transition ${
                   active
-                    ? "border-slate-900 ring-2 ring-slate-900/10 dark:border-zinc-100 dark:ring-zinc-100/20"
-                    : "border-slate-200 hover:border-slate-400 dark:border-zinc-800 dark:hover:border-zinc-600"
+                    ? "border-indigo-600 ring-2 ring-indigo-600/20 dark:border-indigo-400"
+                    : "border-slate-200 hover:border-slate-400 dark:border-[#363d4a] dark:hover:border-slate-500"
                 }`}
               >
                 <div className="bg-[#0d1117] p-2">
@@ -102,16 +102,16 @@ export function EvolutionPanel({
                     className="w-full"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3">
+                <div className="flex items-center justify-between p-3 dark:bg-[#272c36]">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       Stage {stage.stage}: {stage.rank}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-zinc-400">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                       {stage.unlocks}
                     </div>
                   </div>
-                  <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-[#1e222a] dark:text-slate-200">
                     {stage.rangeLabel}
                   </span>
                 </div>

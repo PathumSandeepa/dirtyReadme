@@ -7,8 +7,8 @@
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
+  --background: #14171c;
+  --foreground: #e2e8f0;
 }
 
 body {
@@ -32,10 +32,10 @@ body {
 }
 
 .dark .transparency-grid {
-  background-color: #0b0d12;
+  background-color: #1a1e25;
   background-image:
-    linear-gradient(45deg, #131720 25%, transparent 25%),
-    linear-gradient(-45deg, #131720 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #131720 75%),
-    linear-gradient(-45deg, transparent 75%, #131720 75%);
+    linear-gradient(45deg, #232832 25%, transparent 25%),
+    linear-gradient(-45deg, #232832 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #232832 75%),
+    linear-gradient(-45deg, transparent 75%, #232832 75%);
 }

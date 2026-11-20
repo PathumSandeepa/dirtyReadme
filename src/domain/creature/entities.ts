@@ -13,6 +13,7 @@ export type ThemePresetId =
   | "stealth-carbon"
   | "crimson-mecha"
   | "solar-gold"
+  | "cobalt-indigo"
   | "custom";
 
 export interface LanguageStat {
@@ -248,6 +249,17 @@ export const THEME_PRESETS: ThemePreset[] = [
       frame: "#231F1A",
     },
   },
+  {
+    id: "cobalt-indigo",
+    name: "Nordic Indigo",
+    tagline: "Arctic White / Cobalt Indigo / Mint",
+    colors: {
+      primary: "#EEF2FF",
+      accent: "#4F46E5",
+      energy: "#10B981",
+      frame: "#1E293B",
+    },
+  },
 ];
 
 export const DEFAULT_LANGUAGES: LanguageStat[] = [
@@ -271,6 +283,6 @@ export const DEFAULT_CREATURE_CONFIG: CreatureConfig = {
   showHud: true,
   customTitle: "",
   commits: 1680,
-  username: "PathumSandeepa",
+  username: "your-username",
   languages: DEFAULT_LANGUAGES,
 };

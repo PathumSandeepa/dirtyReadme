@@ -98,13 +98,27 @@ function encodeBase64Utf8(str: string): string {
   return btoa(binary);
 }
 
+export function parseGitHubUsername(rawInput: string): string {
+  const trimmed = rawInput.trim();
+  if (!trimmed) return "";
+
+  const urlMatch = trimmed.match(
+    /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9-]+)(?:\/|$|\?)/i
+  );
+  if (urlMatch?.[1]) {
+    return urlMatch[1];
+  }
+
+  return trimmed.replace(/^@+/, "").split(/[/?#\s]/)[0] || "";
+}
+
 export async function fetchGitHubProfileSnapshot(
   rawUsername: string,
   authToken?: string
 ): Promise<GitHubProfileSnapshot> {
-  const username = rawUsername.trim().replace(/^@/, "");
+  const username = parseGitHubUsername(rawUsername);
   if (!username) {
-    throw new Error("Please enter a valid GitHub username.");
+    throw new Error("Please enter a valid GitHub username or profile URL.");
   }
 
   const headers: Record<string, string> = {
@@ -302,6 +316,30 @@ export async function publishFilesToProfileRepo(params: {
     "Content-Type": "application/json",
   };
 
+  const repoInfoRes = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+    { headers }
+  );
+
+  if (repoInfoRes.status === 404) {
+    throw new Error(
+      `Repository "${owner}/${repo}" was not found. Make sure you created a public repository named "${repo}" under your GitHub account.`
+    );
+  }
+  if (repoInfoRes.status === 401 || repoInfoRes.status === 403) {
+    throw new Error(
+      "Authentication failed. Verify your Personal Access Token has Contents (Read and write) or classic 'repo' permissions."
+    );
+  }
+
+  let targetBranch = branch;
+  if (repoInfoRes.ok) {
+    const repoMeta = (await repoInfoRes.json()) as { default_branch?: string };
+    if (repoMeta.default_branch) {
+      targetBranch = repoMeta.default_branch;
+    }
+  }
+
   const updatedPaths: string[] = [];
 
   for (const file of files) {
@@ -309,14 +347,12 @@ export async function publishFilesToProfileRepo(params: {
     let existingSha: string | undefined;
 
     const getRes = await fetch(
-      `${endpoint}?ref=${encodeURIComponent(branch)}`,
+      `${endpoint}?ref=${encodeURIComponent(targetBranch)}`,
       { headers }
     );
     if (getRes.ok) {
       const existing = (await getRes.json()) as { sha?: string };
       existingSha = existing.sha;
-    } else if (getRes.status === 404 && file.path === "README.md") {
-      existingSha = undefined;
     } else if (getRes.status === 404) {
       existingSha = undefined;
     } else {
@@ -332,7 +368,7 @@ export async function publishFilesToProfileRepo(params: {
       body: JSON.stringify({
         message: file.message,
         content: encodeBase64Utf8(file.content),
-        branch,
+        branch: targetBranch,
         ...(existingSha ? { sha: existingSha } : {}),
       }),
     });

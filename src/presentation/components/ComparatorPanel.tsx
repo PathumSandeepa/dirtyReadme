@@ -15,7 +15,11 @@ interface ComparatorPanelProps {
 }
 
 export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
-  const [leftUser, setLeftUser] = useState(baseConfig.username || "PathumSandeepa");
+  const [leftUser, setLeftUser] = useState(
+    baseConfig.username && baseConfig.username !== "your-username"
+      ? baseConfig.username
+      : "octocat"
+  );
   const [rightUser, setRightUser] = useState("torvalds");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,13 +69,13 @@ export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
   };
 
   return (
-    <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
       <div>
-        <div className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-zinc-100">
-          <Users className="h-5 w-5" />
+        <div className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+          <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
           <h2>Compare Two GitHub Profiles Side-by-Side</h2>
         </div>
-        <p className="mt-1 text-sm text-slate-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
           Preview how your current creature styling scales across any two GitHub accounts.
         </p>
       </div>
@@ -85,19 +89,19 @@ export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
           value={leftUser}
           onChange={(e) => setLeftUser(e.target.value)}
           placeholder="First GitHub username"
-          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-600 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
         />
         <input
           type="text"
           value={rightUser}
           onChange={(e) => setRightUser(e.target.value)}
           placeholder="Second GitHub username"
-          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-600 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
         />
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60 dark:bg-indigo-500 dark:hover:bg-indigo-400"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           {loading ? "Comparing..." : "Compare"}
@@ -105,7 +109,7 @@ export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
       </form>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-200">
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-700/50 dark:bg-rose-950/30 dark:text-rose-200">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -119,18 +123,18 @@ export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
             return (
               <div
                 key={snap.username}
-                className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950"
+                className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36]"
               >
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-zinc-800">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-[#363d4a]">
                   <div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       @{snap.username}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-zinc-400">
+                    <div className="text-xs text-slate-500 dark:text-slate-300">
                       {snap.publicRepos} public repos · {snap.totalStars} stars
                     </div>
                   </div>
-                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">
+                  <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white dark:bg-indigo-500">
                     Stage {stage.stage} · {stage.rank}
                   </span>
                 </div>

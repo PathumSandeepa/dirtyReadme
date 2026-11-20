@@ -1107,7 +1107,7 @@ export function buildShareCardInnerSvg(
   const meta = getCreatureMeta(config.creature);
   const geometry = renderCreatureGeometryOnly(config, idPrefix);
 
-  const safeUser = escapeXml(config.username.trim() || "PathumSandeepa");
+  const safeUser = escapeXml(config.username.trim() || "your-username");
   const titleText = config.customTitle.trim()
     ? escapeXml(config.customTitle.trim().toUpperCase())
     : escapeXml(`${stageInfo.rank} ${meta.name.toUpperCase()}`);
@@ -1180,7 +1180,7 @@ export function generateShareCardSvgDocument(config: CreatureConfig): string {
   const meta = getCreatureMeta(config.creature);
   const inner = buildShareCardInnerSvg(config, "sc");
   const title = escapeXml(
-    `${meta.name} Share Card - @${config.username || "PathumSandeepa"}`
+    `${meta.name} Share Card - @${config.username || "your-username"}`
   );
 
   return [

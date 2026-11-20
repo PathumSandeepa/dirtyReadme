@@ -31,6 +31,7 @@ import {
 import {
   type GitHubProfileSnapshot,
   fetchGitHubProfileSnapshot,
+  parseGitHubUsername,
 } from "@/infrastructure/github/githubClient";
 
 export function useStudioController() {
@@ -187,10 +188,17 @@ export function useStudioController() {
   }
 
   async function syncFromGitHub(targetUsername: string, authToken?: string) {
+    const parsedUsername = parseGitHubUsername(targetUsername);
+    if (!parsedUsername) {
+      setSyncError("Please enter a valid GitHub username or profile URL.");
+      return null;
+    }
+
+    setCreatureConfig((prev) => ({ ...prev, username: parsedUsername }));
     setSyncLoading(true);
     setSyncError(null);
     try {
-      const snap = await fetchGitHubProfileSnapshot(targetUsername, authToken);
+      const snap = await fetchGitHubProfileSnapshot(parsedUsername, authToken);
       setSnapshot(snap);
       setCreatureConfig((prev) => {
         const nextCommits =
@@ -230,7 +238,7 @@ export function useStudioController() {
                     .replace(/\/$/, "")
                     .toUpperCase(),
                   url: snap.website,
-                  color: "27272A",
+                  color: "4F46E5",
                   logo: "googlechrome",
                   enabled: true,
                 },
@@ -257,8 +265,8 @@ export function useStudioController() {
           profileStatusBio: snap.bio,
           profileLocation: snap.location || prev.profileLocation,
           profileCompany: snap.company || prev.profileCompany,
-          profileWebsite: snap.website || prev.profileWebsite,
-          headline: `${snap.displayName} | Developer Profile`,
+          profileWebsite: snap.website || `https://github.com/${snap.username}`,
+          headline: `${snap.displayName} | Software Engineer`,
           bio: snap.bio,
           actionLinks: nextLinks,
           badges: prev.badges.map((b) =>

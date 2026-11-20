@@ -177,14 +177,14 @@ export function ProfileReadmeStepPanel({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
         <div className="mb-4 flex items-center gap-2.5">
-          <User className="h-5 w-5 text-slate-700 dark:text-zinc-300" />
+          <User className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-50">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Customize Every Text on Your Profile
             </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Edit headings, bio, tags, sidebar details, and captions freely.
             </p>
           </div>
@@ -193,7 +193,7 @@ export function ProfileReadmeStepPanel({
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Display Name
               </label>
               <input
@@ -202,12 +202,12 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileDisplayName", e.target.value)
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Location
               </label>
               <input
@@ -216,12 +216,12 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileLocation", e.target.value)
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Role / Organization
               </label>
               <input
@@ -230,12 +230,12 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileCompany", e.target.value)
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Website URL
               </label>
               <input
@@ -244,13 +244,13 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileWebsite", e.target.value)
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               Sidebar Status Bio
             </label>
             <input
@@ -259,24 +259,24 @@ export function ProfileReadmeStepPanel({
               onChange={(e) =>
                 onUpdateField("profileStatusBio", e.target.value)
               }
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               README Main Headline
             </label>
             <input
               type="text"
               value={readmeConfig.headline}
               onChange={(e) => onUpdateField("headline", e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               Role Tagline Chips (Drag to reorder)
             </label>
             <div className="mb-2.5 flex flex-wrap gap-2">
@@ -292,7 +292,7 @@ export function ProfileReadmeStepPanel({
                     }
                     setDraggedTagIdx(null);
                   }}
-                  className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-800 active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+                  className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-800 active:cursor-grabbing dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
                 >
                   <GripVertical className="h-3.5 w-3.5 text-slate-400" />
                   <input
@@ -326,11 +326,11 @@ export function ProfileReadmeStepPanel({
                 value={newTagInput}
                 onChange={(e) => setNewTagInput(e.target.value)}
                 placeholder="Add role tag (e.g. CLOUD ARCHITECT)"
-                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
               <button
                 type="submit"
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
               >
                 Add Tag
               </button>
@@ -338,31 +338,31 @@ export function ProfileReadmeStepPanel({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               About / Intro Paragraph
             </label>
             <textarea
               rows={3}
               value={readmeConfig.bio}
               onChange={(e) => onUpdateField("bio", e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               Call-To-Action Line
             </label>
             <input
               type="text"
               value={readmeConfig.ctaLine}
               onChange={(e) => onUpdateField("ctaLine", e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               Creature Caption Text (supports {"{{CREATURE}}"}, {"{{STAGE}}"}, {"{{COMMITS}}"})
             </label>
             <input
@@ -371,13 +371,13 @@ export function ProfileReadmeStepPanel({
               onChange={(e) =>
                 onUpdateField("telemetryCaptionTemplate", e.target.value)
               }
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Extra Section Heading (Optional)
               </label>
               <input
@@ -387,12 +387,12 @@ export function ProfileReadmeStepPanel({
                   onUpdateField("customSectionTitle", e.target.value)
                 }
                 placeholder="e.g. Current Focus"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Telemetry Table Title
               </label>
               <input
@@ -401,13 +401,13 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("statsTableTitle", e.target.value)
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-zinc-300">
+            <label className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300">
               Extra Custom Markdown Block (Optional)
             </label>
             <textarea
@@ -417,20 +417,20 @@ export function ProfileReadmeStepPanel({
                 onUpdateField("customFooterMarkdown", e.target.value)
               }
               placeholder="Write any extra Markdown lines or links..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
         <div className="mb-4 flex items-center gap-2.5">
-          <Tag className="h-5 w-5 text-slate-700 dark:text-zinc-300" />
+          <Tag className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-50">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Drag &amp; Drop Tech Stack Builder
             </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Drag badges to reorder them, or drag any skill from the library into your active stack.
             </p>
           </div>
@@ -448,11 +448,11 @@ export function ProfileReadmeStepPanel({
           }}
           className={`rounded-xl border-2 border-dashed p-4 transition ${
             dropZoneActive
-              ? "border-slate-900 bg-slate-100 dark:border-zinc-200 dark:bg-zinc-900"
-              : "border-slate-200 bg-slate-50/70 dark:border-zinc-800 dark:bg-zinc-900/40"
+              ? "border-slate-900 bg-slate-100 dark:border-indigo-400 dark:bg-[#272c36]"
+              : "border-slate-200 bg-slate-50/70 dark:border-[#363d4a] dark:bg-[#272c36]"
           }`}
         >
-          <div className="mb-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-zinc-300">
+          <div className="mb-2.5 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
             <span>Active Tech Stack ({activeBadges.length}) — Drag to Reorder</span>
             <span className="font-normal text-slate-400">
               Drop skills here
@@ -483,10 +483,10 @@ export function ProfileReadmeStepPanel({
                     e.stopPropagation();
                     handleDropOnBadge(badge.id);
                   }}
-                  className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 shadow-xs transition active:cursor-grabbing dark:bg-zinc-950 dark:text-zinc-100 ${
+                  className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-medium text-slate-800 shadow-xs transition active:cursor-grabbing dark:bg-[#1e222a] dark:text-slate-100 ${
                     dragOverBadgeId === badge.id
-                      ? "border-slate-900 ring-2 ring-slate-900/20 dark:border-zinc-100"
-                      : "border-slate-200 dark:border-zinc-700"
+                      ? "border-slate-900 ring-2 ring-slate-900/20 dark:border-indigo-400"
+                      : "border-slate-200 dark:border-[#454e5e]"
                   }`}
                 >
                   <GripVertical className="h-3.5 w-3.5 text-slate-400" />
@@ -495,7 +495,7 @@ export function ProfileReadmeStepPanel({
                     style={{ backgroundColor: `#${badge.color}` }}
                   />
                   <span>{badge.label}</span>
-                  <div className="ml-1 flex items-center gap-0.5 border-l border-slate-200 pl-1 dark:border-zinc-800">
+                  <div className="ml-1 flex items-center gap-0.5 border-l border-slate-200 pl-1 dark:border-[#363d4a]">
                     <button
                       type="button"
                       disabled={idx === 0}
@@ -548,8 +548,8 @@ export function ProfileReadmeStepPanel({
                   onClick={() => setBadgeCategory(cat)}
                   className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition ${
                     badgeCategory === cat
-                      ? "bg-slate-900 text-white dark:bg-zinc-50 dark:text-zinc-950"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-zinc-900 dark:text-zinc-400"
+                      ? "bg-slate-900 text-white dark:bg-indigo-500 dark:text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#272c36] dark:text-slate-400"
                   }`}
                 >
                   {cat}
@@ -561,11 +561,11 @@ export function ProfileReadmeStepPanel({
               value={badgeSearch}
               onChange={(e) => setBadgeSearch(e.target.value)}
               placeholder="Search skills..."
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
           </div>
 
-          <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-900/20">
+          <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded-xl border border-slate-100 bg-slate-50/40 p-3 dark:border-[#363d4a] dark:bg-[#242933]">
             {availableBadges.map((badge) => (
               <button
                 key={badge.id}
@@ -574,7 +574,7 @@ export function ProfileReadmeStepPanel({
                 onDragStart={() => setDraggedBadgeId(badge.id)}
                 onDragEnd={() => setDraggedBadgeId(null)}
                 onClick={() => toggleBadge(badge.id, true)}
-                className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 active:cursor-grabbing dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+                className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 active:cursor-grabbing dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
               >
                 <Plus className="h-3 w-3 text-slate-400" />
                 <span
@@ -592,7 +592,7 @@ export function ProfileReadmeStepPanel({
               value={newBadgeLabel}
               onChange={(e) => setNewBadgeLabel(e.target.value)}
               placeholder="Create custom badge (e.g. TensorFlow)"
-              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50"
+              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             />
             <input
               type="color"
@@ -603,7 +603,7 @@ export function ProfileReadmeStepPanel({
             />
             <button
               type="submit"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
             >
               Add
             </button>
@@ -611,14 +611,14 @@ export function ProfileReadmeStepPanel({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
         <div className="mb-4 flex items-center gap-2.5">
-          <Link2 className="h-5 w-5 text-slate-700 dark:text-zinc-300" />
+          <Link2 className="h-5 w-5 text-slate-700 dark:text-slate-300" />
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-zinc-50">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
               CTA Buttons &amp; Layout Options
             </h2>
-            <p className="text-sm text-slate-500 dark:text-zinc-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Customize your profile links, layout template, and optional Markdown blocks.
             </p>
           </div>
@@ -629,7 +629,7 @@ export function ProfileReadmeStepPanel({
             {readmeConfig.actionLinks.map((link, idx) => (
               <div
                 key={link.id}
-                className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/40 sm:grid-cols-12"
+                className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-[#363d4a] dark:bg-[#272c36] sm:grid-cols-12"
               >
                 <input
                   type="text"
@@ -640,7 +640,7 @@ export function ProfileReadmeStepPanel({
                     onUpdateField("actionLinks", updated);
                   }}
                   placeholder="Label"
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 sm:col-span-3"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 dark:border-[#363d4a] dark:bg-[#1e222a] dark:text-slate-100 sm:col-span-3"
                 />
                 <input
                   type="text"
@@ -651,7 +651,7 @@ export function ProfileReadmeStepPanel({
                     onUpdateField("actionLinks", updated);
                   }}
                   placeholder="Text"
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 sm:col-span-3"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 dark:border-[#363d4a] dark:bg-[#1e222a] dark:text-slate-100 sm:col-span-3"
                 />
                 <input
                   type="text"
@@ -662,7 +662,7 @@ export function ProfileReadmeStepPanel({
                     onUpdateField("actionLinks", updated);
                   }}
                   placeholder="https://..."
-                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 sm:col-span-5"
+                  className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 dark:border-[#363d4a] dark:bg-[#1e222a] dark:text-slate-300 sm:col-span-5"
                 />
                 <button
                   type="button"
@@ -673,7 +673,7 @@ export function ProfileReadmeStepPanel({
                     )
                   }
                   aria-label="Delete link"
-                  className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-400 hover:text-red-600 dark:border-zinc-800 dark:bg-zinc-950"
+                  className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-400 hover:text-red-600 dark:border-[#363d4a] dark:bg-[#1e222a]"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -690,21 +690,21 @@ export function ProfileReadmeStepPanel({
               value={newLinkLabel}
               onChange={(e) => setNewLinkLabel(e.target.value)}
               placeholder="Label (PORTFOLIO)"
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 sm:col-span-3"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100 sm:col-span-3"
             />
             <input
               type="text"
               value={newLinkText}
               onChange={(e) => setNewLinkText(e.target.value)}
               placeholder="Text (VISIT)"
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 sm:col-span-3"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100 sm:col-span-3"
             />
             <input
               type="url"
               value={newLinkUrl}
               onChange={(e) => setNewLinkUrl(e.target.value)}
               placeholder="https://..."
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 sm:col-span-4"
+              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100 sm:col-span-4"
             />
             <div className="flex gap-1.5 sm:col-span-2">
               <input
@@ -715,14 +715,14 @@ export function ProfileReadmeStepPanel({
               />
               <button
                 type="submit"
-                className="flex-1 rounded-xl border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+                className="flex-1 rounded-xl border border-slate-200 bg-white px-2 text-xs font-medium text-slate-800 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               >
                 Add
               </button>
             </div>
           </form>
 
-          <div className="grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-4 dark:border-zinc-800">
+          <div className="grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-4 dark:border-[#363d4a]">
             {README_TEMPLATES.map((tpl) => (
               <button
                 key={tpl.id}
@@ -730,14 +730,14 @@ export function ProfileReadmeStepPanel({
                 onClick={() => onUpdateField("templateId", tpl.id)}
                 className={`rounded-xl border p-3 text-left transition ${
                   readmeConfig.templateId === tpl.id
-                    ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900 dark:border-zinc-100 dark:bg-zinc-900"
-                    : "border-slate-200 bg-white hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950"
+                    ? "border-slate-900 bg-slate-50 ring-1 ring-slate-900 dark:border-indigo-400 dark:bg-[#272c36]"
+                    : "border-slate-200 bg-white hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#1e222a]"
                 }`}
               >
-                <div className="text-xs font-semibold text-slate-900 dark:text-zinc-100">
+                <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                   {tpl.name}
                 </div>
-                <div className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-400">
+                <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                   {tpl.description}
                 </div>
               </button>
@@ -755,24 +755,24 @@ export function ProfileReadmeStepPanel({
             ).map((opt) => (
               <label
                 key={opt.key}
-                className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-700 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-200"
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-700 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
               >
                 <input
                   type="checkbox"
                   checked={readmeConfig[opt.key]}
                   onChange={(e) => onUpdateField(opt.key, e.target.checked)}
-                  className="accent-slate-900 dark:accent-zinc-100"
+                  className="accent-slate-900 dark:accent-indigo-400"
                 />
                 <span>{opt.label}</span>
               </label>
             ))}
           </div>
 
-          <div className="border-t border-slate-100 pt-3 dark:border-zinc-800">
+          <div className="border-t border-slate-100 pt-3 dark:border-[#363d4a]">
             <button
               type="button"
               onClick={() => setShowRawEditor((v) => !v)}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-900 dark:text-zinc-300"
+              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 underline underline-offset-4 hover:text-slate-900 dark:text-slate-300"
             >
               <FileText className="h-3.5 w-3.5" />
               {showRawEditor
@@ -781,7 +781,7 @@ export function ProfileReadmeStepPanel({
             </button>
 
             {showRawEditor && (
-              <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-950 dark:border-zinc-800">
+              <div className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-950 dark:border-[#363d4a]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2">
                   <div className="flex flex-wrap gap-1.5">
                     {DYNAMIC_TOKENS.map((t) => (
@@ -823,7 +823,7 @@ export function ProfileReadmeStepPanel({
         <button
           type="button"
           onClick={onPrevStep}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200"
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -831,9 +831,9 @@ export function ProfileReadmeStepPanel({
         <button
           type="button"
           onClick={onNextStep}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-zinc-200"
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400"
         >
-          Next: Connect &amp; Publish to GitHub
+          Next: Enter Token &amp; Push
           <ArrowRight className="h-4 w-4" />
         </button>
       </div>
