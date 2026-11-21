@@ -90,6 +90,7 @@ export interface ReadmeConfig {
   customFooterMarkdown: string;
   badges: ReadmeBadge[];
   stackCards: TechStackCard[];
+  savedOrganizedCards: TechStackCard[] | null;
   actionLinks: ReadmeActionLink[];
   profileDisplayName: string;
   profileStatusBio: string;
@@ -481,6 +482,7 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
     ...card,
     badgeIds: [...card.badgeIds],
   })),
+  savedOrganizedCards: null,
   actionLinks: [
     {
       id: "github",

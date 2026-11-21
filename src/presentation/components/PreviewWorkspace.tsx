@@ -13,7 +13,6 @@ import {
   Link2,
   MapPin,
   Share2,
-  Users,
 } from "lucide-react";
 import type { CameraView, CreatureConfig } from "@/domain/creature/entities";
 import {
@@ -21,6 +20,7 @@ import {
   getEvolutionStage,
   getSpriteKey,
   getViewDisplayLabel,
+  getVisibleLanguages,
 } from "@/domain/creature/services";
 import type { ReadmeBadge, ReadmeConfig } from "@/domain/profile/entities";
 import {
@@ -48,12 +48,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ComparatorPanel } from "./ComparatorPanel";
 import { CreatureAnimatedView } from "./CreatureAnimatedView";
 import { EvolutionPanel } from "./EvolutionPanel";
 import { ShareCardCanvasView } from "./ShareCardCanvasView";
 
-type PreviewTab = "profile" | "share-card" | "compare" | "stages";
+type PreviewTab = "profile" | "share-card" | "stages";
 type CodeSubTab = "visual" | "markdown";
 
 interface PreviewWorkspaceProps {
@@ -92,6 +91,7 @@ export function PreviewWorkspace({
     creatureConfig.creature,
     creatureConfig.view
   );
+  const visibleLanguages = getVisibleLanguages(creatureConfig);
   const username = creatureConfig.username.trim() || "your-username";
   const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
   const enabledLinks = readmeConfig.actionLinks.filter(
@@ -174,7 +174,8 @@ export function PreviewWorkspace({
                 Live Creature Canvas — {meta.name}
               </CardTitle>
               <CardDescription className="font-mono text-xs">
-                Stage {stage.stage} ({stage.rank}) · View: {viewLabel}
+                Stage {stage.stage} ({stage.rank}) · View: {viewLabel} ·{" "}
+                {creatureConfig.inWater ? "In Water" : "No Water"}
               </CardDescription>
             </div>
           </div>
@@ -239,7 +240,7 @@ export function PreviewWorkspace({
         value={activeTab}
         onValueChange={(val) => setActiveTab(val as PreviewTab)}
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="gap-1.5 font-mono text-xs">
             <Eye className="size-3.5" />
             README
@@ -247,10 +248,6 @@ export function PreviewWorkspace({
           <TabsTrigger value="share-card" className="gap-1.5 font-mono text-xs">
             <Share2 className="size-3.5" />
             Social Card
-          </TabsTrigger>
-          <TabsTrigger value="compare" className="gap-1.5 font-mono text-xs">
-            <Users className="size-3.5" />
-            Compare
           </TabsTrigger>
           <TabsTrigger value="stages" className="gap-1.5 font-mono text-xs">
             <Clock className="size-3.5" />
@@ -662,10 +659,10 @@ export function PreviewWorkspace({
                                     </tr>
                                     <tr>
                                       <td className="px-3 py-1.5 opacity-80">
-                                        Top Stack
+                                        Top Stack ({visibleLanguages.length})
                                       </td>
                                       <td className="px-3 py-1.5">
-                                        {creatureConfig.languages
+                                        {visibleLanguages
                                           .map((l) => l.name)
                                           .join(" · ")}
                                       </td>
@@ -782,10 +779,6 @@ export function PreviewWorkspace({
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {activeTab === "compare" && (
-        <ComparatorPanel baseConfig={creatureConfig} />
       )}
 
       {activeTab === "stages" && (

@@ -8,13 +8,7 @@ export type ColorMode = "canonical" | "languages" | "custom";
 
 export type BackgroundMode = "transparent" | "custom";
 
-export type ThemePresetId =
-  | "ocean-slate"
-  | "biolume-azure"
-  | "mecha-prototype"
-  | "cobalt-indigo"
-  | "sunset-coral"
-  | "custom";
+export type LanguageCount = 3 | 5 | 7;
 
 export interface LanguageStat {
   name: string;
@@ -35,9 +29,10 @@ export interface CreatureConfig {
   view: CameraView;
   windowMode: ContributionWindow;
   colorMode: ColorMode;
-  themeId: ThemePresetId;
   colors: CreatureColors;
   backgroundMode: BackgroundMode;
+  inWater: boolean;
+  languageCount: LanguageCount;
   animationSpeed: number;
   showHud: boolean;
   customTitle: string;
@@ -73,13 +68,6 @@ export interface StageDefinition {
   unlocks: string;
 }
 
-export interface ThemePreset {
-  id: Exclude<ThemePresetId, "custom">;
-  name: string;
-  tagline: string;
-  colors: Omit<CreatureColors, "background">;
-}
-
 export interface DerivedPalette {
   armorHighlight: string;
   armorMain: string;
@@ -97,6 +85,24 @@ export interface DerivedPalette {
   background: string;
   isLightArmor: boolean;
 }
+
+export const ORIGINAL_CREATURE_PALETTES: Record<
+  CreatureId,
+  Omit<CreatureColors, "background">
+> = {
+  tulkun: {
+    primary: "#2C4156",
+    accent: "#C86D3B",
+    energy: "#9CE2F8",
+    frame: "#141E2B",
+  },
+  jellyfish: {
+    primary: "#1F75E8",
+    accent: "#7AE0FF",
+    energy: "#0D3E9E",
+    frame: "#0A2259",
+  },
+};
 
 export const CREATURE_CATALOG: CreatureMeta[] = [
   {
@@ -186,68 +192,16 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
   },
 ];
 
-export const THEME_PRESETS: ThemePreset[] = [
-  {
-    id: "ocean-slate",
-    name: "Ocean Tulkun",
-    tagline: "Original Slate / Copper Crest / Cyan Glow",
-    colors: {
-      primary: "#2C4156",
-      accent: "#C86D3B",
-      energy: "#9CE2F8",
-      frame: "#141E2B",
-    },
-  },
-  {
-    id: "biolume-azure",
-    name: "Biolume Azure",
-    tagline: "Original Electric Azure / Ice Cyan / Cobalt",
-    colors: {
-      primary: "#1F75E8",
-      accent: "#7AE0FF",
-      energy: "#0D3E9E",
-      frame: "#0A2259",
-    },
-  },
-  {
-    id: "mecha-prototype",
-    name: "Mecha White",
-    tagline: "Matte Silver / Safety Orange / Cyber Green",
-    colors: {
-      primary: "#CBD5E1",
-      accent: "#FF6B00",
-      energy: "#00E676",
-      frame: "#1F242D",
-    },
-  },
-  {
-    id: "cobalt-indigo",
-    name: "Pastel Indigo",
-    tagline: "Periwinkle / Coral / Mint Glow",
-    colors: {
-      primary: "#5B65D8",
-      accent: "#F89B79",
-      energy: "#8BE0C8",
-      frame: "#262A40",
-    },
-  },
-  {
-    id: "sunset-coral",
-    name: "Orchid Coral",
-    tagline: "Violet Pearl / Sunset Coral / Aqua",
-    colors: {
-      primary: "#7E57C2",
-      accent: "#FF8A65",
-      energy: "#80CBC4",
-      frame: "#241D35",
-    },
-  },
-];
+export const LANGUAGE_COUNTS: LanguageCount[] = [3, 5, 7];
 
 export const DEFAULT_LANGUAGES: LanguageStat[] = [
-  { name: "TypeScript", color: "#3178C6", share: 54 },
-  { name: "JavaScript", color: "#F1E05A", share: 28 },
-  { name: "Python", color: "#3572A5", share: 18 },
+  { name: "TypeScript", color: "#3178C6", share: 32 },
+  { name: "JavaScript", color: "#F1E05A", share: 22 },
+  { name: "Python", color: "#3572A5", share: 16 },
+  { name: "Rust", color: "#DEA584", share: 10 },
+  { name: "Go", color: "#00ADD8", share: 8 },
+  { name: "CSS", color: "#663399", share: 7 },
+  { name: "HTML", color: "#E34C26", share: 5 },
 ];
 
 export const DEFAULT_CREATURE_CONFIG: CreatureConfig = {
@@ -255,12 +209,13 @@ export const DEFAULT_CREATURE_CONFIG: CreatureConfig = {
   view: "side",
   windowMode: "annual",
   colorMode: "canonical",
-  themeId: "ocean-slate",
   colors: {
-    ...THEME_PRESETS[0].colors,
+    ...ORIGINAL_CREATURE_PALETTES.tulkun,
     background: "transparent",
   },
   backgroundMode: "transparent",
+  inWater: true,
+  languageCount: 3,
   animationSpeed: 1.0,
   showHud: true,
   customTitle: "",

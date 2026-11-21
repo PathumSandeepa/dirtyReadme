@@ -12,12 +12,14 @@ import {
   FileText,
   GripVertical,
   Layers,
+  LayoutGrid,
   Link2,
   Plus,
   RefreshCw,
   RotateCcw,
   Tag,
   Trash2,
+  Undo2,
   User,
 } from "lucide-react";
 import type { CreatureConfig } from "@/domain/creature/entities";
@@ -40,6 +42,7 @@ import {
 } from "@/domain/profile/readmeService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ColorPalettePopoverButton } from "./ColorPalettePicker";
 
 interface ProfileReadmeStepPanelProps {
   creatureConfig: CreatureConfig;
@@ -66,6 +69,8 @@ interface ProfileReadmeStepPanelProps {
   onRenameStackCard: (cardId: string, title: string) => void;
   onDeleteStackCard: (cardId: string) => void;
   onReorderStackCards: (fromIdx: number, toIdx: number) => void;
+  onCombineStackCards: () => void;
+  onUndoCombineStackCards: () => void;
   onAddCustomBadgeToCard: (
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
@@ -109,6 +114,8 @@ export function ProfileReadmeStepPanel({
   onRenameStackCard,
   onDeleteStackCard,
   onReorderStackCards,
+  onCombineStackCards,
+  onUndoCombineStackCards,
   onAddCustomBadgeToCard,
   onReorderTags,
   onPrevStep,
@@ -585,20 +592,44 @@ export function ProfileReadmeStepPanel({
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const id = onAddStackCard(
-                `Stack Group ${readmeConfig.stackCards.length + 1}`
-              );
-              setSelectedCardId(id);
-            }}
-          >
-            <Plus data-icon="inline-start" />
-            Add Card
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {readmeConfig.savedOrganizedCards !== null && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onUndoCombineStackCards}
+              >
+                <Undo2 data-icon="inline-start" />
+                Undo Combine ({readmeConfig.savedOrganizedCards.length} Cards)
+              </Button>
+            )}
+            {readmeConfig.stackCards.length > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onCombineStackCards}
+              >
+                <LayoutGrid data-icon="inline-start" />
+                Combine All
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const id = onAddStackCard(
+                  `Stack Group ${readmeConfig.stackCards.length + 1}`
+                );
+                setSelectedCardId(id);
+              }}
+            >
+              <Plus data-icon="inline-start" />
+              Add Card
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -642,7 +673,11 @@ export function ProfileReadmeStepPanel({
                       onChange={(e) =>
                         onRenameStackCard(card.id, e.target.value)
                       }
-                      placeholder="Card heading..."
+                      placeholder={
+                        readmeConfig.stackCards.length === 1 && !card.title
+                          ? "Combined Tech Stack (no heading)"
+                          : "Card heading..."
+                      }
                       className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground focus:border-border focus:bg-background focus:outline-none"
                     />
                     <Badge variant="secondary" className="font-mono text-[10px]">
@@ -918,12 +953,12 @@ export function ProfileReadmeStepPanel({
               className="rounded-xl border bg-muted/50 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:col-span-4"
             />
             <div className="flex gap-1.5 sm:col-span-3">
-              <input
-                type="color"
+              <ColorPalettePopoverButton
                 value={newBadgeColor}
-                onChange={(e) => setNewBadgeColor(e.target.value)}
-                aria-label="Custom badge color"
-                className="h-9 w-10 shrink-0 cursor-pointer rounded-xl border border-border bg-transparent"
+                onChange={setNewBadgeColor}
+                label="Custom Badge Color"
+                compact
+                className="h-9 rounded-xl px-2.5"
               />
               <button
                 type="submit"
@@ -1028,19 +1063,17 @@ export function ProfileReadmeStepPanel({
                         </option>
                       ))}
                     </select>
-                    <input
-                      type="color"
+                    <ColorPalettePopoverButton
                       value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
-                      onChange={(e) => {
+                      onChange={(hex) => {
                         const updated = [...readmeConfig.actionLinks];
                         updated[idx] = {
                           ...link,
-                          color: e.target.value.replace("#", "").toUpperCase(),
+                          color: hex.replace("#", "").toUpperCase(),
                         };
                         onUpdateField("actionLinks", updated);
                       }}
-                      aria-label={`Color for ${link.label}`}
-                      className="h-7 w-9 cursor-pointer rounded border border-border bg-transparent"
+                      label={`Color for ${link.label || "CTA"}`}
                     />
                   </div>
 
@@ -1147,12 +1180,12 @@ export function ProfileReadmeStepPanel({
               ))}
             </select>
             <div className="flex gap-1.5 sm:col-span-6">
-              <input
-                type="color"
+              <ColorPalettePopoverButton
                 value={newLinkColor}
-                onChange={(e) => setNewLinkColor(e.target.value)}
-                aria-label="New link badge color"
-                className="h-9 w-10 rounded-lg border border-border bg-transparent"
+                onChange={setNewLinkColor}
+                label="New CTA Badge Color"
+                compact
+                className="h-9 rounded-lg px-2.5"
               />
               <button
                 type="submit"

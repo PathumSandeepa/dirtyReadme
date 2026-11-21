@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ColorPicker,
   ColorService,
@@ -9,6 +9,7 @@ import {
 } from "react-color-palette";
 import "react-color-palette/css";
 import { normalizeHex } from "@/domain/creature/services";
+import { Button } from "@/components/ui/button";
 
 interface ColorPalettePickerProps {
   value: string;
@@ -52,5 +53,81 @@ export function ColorPalettePicker({
         onChange={handleChange}
       />
     </div>
+  );
+}
+
+interface ColorPalettePopoverButtonProps {
+  value: string;
+  onChange: (hex: string) => void;
+  label?: string;
+  compact?: boolean;
+  className?: string;
+}
+
+export function ColorPalettePopoverButton({
+  value,
+  onChange,
+  label = "Pick Color",
+  compact = false,
+  className = "",
+}: ColorPalettePopoverButtonProps) {
+  const [open, setOpen] = useState(false);
+  const safeHex = normalizeHex(value, "#2563EB");
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={label}
+        title={`${label} (${safeHex})`}
+        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1.5 text-xs font-mono text-foreground transition hover:border-primary/70 hover:bg-muted/50 ${className}`}
+      >
+        <span
+          className="size-4 shrink-0 rounded border border-border/80"
+          style={{ backgroundColor: safeHex }}
+        />
+        {!compact && (
+          <span className="text-[11px] text-muted-foreground">{safeHex}</span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-xs"
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="flex w-full max-w-xs flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className="size-4 rounded-full border border-border"
+                  style={{ backgroundColor: safeHex }}
+                />
+                <span className="font-mono text-xs font-semibold">{label}</span>
+              </div>
+              <span className="font-mono text-xs text-muted-foreground">
+                {safeHex}
+              </span>
+            </div>
+
+            <ColorPalettePicker value={safeHex} onChange={onChange} height={145} />
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setOpen(false)}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

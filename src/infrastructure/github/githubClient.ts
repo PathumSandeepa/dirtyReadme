@@ -27,6 +27,13 @@ export const GITHUB_LANGUAGE_COLORS: Record<string, string> = {
   Haskell: "#5E5086",
   Solidity: "#AA6746",
   Astro: "#FF5A03",
+  Dockerfile: "#384D54",
+  YAML: "#CB171E",
+  SQL: "#E38C00",
+  "Jupyter Notebook": "#DA5B0B",
+  PowerShell: "#012456",
+  Makefile: "#427819",
+  MDX: "#FCB32C",
 };
 
 export interface GitHubProfileSnapshot {
@@ -181,7 +188,7 @@ export async function fetchGitHubProfileSnapshot(
   const totalWeight = Array.from(langCounts.values()).reduce((a, b) => a + b, 0);
   const topLanguages: LanguageStat[] = Array.from(langCounts.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, 7)
     .map(([name, weight]) => ({
       name,
       color: getLanguageColor(name),

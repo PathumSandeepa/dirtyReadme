@@ -3,6 +3,7 @@ import {
   getCreatureMeta,
   getEvolutionStage,
   getViewDisplayLabel,
+  getVisibleLanguages,
 } from "@/domain/creature/services";
 import type {
   ReadmeActionLink,
@@ -57,7 +58,9 @@ export function resolveDynamicTokens(
     0,
     Math.floor(creature.commits || 0)
   ).toLocaleString("en-US");
-  const langsText = creature.languages.map((l) => l.name).join(" · ");
+  const langsText = getVisibleLanguages(creature)
+    .map((l) => l.name)
+    .join(" · ");
   const viewText = getViewDisplayLabel(creature.creature, creature.view);
 
   return text
@@ -174,6 +177,58 @@ export function reorderStackCards(
   return reorderItems(cards, fromIdx, toIdx);
 }
 
+export function combineAllStackCards(cards: TechStackCard[]): {
+  cards: TechStackCard[];
+  snapshot: TechStackCard[];
+} {
+  const snapshot = cards.map((card) => ({
+    ...card,
+    badgeIds: [...card.badgeIds],
+  }));
+  const seen = new Set<string>();
+  const mergedIds: string[] = [];
+  for (const card of cards) {
+    for (const id of card.badgeIds) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        mergedIds.push(id);
+      }
+    }
+  }
+  return {
+    cards: [{ id: "card-combined", title: "", badgeIds: mergedIds }],
+    snapshot,
+  };
+}
+
+export function restoreOrganizedStackCards(
+  snapshot: TechStackCard[],
+  currentCards: TechStackCard[]
+): TechStackCard[] {
+  const restored = snapshot.map((card) => ({
+    ...card,
+    badgeIds: [...card.badgeIds],
+  }));
+  const existing = new Set(restored.flatMap((c) => c.badgeIds));
+  const extraIds: string[] = [];
+  for (const card of currentCards) {
+    for (const id of card.badgeIds) {
+      if (!existing.has(id)) {
+        existing.add(id);
+        extraIds.push(id);
+      }
+    }
+  }
+  if (extraIds.length > 0 && restored.length > 0) {
+    const lastIdx = restored.length - 1;
+    restored[lastIdx] = {
+      ...restored[lastIdx],
+      badgeIds: [...restored[lastIdx].badgeIds, ...extraIds],
+    };
+  }
+  return restored;
+}
+
 export function buildMarkerSection(
   creature: CreatureConfig,
   readme: ReadmeConfig
@@ -225,7 +280,9 @@ export function buildStatsTableSection(
     Math.floor(creature.commits || 0)
   ).toLocaleString("en-US");
   const viewLabel = getViewDisplayLabel(creature.creature, creature.view);
-  const langList = creature.languages.map((l) => `\`${l.name}\``).join(" · ");
+  const langList = getVisibleLanguages(creature)
+    .map((l) => `\`${l.name}\``)
+    .join(" · ");
   const tableHeading =
     resolveDynamicTokens(readme.statsTableTitle, creature).trim() ||
     "Cybernetic Telemetry";

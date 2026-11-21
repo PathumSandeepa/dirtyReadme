@@ -1,4 +1,7 @@
-import type { CreatureConfig } from "@/domain/creature/entities";
+import {
+  DEFAULT_LANGUAGES,
+  type CreatureConfig,
+} from "@/domain/creature/entities";
 import { GLYPHS_5X7 } from "@/domain/creature/pixelArt";
 import { getCreatureMeta, getSpriteKey } from "@/domain/creature/services";
 import type { ReadmeConfig } from "@/domain/profile/entities";
@@ -99,6 +102,7 @@ export function generateEvolveScriptMjs(
   const spriteKey = getSpriteKey(creatureConfig.creature, creatureConfig.view);
   const meta = getCreatureMeta(creatureConfig.creature);
   const glyphsJson = JSON.stringify(GLYPHS_5X7);
+  const defaultLangsJson = JSON.stringify(DEFAULT_LANGUAGES);
 
   return `import fs from "node:fs";
 import path from "node:path";
@@ -125,6 +129,7 @@ const DEFAULT_SPRITE_KEY = ${JSON.stringify(spriteKey)};
 const CREATURE_DESIGNATION = ${JSON.stringify(meta.designation)};
 const CREATURE_DISPLAY_NAME = ${JSON.stringify(meta.name)};
 const GLYPHS_5X7 = ${glyphsJson};
+const DEFAULT_LANGUAGES = ${defaultLangsJson};
 
 function loadConfig() {
   const cfgPath = path.resolve("creature-config.json");
@@ -250,61 +255,111 @@ function hslToRgb(h, s, l) {
   ];
 }
 
-function recolorSprite(sprite, config) {
-  const isOriginalTulkun =
-    config.creature === "tulkun" &&
-    config.colorMode === "canonical" &&
-    config.themeId === "ocean-slate";
-  const isOriginalJelly =
-    config.creature === "jellyfish" &&
-    config.colorMode === "canonical" &&
-    config.themeId === "biolume-azure";
-  if (isOriginalTulkun || isOriginalJelly) return sprite;
+function ensureLanguageSlots(languages, count) {
+  const merged = [];
+  const seen = new Set();
+  for (const lang of languages || []) {
+    const key = String(lang?.name || "").trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push({ ...lang, color: lang.color || "#3178C6" });
+  }
+  for (const fallback of DEFAULT_LANGUAGES) {
+    if (merged.length >= count) break;
+    const key = fallback.name.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push({ ...fallback });
+    }
+  }
+  return merged;
+}
 
-  const [pH, pS, pL] = rgbToHsl(...hexToRgb(config.colors.primary));
-  const [aH, aS, aL] = rgbToHsl(...hexToRgb(config.colors.accent));
-  const [eH, eS, eL] = rgbToHsl(...hexToRgb(config.colors.energy));
+function getVisibleLanguages(config) {
+  const count = config.languageCount === 7 || config.languageCount === 5 ? config.languageCount : 3;
+  return ensureLanguageSlots(config.languages, count).slice(0, count);
+}
+
+function blendRgbaPixel(buf, px, py, r, g, b, a) {
+  if (px < 0 || px >= LOGICAL_WIDTH || py < 0 || py >= LOGICAL_HEIGHT || a <= 0) return;
+  const idx = (py * LOGICAL_WIDTH + px) * 4;
+  if (a >= 255 || buf[idx + 3] === 0) {
+    buf[idx] = r; buf[idx + 1] = g; buf[idx + 2] = b; buf[idx + 3] = a;
+    return;
+  }
+  const alpha = a / 255;
+  const inv = 1 - alpha;
+  buf[idx] = Math.round(r * alpha + buf[idx] * inv);
+  buf[idx + 1] = Math.round(g * alpha + buf[idx + 1] * inv);
+  buf[idx + 2] = Math.round(b * alpha + buf[idx + 2] * inv);
+  buf[idx + 3] = Math.min(255, Math.round(a + buf[idx + 3] * inv));
+}
+
+function recolorSprite(sprite, config) {
+  if (config.colorMode === "canonical") return sprite;
+
+  const visibleLangs = getVisibleLanguages(config);
+  const langHsls = visibleLangs.map((lang) => rgbToHsl(...hexToRgb(lang.color)));
+  const [pH, pS, pL] = config.colorMode === "languages" && langHsls[0] ? langHsls[0] : rgbToHsl(...hexToRgb(config.colors.primary));
+  const [aH, aS, aL] = config.colorMode === "languages" && langHsls[1] ? langHsls[1] : rgbToHsl(...hexToRgb(config.colors.accent));
+  const [eH, eS, eL] = config.colorMode === "languages" && langHsls[2] ? langHsls[2] : rgbToHsl(...hexToRgb(config.colors.energy));
+  const extraHsls = config.colorMode === "languages" ? langHsls.slice(3) : [];
+  const lerpHsl = (a, b, wt) => {
+    const dh = ((b[0] - a[0] + 540) % 360) - 180;
+    return [(a[0] + dh * wt + 360) % 360, a[1] * (1 - wt) + b[1] * wt, a[2] * (1 - wt) + b[2] * wt];
+  };
+  const sampleSmoothStops = (base, u) => {
+    if (extraHsls.length === 0 || u <= 0.35) return base;
+    const stops = [base, ...extraHsls];
+    const t = clamp((u - 0.35) / 0.65, 0, 1);
+    const pos = t * (stops.length - 1);
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(stops.length - 1, i0 + 1);
+    return lerpHsl(stops[i0], stops[i1], pos - i0);
+  };
+
   const out = new Uint8ClampedArray(sprite.data.length);
   const src = sprite.data;
+  const w = sprite.width;
 
   for (let i = 0; i < src.length; i += 4) {
     const a = src[i + 3];
     if (a === 0) continue;
-    const r = src[i];
-    const g = src[i + 1];
-    const b = src[i + 2];
+    const r = src[i], g = src[i + 1], b = src[i + 2];
     const [h, s, l] = rgbToHsl(r, g, b);
     if (l < 0.13 || (l > 0.9 && s < 0.16)) {
-      out[i] = r;
-      out[i + 1] = g;
-      out[i + 2] = b;
-      out[i + 3] = a;
+      out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = a;
       continue;
     }
+    const px = (i / 4) % w;
+    const u = px / Math.max(1, w - 1);
+
     let rgb;
     if (config.creature === "tulkun") {
       if (h >= 6 && h <= 54 && s > 0.24) {
         rgb = hslToRgb(aH, Math.max(s * 0.45, aS * 0.9), clamp(l * 0.65 + aL * 0.35, 0.18, 0.85));
       } else if (l > 0.56 && h >= 172 && h <= 228 && s > 0.14) {
-        rgb = hslToRgb(eH, clamp(eS * 0.85, 0.2, 0.95), clamp(l * 0.72 + eL * 0.28, 0.35, 0.92));
+        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
+        rgb = hslToRgb(th, clamp(ts * 0.88, 0.25, 0.96), clamp(l * 0.68 + tl * 0.32, 0.36, 0.92));
       } else if (s <= 0.15 && l > 0.65) {
         rgb = hslToRgb(pH, Math.min(0.14, pS * 0.3), l);
       } else {
-        rgb = hslToRgb(pH, clamp(pS * 0.92 + s * 0.12, 0.04, 0.88), clamp(pL + (l - 0.31) * 0.85, 0.14, 0.88));
+        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
+        rgb = hslToRgb(th, clamp(ts * 0.92 + s * 0.12, 0.04, 0.88), clamp(tl + (l - 0.31) * 0.85, 0.14, 0.88));
       }
     } else {
       if (l > 0.68) {
-        rgb = hslToRgb(aH, clamp(aS * 0.92, 0.25, 0.96), clamp(l * 0.74 + aL * 0.26, 0.55, 0.94));
+        const [th, ts, tl] = sampleSmoothStops([aH, aS, aL], u);
+        rgb = hslToRgb(th, clamp(ts * 0.92, 0.25, 0.96), clamp(l * 0.72 + tl * 0.28, 0.55, 0.94));
       } else if (l < 0.34) {
-        rgb = hslToRgb(eH, clamp(eS * 0.95, 0.35, 0.98), clamp(l * 0.65 + eL * 0.35, 0.16, 0.58));
+        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
+        rgb = hslToRgb(th, clamp(ts * 0.95, 0.35, 0.98), clamp(l * 0.65 + tl * 0.35, 0.16, 0.58));
       } else {
-        rgb = hslToRgb(pH, clamp(pS * 0.95, 0.25, 0.98), clamp(pL + (l - 0.48) * 0.85, 0.2, 0.82));
+        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
+        rgb = hslToRgb(th, clamp(ts * 0.95, 0.25, 0.98), clamp(tl + (l - 0.48) * 0.85, 0.2, 0.82));
       }
     }
-    out[i] = rgb[0];
-    out[i + 1] = rgb[1];
-    out[i + 2] = rgb[2];
-    out[i + 3] = a;
+    out[i] = rgb[0]; out[i + 1] = rgb[1]; out[i + 2] = rgb[2]; out[i + 3] = a;
   }
   return { width: sprite.width, height: sprite.height, data: out };
 }
@@ -315,22 +370,9 @@ function fillRectRgba(buf, x, y, w, h, rgba) {
   const x1 = Math.min(LOGICAL_WIDTH, Math.ceil(x + w));
   const y1 = Math.min(LOGICAL_HEIGHT, Math.ceil(y + h));
   const [r, g, b, a] = rgba;
-  const alpha = a / 255;
   for (let py = y0; py < y1; py++) {
     for (let px = x0; px < x1; px++) {
-      const idx = (py * LOGICAL_WIDTH + px) * 4;
-      if (alpha >= 1 || buf[idx + 3] === 0) {
-        buf[idx] = r;
-        buf[idx + 1] = g;
-        buf[idx + 2] = b;
-        buf[idx + 3] = a;
-      } else if (alpha > 0) {
-        const inv = 1 - alpha;
-        buf[idx] = Math.round(r * alpha + buf[idx] * inv);
-        buf[idx + 1] = Math.round(g * alpha + buf[idx + 1] * inv);
-        buf[idx + 2] = Math.round(b * alpha + buf[idx + 2] * inv);
-        buf[idx + 3] = Math.min(255, Math.round(a + buf[idx + 3] * inv));
-      }
+      blendRgbaPixel(buf, px, py, r, g, b, a);
     }
   }
 }
@@ -353,10 +395,95 @@ function drawPixelTextRgba(buf, text, ox, oy, rgba) {
   }
 }
 
+function drawUnderwaterBackdrop(buf, phase, config) {
+  const t = phase * Math.PI * 2;
+  const isTransparent = config.backgroundMode === "transparent";
+  if (isTransparent) {
+    const cx = LOGICAL_WIDTH * 0.5, cy = config.showHud ? 94 : 112, rx = 212, ry = config.showHud ? 88 : 104;
+    for (let y = 0; y < LOGICAL_HEIGHT; y++) {
+      const ny = (y - cy) / ry;
+      if (ny * ny >= 1) continue;
+      for (let x = 0; x < LOGICAL_WIDTH; x++) {
+        const nx = (x - cx) / rx;
+        const r2 = nx * nx + ny * ny;
+        if (r2 >= 1) continue;
+        const falloff = Math.pow(1 - Math.sqrt(r2), 1.65);
+        const depthT = y / LOGICAL_HEIGHT;
+        blendRgbaPixel(buf, x, y, Math.round(12 + (1 - depthT) * 14), Math.round(48 + (1 - depthT) * 52), Math.round(92 + (1 - depthT) * 68), Math.round(170 * falloff));
+      }
+    }
+  } else {
+    for (let y = 0; y < LOGICAL_HEIGHT; y++) {
+      const depth = y / LOGICAL_HEIGHT;
+      const topMix = 1 - depth;
+      const r = Math.round(8 + topMix * 16), g = Math.round(30 + topMix * 56), b = Math.round(62 + topMix * 84);
+      const a = Math.round(72 + Math.abs(0.5 - depth) * 32);
+      for (let x = 0; x < LOGICAL_WIDTH; x++) blendRgbaPixel(buf, x, y, r, g, b, a);
+    }
+  }
+
+  const rayBases = [65, 138, 224, 308, 382], rayWidths = [18, 24, 28, 20, 16];
+  const rayMaxY = config.showHud ? 172 : 210;
+  for (let i = 0; i < rayBases.length; i++) {
+    const baseX = rayBases[i] + Math.sin(t + i * 1.35) * 9, width = rayWidths[i];
+    for (let y = 4; y < rayMaxY; y++) {
+      const vFrac = y / rayMaxY, fadeY = (1 - vFrac) * smoothstep(0, 16, y);
+      const center = baseX + vFrac * 26, halfW = (width * (0.65 + vFrac * 0.7)) * 0.5;
+      const x0 = Math.max(8, Math.floor(center - halfW)), x1 = Math.min(LOGICAL_WIDTH - 8, Math.ceil(center + halfW));
+      const edgeFade = isTransparent ? smoothstep(20, 75, center) * smoothstep(LOGICAL_WIDTH - 20, LOGICAL_WIDTH - 75, center) : 1;
+      for (let x = x0; x < x1; x++) {
+        const dxNorm = Math.abs(x - center) / Math.max(1, halfW);
+        const alpha = Math.round(28 * (1 - dxNorm * dxNorm) * fadeY * edgeFade);
+        if (alpha > 2) blendRgbaPixel(buf, x, y, 135, 222, 255, alpha);
+      }
+    }
+  }
+
+  for (let s = 0; s < 6; s++) {
+    const baseY = 26 + s * 26, segLen = 36 + (s % 3) * 18;
+    const scrollX = ((s * 83 + phase * LOGICAL_WIDTH) % (LOGICAL_WIDTH + 60)) - 30;
+    for (let k = 0; k < segLen; k++) {
+      const px = Math.round(scrollX + k);
+      if (px < 18 || px > LOGICAL_WIDTH - 18) continue;
+      const py = Math.round(baseY + Math.sin(k * 0.16 + t + s) * 2.2);
+      blendRgbaPixel(buf, px, py, 165, 232, 255, Math.round(32 * Math.sin((k / segLen) * Math.PI)));
+    }
+  }
+
+  const maxBubbleY = config.showHud ? 174 : 216;
+  for (let i = 0; i < 10; i++) {
+    const seedX = ((i * 67 + 29) % 100) / 100, seedY = ((i * 43 + 11) % 100) / 100;
+    const bx = Math.round(36 + seedX * (LOGICAL_WIDTH - 72) + Math.sin(t + i * 1.1) * 3.5);
+    const rise = (seedY + phase) % 1, by = Math.round(maxBubbleY - rise * (maxBubbleY - 14));
+    const alpha = Math.round(145 * Math.sin(rise * Math.PI));
+    if (alpha > 12) fillRectRgba(buf, bx, by, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1, [178, 236, 255, alpha]);
+  }
+}
+
+function drawUnderwaterForegroundBubbles(buf, phase, config) {
+  if (!config.inWater) return;
+  const t = phase * Math.PI * 2, maxBubbleY = config.showHud ? 172 : 214;
+  for (let i = 0; i < 6; i++) {
+    const seedX = ((i * 89 + 17) % 100) / 100, seedY = ((i * 53 + 23) % 100) / 100;
+    const mul = i % 2 === 0 ? 1 : 2, rise = (seedY + phase * mul) % 1;
+    const bx = Math.round(46 + seedX * (LOGICAL_WIDTH - 92) + Math.sin(t * mul + i * 2.1) * 4.5);
+    const by = Math.round(maxBubbleY - rise * (maxBubbleY - 16));
+    const alpha = Math.round(180 * Math.sin(rise * Math.PI));
+    if (alpha < 18) continue;
+    if (i < 2) {
+      const rim = [148, 224, 255, alpha], gleam = [235, 250, 255, Math.min(255, alpha + 40)];
+      fillRectRgba(buf, bx + 1, by, 2, 1, rim); fillRectRgba(buf, bx + 1, by + 3, 2, 1, rim);
+      fillRectRgba(buf, bx, by + 1, 1, 2, rim); fillRectRgba(buf, bx + 3, by + 1, 1, 2, rim);
+      fillRectRgba(buf, bx + 1, by + 1, 1, 1, gleam);
+    } else {
+      fillRectRgba(buf, bx, by, 2, 2, [200, 242, 255, alpha]);
+    }
+  }
+}
+
 function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t) {
   if (creature === "jellyfish") {
-    const pulse =
-      (0.62 * Math.sin(t) + 0.26 * Math.sin(2 * t - 0.5) + 0.08 * Math.sin(3 * t - 1.0)) / 0.92;
+    const pulse = (0.62 * Math.sin(t) + 0.26 * Math.sin(2 * t - 0.5) + 0.08 * Math.sin(3 * t - 1.0)) / 0.92;
     const u = clamp(lx / drawW + 0.5, 0, 1);
     const v = clamp((ly / drawH) * 2, -1.2, 1.2);
     const trailWeight = smoothstep(0.21, 0.29, u);
@@ -391,8 +518,7 @@ function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t)
   const k = isTop ? 1.45 : 1.35;
   const envPower = isTop ? 1.55 : 1.65;
   const envBase = isTop ? 0.09 : 0.11;
-  let srcX = lx;
-  let srcY = ly;
+  let srcX = lx, srcY = ly;
 
   for (let iter = 0; iter < 2; iter++) {
     const u = clamp(srcX / drawW + 0.5, 0, 1);
@@ -422,47 +548,49 @@ function renderFrameRgba(recoloredSprite, config, phase) {
   if (config.backgroundMode !== "transparent") {
     const [br, bg, bb] = hexToRgb(config.colors.background, "#0D1117");
     for (let i = 0; i < out.length; i += 4) {
-      out[i] = br;
-      out[i + 1] = bg;
-      out[i + 2] = bb;
-      out[i + 3] = 255;
+      out[i] = br; out[i + 1] = bg; out[i + 2] = bb; out[i + 3] = 255;
     }
+  }
+
+  if (config.inWater) {
+    drawUnderwaterBackdrop(out, phase, config);
   }
 
   const stageInfo = getEvolutionStage(config.commits);
   const stageScale = STAGE_SCALES[stageInfo.stage - 1] || 1.0;
   const view = config.creature === "jellyfish" ? "side" : (config.view === "top" ? "top" : "side");
   const t = phase * Math.PI * 2;
+  const visibleLangs = getVisibleLanguages(config);
 
-  // Stage wake particles
   if (stageInfo.stage >= 2) {
     const count = stageInfo.stage === 2 ? 4 : stageInfo.stage === 3 ? 7 : stageInfo.stage === 4 ? 11 : 15;
+    const useLangColors = config.colorMode !== "canonical" && visibleLangs.length > 0;
     const [er, eg, eb] = hexToRgb(mixHex(config.colors.energy, "#FFFFFF", 0.45));
     const [ar, ag, ab] = hexToRgb(config.colors.accent);
-    const maxY = config.showHud ? 176 : 216;
+    const maxY = config.showHud ? 174 : 216;
     for (let i = 0; i < count; i++) {
-      const s1 = ((i * 73 + 19) % 100) / 100;
-      const s2 = ((i * 41 + 7) % 100) / 100;
-      const mul = (i % 3) + 1;
+      const s1 = ((i * 73 + 19) % 100) / 100, s2 = ((i * 41 + 7) % 100) / 100, mul = (i % 3) + 1;
       const px = Math.round(28 + ((s1 + phase * mul) % 1) * (LOGICAL_WIDTH - 56));
       const py = Math.round(24 + s2 * (maxY - 36) + Math.sin((phase * mul + s1) * Math.PI * 2) * 4);
       const sz = i % 4 === 0 && stageInfo.stage >= 4 ? 2 : 1;
-      const acc = i % 5 === 0 && stageInfo.stage >= 4;
       const alpha = clamp(Math.round(135 + 50 * Math.sin((phase + s2) * Math.PI * 2) + 50), 90, 235);
-      fillRectRgba(out, px, py, sz, sz, [acc ? ar : er, acc ? ag : eg, acc ? ab : eb, alpha]);
+      const rgb = useLangColors
+        ? hexToRgb(mixHex(visibleLangs[i % visibleLangs.length].color, "#FFFFFF", 0.35))
+        : (i % 5 === 0 && stageInfo.stage >= 4 ? [ar, ag, ab] : [er, eg, eb]);
+      fillRectRgba(out, px, py, sz, sz, [rgb[0], rgb[1], rgb[2], alpha]);
     }
   }
 
+  const hasMultiRowHud = config.showHud && visibleLangs.length > 3;
   const maxFitW = 342 * stageScale;
-  const maxFitH = (config.showHud ? 136 : 170) * stageScale;
+  const maxFitH = (hasMultiRowHud ? 126 : config.showHud ? 136 : 170) * stageScale;
   const fitScale = Math.min(maxFitW / recoloredSprite.width, maxFitH / recoloredSprite.height);
   const drawW = recoloredSprite.width * fitScale;
   const drawH = recoloredSprite.height * fitScale;
   const centerX = LOGICAL_WIDTH * 0.5;
-  const centerY = config.showHud ? 92 : 115;
+  const centerY = hasMultiRowHud ? 86 : config.showHud ? 92 : 115;
 
-  let gx = 0;
-  let gy = 0;
+  let gx = 0, gy = 0;
   if (config.creature === "jellyfish") {
     gx = -6.5 * Math.sin(t - 0.45) - 1.6 * Math.sin(2 * t - 0.9);
     gy = 2.4 * Math.sin(t + 0.5);
@@ -491,44 +619,42 @@ function renderFrameRgba(recoloredSprite, config, phase) {
       const sp = (sy * recoloredSprite.width + sx) * 4;
       const sa = srcData[sp + 3];
       if (sa < 12) continue;
-      const dp = (dy * LOGICAL_WIDTH + dx) * 4;
-      if (sa >= 250 || out[dp + 3] === 0) {
-        out[dp] = srcData[sp];
-        out[dp + 1] = srcData[sp + 1];
-        out[dp + 2] = srcData[sp + 2];
-        out[dp + 3] = sa;
-      } else {
-        const a = sa / 255;
-        const inv = 1 - a;
-        out[dp] = Math.round(srcData[sp] * a + out[dp] * inv);
-        out[dp + 1] = Math.round(srcData[sp + 1] * a + out[dp + 1] * inv);
-        out[dp + 2] = Math.round(srcData[sp + 2] * a + out[dp + 2] * inv);
-        out[dp + 3] = Math.min(255, Math.round(sa + out[dp + 3] * inv));
-      }
+      blendRgbaPixel(out, dx, dy, srcData[sp], srcData[sp + 1], srcData[sp + 2], sa);
     }
   }
+
+  drawUnderwaterForegroundBubbles(out, phase, config);
 
   if (config.showHud) {
     const title = (config.customTitle || "").trim()
       ? config.customTitle.trim().toUpperCase()
       : \`\${stageInfo.rank} \${config.creature.toUpperCase()}\`;
     const commitsStr = Math.max(0, Math.floor(config.commits || 0)).toLocaleString("en-US");
-    const isLightBg = config.backgroundMode !== "transparent" && getLuminance(config.colors.background) > 0.55;
+    const isLightBg = !config.inWater && config.backgroundMode !== "transparent" && getLuminance(config.colors.background) > 0.55;
     const [ar, ag, ab] = hexToRgb(config.colors.accent);
-    const [lr, lg, lb] = hexToRgb(isLightBg ? "#1E293B" : mixHex(config.colors.energy, "#CBEBFF", 0.55));
-    const [cr, cg, cb] = hexToRgb(isLightBg ? "#0F172A" : mixHex(mixHex(config.colors.energy, "#FFFFFF", 0.45), "#FFFFFF", 0.4));
+    const [lr, lg, lb] = hexToRgb(isLightBg ? "#1E293B" : mixHex(config.colors.energy, "#CBEBFF", 0.65));
+    const [cr, cg, cb] = hexToRgb(isLightBg ? "#0F172A" : mixHex(mixHex(config.colors.energy, "#FFFFFF", 0.45), "#FFFFFF", 0.45));
 
-    fillRectRgba(out, 24, 190, 4, 7, [ar, ag, ab, 255]);
-    drawPixelTextRgba(out, \`STAGE \${stageInfo.stage}: \${title}\`, 31, 190, [lr, lg, lb, 255]);
-    drawPixelTextRgba(out, \`CONTRIBUTIONS: \${commitsStr}\`, 24, 201, [cr, cg, cb, 255]);
+    const isCompact = visibleLangs.length > 3;
+    const r1Y = isCompact ? 179 : 190, r2Y = isCompact ? 189 : 201;
+    let chipY = isCompact ? 200 : 212;
+
+    fillRectRgba(out, 24, r1Y, 4, 7, [ar, ag, ab, 255]);
+    drawPixelTextRgba(out, \`STAGE \${stageInfo.stage}: \${title}\`, 31, r1Y, [lr, lg, lb, 255]);
+    drawPixelTextRgba(out, \`CONTRIBUTIONS: \${commitsStr}\`, 24, r2Y, [cr, cg, cb, 255]);
 
     let chipX = 24;
-    for (const lang of (config.languages || []).slice(0, 3)) {
+    for (const lang of visibleLangs) {
       const nameShort = lang.name.toUpperCase().slice(0, 10);
+      const chipWidth = 7 + nameShort.length * 6 + 9;
+      if (chipX > 24 && chipX + chipWidth > LOGICAL_WIDTH - 16) {
+        chipX = 24;
+        chipY += 11;
+      }
       const [sr, sg, sb] = hexToRgb(lang.color, "#8B949E");
-      fillRectRgba(out, chipX, 212, 4, 7, [sr, sg, sb, 255]);
-      drawPixelTextRgba(out, nameShort, chipX + 7, 212, [lr, lg, lb, 255]);
-      chipX += 7 + nameShort.length * 6 + 9;
+      fillRectRgba(out, chipX, chipY, 4, 7, [sr, sg, sb, 255]);
+      drawPixelTextRgba(out, nameShort, chipX + 7, chipY, [lr, lg, lb, 255]);
+      chipX += chipWidth;
     }
   }
   return out;
@@ -537,13 +663,11 @@ function renderFrameRgba(recoloredSprite, config, phase) {
 function upscaleRgba2x(logical) {
   const out = Buffer.alloc(CANVAS_WIDTH * CANVAS_HEIGHT * 4);
   for (let y = 0; y < LOGICAL_HEIGHT; y++) {
-    const r0 = y * 2 * CANVAS_WIDTH * 4;
-    const r1 = (y * 2 + 1) * CANVAS_WIDTH * 4;
+    const r0 = y * 2 * CANVAS_WIDTH * 4, r1 = (y * 2 + 1) * CANVAS_WIDTH * 4;
     for (let x = 0; x < LOGICAL_WIDTH; x++) {
       const sp = (y * LOGICAL_WIDTH + x) * 4;
       const r = logical[sp], g = logical[sp + 1], b = logical[sp + 2], a = logical[sp + 3];
-      const d0 = r0 + x * 8;
-      const d1 = r1 + x * 8;
+      const d0 = r0 + x * 8, d1 = r1 + x * 8;
       out[d0] = r; out[d0 + 1] = g; out[d0 + 2] = b; out[d0 + 3] = a;
       out[d0 + 4] = r; out[d0 + 5] = g; out[d0 + 6] = b; out[d0 + 7] = a;
       out[d1] = r; out[d1 + 1] = g; out[d1 + 2] = b; out[d1 + 3] = a;
@@ -617,13 +741,13 @@ const LANGUAGE_COLORS = {
   Go: "#00ADD8", Java: "#B07219", "C++": "#F34B7D", C: "#555555", "C#": "#178600",
   PHP: "#4F5D95", Ruby: "#701516", Swift: "#F05138", Kotlin: "#A97BFF", Dart: "#00B4AB",
   HTML: "#E34C26", CSS: "#563D7C", Shell: "#89E051", Vue: "#41B883", Svelte: "#FF3E00",
+  Dockerfile: "#384D54", YAML: "#CB171E", SQL: "#E38C00", "Jupyter Notebook": "#DA5B0B",
 };
 
-async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbackLangs) {
+async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbackLangs, languageCount) {
   const token = process.env.PROFILE_PAT || process.env.GITHUB_TOKEN || "";
   let commits = null;
 
-  // Tier 1: GitHub GraphQL (supports private contributions when PROFILE_PAT secret is configured)
   if (process.env.PROFILE_PAT) {
     try {
       const now = new Date();
@@ -648,10 +772,9 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
         const total = json?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions;
         if (typeof total === "number") commits = total;
       }
-    } catch { /* fall through to public API */ }
+    } catch { /* fall through */ }
   }
 
-  // Tier 2: Public GitHub Contributions Calendar API (works with ZERO custom secrets!)
   if (commits === null) {
     try {
       const currentYear = String(new Date().getUTCFullYear());
@@ -667,10 +790,9 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
           commits = data.total[currentYear];
         }
       }
-    } catch { /* fall through to HTML fallback */ }
+    } catch { /* fall through */ }
   }
 
-  // Tier 3: Direct GitHub public contributions HTML summary fallback
   if (commits === null) {
     try {
       const res = await fetch(\`https://github.com/users/\${encodeURIComponent(username)}/contributions\`, {
@@ -681,11 +803,15 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
         const match = html.match(/([\\d,]+)\\s+contributions?\\s+in/i);
         if (match?.[1]) commits = parseInt(match[1].replace(/,/g, ""), 10);
       }
-    } catch { /* keep previous commits if offline */ }
+    } catch { /* keep previous commits */ }
   }
 
-  // Fetch Top 3 languages from public GitHub REST API
+  // Preserve custom user colors by language name when syncing updated GitHub repo stats
+  const existingColorMap = new Map(
+    (fallbackLangs || []).map((l) => [String(l.name || "").toLowerCase(), l.color])
+  );
   let topLanguages = fallbackLangs || [];
+
   try {
     const headers = { Accept: "application/vnd.github+json", "User-Agent": "dynamic-readme-creature" };
     if (token) headers.Authorization = \`Bearer \${token}\`;
@@ -704,21 +830,24 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
       if (counts.size > 0) {
         topLanguages = Array.from(counts.entries())
           .sort((a, b) => b[1] - a[1])
-          .slice(0, 3)
-          .map(([name]) => ({ name, color: LANGUAGE_COLORS[name] || "#8B949E" }));
+          .slice(0, 7)
+          .map(([name]) => ({
+            name,
+            color: existingColorMap.get(name.toLowerCase()) || LANGUAGE_COLORS[name] || "#8B949E",
+          }));
       }
     }
   } catch { /* keep existing languages */ }
 
   return {
     commits: typeof commits === "number" && Number.isFinite(commits) ? commits : fallbackCommits,
-    topLanguages,
+    topLanguages: ensureLanguageSlots(topLanguages, languageCount),
   };
 }
 
-function resolveTokens(template, config, username, stage, rank, commits, topLanguages) {
+function resolveTokens(template, config, username, stage, rank, commits, visibleLangs) {
   const viewText = config.creature === "jellyfish" ? "PELAGIC" : (config.view === "top" ? "TOP" : "SIDE");
-  const langsText = (topLanguages || []).map((l) => l.name).join(" · ");
+  const langsText = (visibleLangs || []).map((l) => l.name).join(" · ");
   return String(template || "")
     .replaceAll("{{USERNAME}}", username)
     .replaceAll("{{CREATURE}}", CREATURE_DISPLAY_NAME)
@@ -729,7 +858,7 @@ function resolveTokens(template, config, username, stage, rank, commits, topLang
     .replaceAll("{{LANGUAGES}}", langsText);
 }
 
-function updateReadmeFiles(config, username, stage, rank, commits, topLanguages) {
+function updateReadmeFiles(config, username, stage, rank, commits, visibleLangs) {
   const readmePath = path.resolve("README.md");
   if (!fs.existsSync(readmePath)) return;
 
@@ -748,7 +877,7 @@ function updateReadmeFiles(config, username, stage, rank, commits, topLanguages)
 
   if (sIdx !== -1 && eIdx !== -1 && eIdx > sIdx) {
     const captionLine = rm.includeTelemetryCaption !== false
-      ? \`\\n<p align="\${align}"><sub>\${resolveTokens(rm.telemetryCaptionTemplate || "Live {{CREATURE}} for @{{USERNAME}} — Stage {{STAGE}}: {{RANK}} · {{COMMITS}} commits · View: {{VIEW}}", config, username, stage, rank, commits, topLanguages)}</sub></p>\`
+      ? \`\\n<p align="\${align}"><sub>\${resolveTokens(rm.telemetryCaptionTemplate || "Live {{CREATURE}} for @{{USERNAME}} — Stage {{STAGE}}: {{RANK}} · {{COMMITS}} commits · View: {{VIEW}}", config, username, stage, rank, commits, visibleLangs)}</sub></p>\`
       : "";
     const block = [
       startMarker,
@@ -769,8 +898,8 @@ function updateReadmeFiles(config, username, stage, rank, commits, topLanguages)
 
   if (ssIdx !== -1 && seIdx !== -1 && seIdx > ssIdx) {
     const viewLabel = config.creature === "jellyfish" ? "PELAGIC" : (config.view === "top" ? "TOP" : "SIDE");
-    const langList = (topLanguages || []).map((l) => \`\\\`\${l.name}\\\`\`).join(" · ");
-    const tableTitle = resolveTokens(rm.statsTableTitle || "Cybernetic Telemetry", config, username, stage, rank, commits, topLanguages);
+    const langList = (visibleLangs || []).map((l) => \`\\\`\${l.name}\\\`\`).join(" · ");
+    const tableTitle = resolveTokens(rm.statsTableTitle || "Cybernetic Telemetry", config, username, stage, rank, commits, visibleLangs);
     const statsBlock = [
       statsStart,
       \`### \${tableTitle}\`,
@@ -799,20 +928,23 @@ async function main() {
     config.username ||
     "your-username";
   const windowMode = process.env.CREATURE_WINDOW || config.windowMode || "annual";
+  const languageCount = config.languageCount === 7 || config.languageCount === 5 ? config.languageCount : 3;
 
   const telemetry = await fetchLiveTelemetry(
     username,
     windowMode,
     config.commits,
-    config.languages
+    config.languages,
+    languageCount
   );
 
   const nextConfig = {
     ...config,
     username,
     windowMode,
+    languageCount,
     commits: telemetry.commits,
-    languages: telemetry.topLanguages.length > 0 ? telemetry.topLanguages : config.languages,
+    languages: telemetry.topLanguages,
   };
 
   let spriteBuffer;
@@ -855,14 +987,15 @@ async function main() {
   fs.writeFileSync(path.resolve("creature.webp"), animatedWebP);
 
   const { stage, rank } = getEvolutionStage(nextConfig.commits);
-  updateReadmeFiles(nextConfig, username, stage, rank, nextConfig.commits, nextConfig.languages);
+  const visibleLangs = getVisibleLanguages(nextConfig);
+  updateReadmeFiles(nextConfig, username, stage, rank, nextConfig.commits, visibleLangs);
 
   const cfgPath = path.resolve("creature-config.json");
   if (fs.existsSync(cfgPath)) {
     fs.writeFileSync(cfgPath, JSON.stringify(nextConfig, null, 2), "utf8");
   }
 
-  console.log(\`Synced @\${username}: Stage \${stage} (\${rank}) · \${nextConfig.commits} commits -> creature.webp (\${animatedWebP.length} bytes)\`);
+  console.log(\`Synced @\${username}: Stage \${stage} (\${rank}) · \${nextConfig.commits} commits · \${visibleLangs.length} langs -> creature.webp (\${animatedWebP.length} bytes)\`);
 }
 
 main().catch((err) => {

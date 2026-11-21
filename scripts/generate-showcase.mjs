@@ -51,8 +51,8 @@ function loadTsModule(relPath) {
 
 const {
   DEFAULT_CREATURE_CONFIG: DEFAULT_CONFIG,
+  ORIGINAL_CREATURE_PALETTES,
   STAGE_DEFINITIONS,
-  THEME_PRESETS,
 } = loadTsModule("src/domain/creature/entities.ts");
 const { getSpriteKey } = loadTsModule("src/domain/creature/services.ts");
 const {
@@ -208,8 +208,8 @@ await writeAnimatedWebP("creature-jellyfish.webp", {
   ...DEFAULT_CONFIG,
   creature: "jellyfish",
   view: "side",
-  colors: { ...THEME_PRESETS[1].colors, background: "transparent" },
-  themeId: THEME_PRESETS[1].id,
+  colorMode: "canonical",
+  colors: { ...ORIGINAL_CREATURE_PALETTES.jellyfish, background: "transparent" },
   commits: 1990,
   username: "PathumSandeepa",
 });

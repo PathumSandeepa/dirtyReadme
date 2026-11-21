@@ -7,7 +7,7 @@ import type {
   CameraView,
   CreatureConfig,
   CreatureId,
-  THEME_PRESETS,
+  LanguageCount,
 } from "@/domain/creature/entities";
 import type {
   ReadmeBadge,
@@ -32,8 +32,13 @@ interface CustomizeWorkspaceProps {
   readmeMarkdown: string;
   onSelectCreature: (creature: CreatureId) => void;
   onSelectView: (view: CameraView) => void;
-  onApplyPreset: (id: (typeof THEME_PRESETS)[number]["id"]) => void;
-  onUpdateColor: (key: "primary" | "accent" | "energy", hex: string) => void;
+  onApplyOriginalColors: () => void;
+  onApplyAutoLanguageColors: () => void;
+  onSetLanguageCount: (count: LanguageCount) => void;
+  onUpdateLanguageColor: (index: number, hex: string) => void;
+  onUpdateLanguageName: (index: number, name: string) => void;
+  onResetLanguageColors: () => void;
+  onSetInWater: (inWater: boolean) => void;
   onSetBackgroundMode: (mode: BackgroundMode) => void;
   onUpdateCustomBg: (hex: string) => void;
   onUpdateCreatureConfig: (
@@ -61,6 +66,8 @@ interface CustomizeWorkspaceProps {
   onRenameStackCard: (cardId: string, title: string) => void;
   onDeleteStackCard: (cardId: string) => void;
   onReorderStackCards: (fromIdx: number, toIdx: number) => void;
+  onCombineStackCards: () => void;
+  onUndoCombineStackCards: () => void;
   onAddCustomBadgeToCard: (
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
@@ -79,8 +86,13 @@ export function CustomizeWorkspace({
   readmeMarkdown,
   onSelectCreature,
   onSelectView,
-  onApplyPreset,
-  onUpdateColor,
+  onApplyOriginalColors,
+  onApplyAutoLanguageColors,
+  onSetLanguageCount,
+  onUpdateLanguageColor,
+  onUpdateLanguageName,
+  onResetLanguageColors,
+  onSetInWater,
   onSetBackgroundMode,
   onUpdateCustomBg,
   onUpdateCreatureConfig,
@@ -94,6 +106,8 @@ export function CustomizeWorkspace({
   onRenameStackCard,
   onDeleteStackCard,
   onReorderStackCards,
+  onCombineStackCards,
+  onUndoCombineStackCards,
   onAddCustomBadgeToCard,
   onReorderTags,
   onOpenAutoEvolve,
@@ -148,8 +162,13 @@ export function CustomizeWorkspace({
               customBgHex={customBgHex}
               onSelectCreature={onSelectCreature}
               onSelectView={onSelectView}
-              onApplyPreset={onApplyPreset}
-              onUpdateColor={onUpdateColor}
+              onApplyOriginalColors={onApplyOriginalColors}
+              onApplyAutoLanguageColors={onApplyAutoLanguageColors}
+              onSetLanguageCount={onSetLanguageCount}
+              onUpdateLanguageColor={onUpdateLanguageColor}
+              onUpdateLanguageName={onUpdateLanguageName}
+              onResetLanguageColors={onResetLanguageColors}
+              onSetInWater={onSetInWater}
               onSetBackgroundMode={onSetBackgroundMode}
               onUpdateCustomBg={onUpdateCustomBg}
               onUpdateConfig={onUpdateCreatureConfig}
@@ -169,6 +188,8 @@ export function CustomizeWorkspace({
               onRenameStackCard={onRenameStackCard}
               onDeleteStackCard={onDeleteStackCard}
               onReorderStackCards={onReorderStackCards}
+              onCombineStackCards={onCombineStackCards}
+              onUndoCombineStackCards={onUndoCombineStackCards}
               onAddCustomBadgeToCard={onAddCustomBadgeToCard}
               onReorderTags={onReorderTags}
               onPrevStep={() => setActiveTab("creature")}

@@ -1,16 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Clock, Cpu, Layers, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  Cpu,
+  Droplets,
+  Layers,
+  ShieldCheck,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 import {
   CAMERA_VIEWS,
   CREATURE_CATALOG,
+  ORIGINAL_CREATURE_PALETTES,
   STAGE_DEFINITIONS,
-  THEME_PRESETS,
   type CameraView,
+  type ColorMode,
   type CreatureConfig,
 } from "@/domain/creature/entities";
-import { getCreatureMeta } from "@/domain/creature/services";
+import {
+  applyLanguageColors,
+  getCreatureMeta,
+} from "@/domain/creature/services";
 import type { ReadmeBadge, ReadmeConfig } from "@/domain/profile/entities";
 import {
   buildActionLinkBadgeUrl,
@@ -42,30 +55,34 @@ export function ShowcaseGalleryView({
 }: ShowcaseGalleryViewProps) {
   const [previewCreature, setPreviewCreature] = useState(creatureConfig.creature);
   const [previewView, setPreviewView] = useState<CameraView>(creatureConfig.view);
-  const [previewThemeId, setPreviewThemeId] = useState(creatureConfig.themeId);
+  const [previewColorMode, setPreviewColorMode] = useState<ColorMode>("canonical");
+  const [previewInWater, setPreviewInWater] = useState(true);
   const [previewStage, setPreviewStage] = useState<number>(4);
 
-  const selectedTheme =
-    THEME_PRESETS.find((t) => t.id === previewThemeId) ?? THEME_PRESETS[0];
   const stageObj =
     STAGE_DEFINITIONS.find((s) => s.stage === previewStage) ??
     STAGE_DEFINITIONS[3];
   const meta = getCreatureMeta(previewCreature);
 
-  const showcaseConfig: CreatureConfig = {
+  const baseShowcase: CreatureConfig = {
     ...creatureConfig,
     creature: previewCreature,
     view: meta.supportsViewSelection ? previewView : "side",
-    themeId: selectedTheme.id,
-    colorMode: "canonical",
+    colorMode: previewColorMode,
+    inWater: previewInWater,
     commits: stageObj.sampleCommits,
     username: "your-username",
     colors: {
-      ...selectedTheme.colors,
+      ...ORIGINAL_CREATURE_PALETTES[previewCreature],
       background: "transparent",
     },
     backgroundMode: "transparent",
   };
+
+  const showcaseConfig =
+    previewColorMode === "languages"
+      ? applyLanguageColors(baseShowcase)
+      : baseShowcase;
 
   const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
   const sampleBadges = readmeConfig.stackCards
@@ -200,11 +217,6 @@ export function ShowcaseGalleryView({
                       if (!item.supportsViewSelection) {
                         setPreviewView("side");
                       }
-                      if (item.id === "jellyfish" && previewThemeId === "ocean-slate") {
-                        setPreviewThemeId("biolume-azure");
-                      } else if (item.id === "tulkun" && previewThemeId === "biolume-azure") {
-                        setPreviewThemeId("ocean-slate");
-                      }
                     }}
                     className={`flex flex-col gap-1.5 rounded-lg border p-3.5 text-left transition ${
                       active
@@ -253,46 +265,66 @@ export function ShowcaseGalleryView({
 
           <Card>
             <CardHeader>
-              <CardTitle className="font-mono">Palettes &amp; Stages</CardTitle>
+              <CardTitle className="font-mono">
+                Colors, Water &amp; Stages
+              </CardTitle>
               <CardDescription>
-                Colors and anatomical growth tiers included in WebP &amp; GIF export.
+                Toggle original colors or auto language tint, underwater backdrop, and
+                growth stage.
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-3.5">
               <div className="grid grid-cols-2 gap-2">
-                {THEME_PRESETS.map((theme) => {
-                  const active = previewThemeId === theme.id;
-                  return (
-                    <button
-                      key={theme.id}
-                      type="button"
-                      onClick={() => setPreviewThemeId(theme.id)}
-                      className={`flex flex-col gap-2 rounded-lg border p-2.5 text-left transition ${
-                        active
-                          ? "border-primary bg-accent/60"
-                          : "bg-muted/40 hover:bg-muted"
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="size-3.5 rounded-full border"
-                          style={{ backgroundColor: theme.colors.primary }}
-                        />
-                        <span
-                          className="size-3.5 rounded-full border"
-                          style={{ backgroundColor: theme.colors.accent }}
-                        />
-                        <span
-                          className="size-3.5 rounded-full border"
-                          style={{ backgroundColor: theme.colors.energy }}
-                        />
-                      </div>
-                      <span className="font-mono text-xs font-medium text-foreground">
-                        {theme.name}
-                      </span>
-                    </button>
-                  );
-                })}
+                <button
+                  type="button"
+                  onClick={() => setPreviewColorMode("canonical")}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition ${
+                    previewColorMode === "canonical"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-muted/40 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Sparkles className="size-3.5" />
+                  Original Colors
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewColorMode("languages")}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition ${
+                    previewColorMode === "languages"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-muted/40 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Wand2 className="size-3.5" />
+                  Auto Languages
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewInWater(true)}
+                  className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition ${
+                    previewInWater
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-muted/40 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Droplets className="size-3.5" />
+                  In Water
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewInWater(false)}
+                  className={`rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition ${
+                    !previewInWater
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-muted/40 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  Without Water
+                </button>
               </div>
 
               <div className="grid grid-cols-5 gap-1.5">
@@ -326,7 +358,8 @@ export function ShowcaseGalleryView({
                   Live Pixel Animation Preview
                 </CardTitle>
                 <CardDescription className="font-mono text-xs">
-                  Stage {stageObj.stage}: {stageObj.rank} · Transparent Canvas
+                  Stage {stageObj.stage}: {stageObj.rank} ·{" "}
+                  {previewInWater ? "In Water" : "Clean Canvas"}
                 </CardDescription>
               </div>
               <Badge variant="outline" className="font-mono">

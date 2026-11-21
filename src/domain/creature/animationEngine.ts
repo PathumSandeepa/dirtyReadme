@@ -10,6 +10,7 @@ import {
   getEvolutionStage,
   getLuminance,
   getViewDisplayLabel,
+  getVisibleLanguages,
   hexToRgb,
   mixHex,
 } from "@/domain/creature/services";
@@ -98,33 +99,93 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   ];
 }
 
+function blendRgbaPixel(
+  buffer: Uint8ClampedArray,
+  bufW: number,
+  bufH: number,
+  px: number,
+  py: number,
+  r: number,
+  g: number,
+  b: number,
+  a: number
+): void {
+  if (px < 0 || px >= bufW || py < 0 || py >= bufH || a <= 0) return;
+  const idx = (py * bufW + px) * 4;
+  if (a >= 255 || buffer[idx + 3] === 0) {
+    buffer[idx] = r;
+    buffer[idx + 1] = g;
+    buffer[idx + 2] = b;
+    buffer[idx + 3] = a;
+    return;
+  }
+  const alpha = a / 255;
+  const inv = 1 - alpha;
+  buffer[idx] = Math.round(r * alpha + buffer[idx] * inv);
+  buffer[idx + 1] = Math.round(g * alpha + buffer[idx + 1] * inv);
+  buffer[idx + 2] = Math.round(b * alpha + buffer[idx + 2] * inv);
+  buffer[idx + 3] = Math.min(255, Math.round(a + buffer[idx + 3] * inv));
+}
+
 export function recolorSpriteRgba(
   sprite: SpriteRgba,
   config: CreatureConfig
 ): SpriteRgba {
-  const isOriginalTulkun =
-    config.creature === "tulkun" &&
-    config.colorMode === "canonical" &&
-    config.themeId === "ocean-slate";
-  const isOriginalJellyfish =
-    config.creature === "jellyfish" &&
-    config.colorMode === "canonical" &&
-    config.themeId === "biolume-azure";
-
-  if (isOriginalTulkun || isOriginalJellyfish) {
+  if (config.colorMode === "canonical") {
     return sprite;
   }
 
-  const [pr, pg, pb] = hexToRgb(config.colors.primary);
-  const [ar, ag, ab] = hexToRgb(config.colors.accent);
-  const [er, eg, eb] = hexToRgb(config.colors.energy);
+  const visibleLangs = getVisibleLanguages(config);
+  const langHsls = visibleLangs.map((lang) => {
+    const [r, g, b] = hexToRgb(lang.color);
+    return rgbToHsl(r, g, b);
+  });
 
-  const [pH, pS, pL] = rgbToHsl(pr, pg, pb);
-  const [aH, aS, aL] = rgbToHsl(ar, ag, ab);
-  const [eH, eS, eL] = rgbToHsl(er, eg, eb);
+  const [pH, pS, pL] =
+    config.colorMode === "languages" && langHsls[0]
+      ? langHsls[0]
+      : rgbToHsl(...hexToRgb(config.colors.primary));
+  const [aH, aS, aL] =
+    config.colorMode === "languages" && langHsls[1]
+      ? langHsls[1]
+      : rgbToHsl(...hexToRgb(config.colors.accent));
+  const [eH, eS, eL] =
+    config.colorMode === "languages" && langHsls[2]
+      ? langHsls[2]
+      : rgbToHsl(...hexToRgb(config.colors.energy));
+
+  const extraHsls =
+    config.colorMode === "languages" ? langHsls.slice(3) : [];
+
+  const lerpHsl = (
+    a: [number, number, number],
+    b: [number, number, number],
+    w: number
+  ): [number, number, number] => {
+    const dh = ((b[0] - a[0] + 540) % 360) - 180;
+    return [
+      (a[0] + dh * w + 360) % 360,
+      a[1] * (1 - w) + b[1] * w,
+      a[2] * (1 - w) + b[2] * w,
+    ];
+  };
+
+  const sampleSmoothStops = (
+    base: [number, number, number],
+    u: number
+  ): [number, number, number] => {
+    if (extraHsls.length === 0 || u <= 0.35) return base;
+    const stops = [base, ...extraHsls];
+    const t = clamp((u - 0.35) / 0.65, 0, 1);
+    const pos = t * (stops.length - 1);
+    const i0 = Math.floor(pos);
+    const i1 = Math.min(stops.length - 1, i0 + 1);
+    return lerpHsl(stops[i0], stops[i1], pos - i0);
+  };
 
   const out = new Uint8ClampedArray(sprite.data.length);
   const src = sprite.data;
+  const w = sprite.width;
 
   for (let i = 0; i < src.length; i += 4) {
     const a = src[i + 3];
@@ -144,39 +205,46 @@ export function recolorSpriteRgba(
       continue;
     }
 
+    const px = (i / 4) % w;
+    const u = px / Math.max(1, w - 1);
+
     let nr: number;
     let ng: number;
     let nb: number;
 
     if (config.creature === "tulkun") {
       if (h >= 6 && h <= 54 && s > 0.24) {
-        // Copper brow crest -> accent channel
         const targetL = clamp(l * 0.65 + aL * 0.35, 0.18, 0.85);
         [nr, ng, nb] = hslToRgb(aH, Math.max(s * 0.45, aS * 0.9), targetL);
       } else if (l > 0.56 && h >= 172 && h <= 228 && s > 0.14) {
-        // Dorsal cyan markings & pale cyan belly tint -> energy channel
-        const targetL = clamp(l * 0.72 + eL * 0.28, 0.35, 0.92);
-        [nr, ng, nb] = hslToRgb(eH, clamp(eS * 0.85, 0.2, 0.95), targetL);
+        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
+        const targetL = clamp(l * 0.68 + tl * 0.32, 0.36, 0.92);
+        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.88, 0.25, 0.96), targetL);
       } else if (s <= 0.15 && l > 0.65) {
-        // White/silver belly pleats stay neutral silver-white slightly harmonized
         [nr, ng, nb] = hslToRgb(pH, Math.min(0.14, pS * 0.3), l);
       } else {
-        // Slate body armor -> primary channel while preserving original shading depth
+        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
         const deltaL = l - 0.31;
-        const targetL = clamp(pL + deltaL * 0.85, 0.14, 0.88);
-        [nr, ng, nb] = hslToRgb(pH, clamp(pS * 0.92 + s * 0.12, 0.04, 0.88), targetL);
+        const targetL = clamp(tl + deltaL * 0.85, 0.14, 0.88);
+        [nr, ng, nb] = hslToRgb(
+          th,
+          clamp(ts * 0.92 + s * 0.12, 0.04, 0.88),
+          targetL
+        );
       }
     } else {
-      // Jellyfish: split blue luminosity into highlight/accent, mid/primary, deep/energy
       if (l > 0.68) {
-        const targetL = clamp(l * 0.74 + aL * 0.26, 0.55, 0.94);
-        [nr, ng, nb] = hslToRgb(aH, clamp(aS * 0.92, 0.25, 0.96), targetL);
+        const [th, ts, tl] = sampleSmoothStops([aH, aS, aL], u);
+        const targetL = clamp(l * 0.72 + tl * 0.28, 0.55, 0.94);
+        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.92, 0.25, 0.96), targetL);
       } else if (l < 0.34) {
-        const targetL = clamp(l * 0.65 + eL * 0.35, 0.16, 0.58);
-        [nr, ng, nb] = hslToRgb(eH, clamp(eS * 0.95, 0.35, 0.98), targetL);
+        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
+        const targetL = clamp(l * 0.65 + tl * 0.35, 0.16, 0.58);
+        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.95, 0.35, 0.98), targetL);
       } else {
-        const targetL = clamp(pL + (l - 0.48) * 0.85, 0.2, 0.82);
-        [nr, ng, nb] = hslToRgb(pH, clamp(pS * 0.95, 0.25, 0.98), targetL);
+        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
+        const targetL = clamp(tl + (l - 0.48) * 0.85, 0.2, 0.82);
+        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.95, 0.25, 0.98), targetL);
       }
     }
 
@@ -189,6 +257,177 @@ export function recolorSpriteRgba(
   return { width: sprite.width, height: sprite.height, data: out };
 }
 
+function drawUnderwaterBackdrop(
+  buffer: Uint8ClampedArray,
+  phase: number,
+  config: CreatureConfig
+): void {
+  const t = phase * Math.PI * 2;
+  const isTransparent = config.backgroundMode === "transparent";
+
+  if (isTransparent) {
+    // Soft feathered deep-ocean aura centered behind creature (alpha fades to 0 inside canvas edges)
+    const cx = LOGICAL_WIDTH * 0.5;
+    const cy = config.showHud ? 94 : 112;
+    const rx = 212;
+    const ry = config.showHud ? 88 : 104;
+
+    for (let y = 0; y < LOGICAL_HEIGHT; y++) {
+      const ny = (y - cy) / ry;
+      const ny2 = ny * ny;
+      if (ny2 >= 1) continue;
+      for (let x = 0; x < LOGICAL_WIDTH; x++) {
+        const nx = (x - cx) / rx;
+        const r2 = nx * nx + ny2;
+        if (r2 >= 1) continue;
+        const falloff = Math.pow(1 - Math.sqrt(r2), 1.65);
+        const depthT = y / LOGICAL_HEIGHT;
+        const r = Math.round(12 + (1 - depthT) * 14);
+        const g = Math.round(48 + (1 - depthT) * 52);
+        const b = Math.round(92 + (1 - depthT) * 68);
+        const a = Math.round(170 * falloff);
+        blendRgbaPixel(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, x, y, r, g, b, a);
+      }
+    }
+  } else {
+    // Subtle deep-water top-to-bottom ocean depth gradient over custom background
+    for (let y = 0; y < LOGICAL_HEIGHT; y++) {
+      const depth = y / LOGICAL_HEIGHT;
+      const topMix = 1 - depth;
+      const r = Math.round(8 + topMix * 16);
+      const g = Math.round(30 + topMix * 56);
+      const b = Math.round(62 + topMix * 84);
+      const a = Math.round(72 + Math.abs(0.5 - depth) * 32);
+      for (let x = 0; x < LOGICAL_WIDTH; x++) {
+        blendRgbaPixel(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, x, y, r, g, b, a);
+      }
+    }
+  }
+
+  // Soft swaying underwater caustic sunbeams from surface
+  const rayBases = [65, 138, 224, 308, 382];
+  const rayWidths = [18, 24, 28, 20, 16];
+  const rayMaxY = config.showHud ? 172 : 210;
+
+  for (let i = 0; i < rayBases.length; i++) {
+    const sway = Math.sin(t + i * 1.35) * 9;
+    const baseX = rayBases[i] + sway;
+    const width = rayWidths[i];
+    for (let y = 4; y < rayMaxY; y++) {
+      const vFrac = y / rayMaxY;
+      const fadeY = (1 - vFrac) * smoothstep(0, 16, y);
+      const center = baseX + vFrac * 26;
+      const halfW = (width * (0.65 + vFrac * 0.7)) * 0.5;
+      const x0 = Math.max(8, Math.floor(center - halfW));
+      const x1 = Math.min(LOGICAL_WIDTH - 8, Math.ceil(center + halfW));
+
+      // Keep rays feathered well inside transparent aura
+      const edgeFade = isTransparent
+        ? smoothstep(20, 75, center) * smoothstep(LOGICAL_WIDTH - 20, LOGICAL_WIDTH - 75, center)
+        : 1;
+
+      for (let x = x0; x < x1; x++) {
+        const dxNorm = Math.abs(x - center) / Math.max(1, halfW);
+        const alpha = Math.round(28 * (1 - dxNorm * dxNorm) * fadeY * edgeFade);
+        if (alpha > 2) {
+          blendRgbaPixel(
+            buffer,
+            LOGICAL_WIDTH,
+            LOGICAL_HEIGHT,
+            x,
+            y,
+            135,
+            222,
+            255,
+            alpha
+          );
+        }
+      }
+    }
+  }
+
+  // Subtle drifting underwater current streaks
+  for (let s = 0; s < 6; s++) {
+    const baseY = 26 + s * 26;
+    const segLen = 36 + (s % 3) * 18;
+    const scrollX = ((s * 83 + phase * LOGICAL_WIDTH) % (LOGICAL_WIDTH + 60)) - 30;
+    for (let k = 0; k < segLen; k++) {
+      const px = Math.round(scrollX + k);
+      if (px < 18 || px > LOGICAL_WIDTH - 18) continue;
+      const py = Math.round(baseY + Math.sin(k * 0.16 + t + s) * 2.2);
+      const edge = Math.sin((k / segLen) * Math.PI);
+      const alpha = Math.round(32 * edge);
+      blendRgbaPixel(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, px, py, 165, 232, 255, alpha);
+    }
+  }
+
+  // Rising background pixel bubbles
+  const maxBubbleY = config.showHud ? 174 : 216;
+  for (let i = 0; i < 10; i++) {
+    const seedX = ((i * 67 + 29) % 100) / 100;
+    const seedY = ((i * 43 + 11) % 100) / 100;
+    const bx = Math.round(
+      36 +
+        seedX * (LOGICAL_WIDTH - 72) +
+        Math.sin(t + i * 1.1) * 3.5
+    );
+    const riseProgress = (seedY + phase) % 1;
+    const by = Math.round(maxBubbleY - riseProgress * (maxBubbleY - 14));
+    const fade = Math.sin(riseProgress * Math.PI);
+    const alpha = Math.round(145 * fade);
+    if (alpha > 12) {
+      const size = i % 3 === 0 ? 2 : 1;
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx, by, size, size, [
+        178,
+        236,
+        255,
+        alpha,
+      ]);
+    }
+  }
+}
+
+function drawUnderwaterForegroundBubbles(
+  buffer: Uint8ClampedArray,
+  phase: number,
+  config: CreatureConfig
+): void {
+  if (!config.inWater) return;
+  const t = phase * Math.PI * 2;
+  const maxBubbleY = config.showHud ? 172 : 214;
+
+  for (let i = 0; i < 6; i++) {
+    const seedX = ((i * 89 + 17) % 100) / 100;
+    const seedY = ((i * 53 + 23) % 100) / 100;
+    const speedMul = i % 2 === 0 ? 1 : 2;
+    const rise = (seedY + phase * speedMul) % 1;
+    const bx = Math.round(
+      46 + seedX * (LOGICAL_WIDTH - 92) + Math.sin(t * speedMul + i * 2.1) * 4.5
+    );
+    const by = Math.round(maxBubbleY - rise * (maxBubbleY - 16));
+    const alpha = Math.round(180 * Math.sin(rise * Math.PI));
+    if (alpha < 18) continue;
+
+    if (i < 2) {
+      // Crisp 4x4 hollow pixel bubble ring with top-left specular gleam
+      const rim: readonly [number, number, number, number] = [148, 224, 255, alpha];
+      const gleam: readonly [number, number, number, number] = [235, 250, 255, Math.min(255, alpha + 40)];
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 1, by, 2, 1, rim);
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 1, by + 3, 2, 1, rim);
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx, by + 1, 1, 2, rim);
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 3, by + 1, 1, 2, rim);
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 1, by + 1, 1, 1, gleam);
+    } else {
+      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx, by, 2, 2, [
+        200,
+        242,
+        255,
+        alpha,
+      ]);
+    }
+  }
+}
+
 function drawWakeParticles(
   buffer: Uint8ClampedArray,
   stage: number,
@@ -198,9 +437,11 @@ function drawWakeParticles(
   if (stage < 2) return;
   const count = stage === 2 ? 4 : stage === 3 ? 7 : stage === 4 ? 11 : 15;
   const p = derivePalette(config);
+  const visibleLangs = getVisibleLanguages(config);
+  const useLangColors = config.colorMode !== "canonical" && visibleLangs.length > 0;
   const [er, eg, eb] = hexToRgb(p.energyBright);
   const [ar, ag, ab] = hexToRgb(p.accentMain);
-  const maxY = config.showHud ? 176 : 216;
+  const maxY = config.showHud ? 174 : 216;
 
   for (let i = 0; i < count; i++) {
     const seed1 = ((i * 73 + 19) % 100) / 100;
@@ -214,18 +455,27 @@ function drawWakeParticles(
         Math.sin((phase * speedMul + seed1) * Math.PI * 2) * 4
     );
     const size = i % 4 === 0 && stage >= 4 ? 2 : 1;
-    const useAccent = i % 5 === 0 && stage >= 4;
-    const alpha = Math.round(135 + 100 * Math.sin((phase + seed2) * Math.PI * 2) * 0.5 + 50);
-    fillRectRgba(
-      buffer,
-      LOGICAL_WIDTH,
-      LOGICAL_HEIGHT,
-      px,
-      py,
-      size,
-      size,
-      [useAccent ? ar : er, useAccent ? ag : eg, useAccent ? ab : eb, clamp(alpha, 90, 235)]
+    const alpha = clamp(
+      Math.round(135 + 50 * Math.sin((phase + seed2) * Math.PI * 2) + 50),
+      90,
+      235
     );
+
+    let rgb: [number, number, number];
+    if (useLangColors) {
+      const lang = visibleLangs[i % visibleLangs.length];
+      rgb = hexToRgb(mixHex(lang.color, "#FFFFFF", 0.35));
+    } else {
+      const useAccent = i % 5 === 0 && stage >= 4;
+      rgb = useAccent ? [ar, ag, ab] : [er, eg, eb];
+    }
+
+    fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, px, py, size, size, [
+      rgb[0],
+      rgb[1],
+      rgb[2],
+      alpha,
+    ]);
   }
 }
 
@@ -250,41 +500,88 @@ function drawPixelHud(
 
   const p = derivePalette(config);
   const isLightBg =
-    config.backgroundMode === "custom" && getLuminance(p.background) > 0.55;
+    !config.inWater &&
+    config.backgroundMode === "custom" &&
+    getLuminance(p.background) > 0.55;
 
   const [ar, ag, ab] = hexToRgb(p.accentMain);
   const labelHex = isLightBg
     ? "#1E293B"
-    : mixHex(p.energyMain, "#CBEBFF", 0.55);
-  const commitHex = isLightBg ? "#0F172A" : mixHex(p.energyBright, "#FFFFFF", 0.4);
+    : mixHex(p.energyMain, "#CBEBFF", 0.65);
+  const commitHex = isLightBg
+    ? "#0F172A"
+    : mixHex(p.energyBright, "#FFFFFF", 0.45);
   const [lr, lg, lb] = hexToRgb(labelHex);
   const [cr, cg, cb] = hexToRgb(commitHex);
 
-  // Row 1: accent indicator + stage & title
-  fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, 24, 190, 4, 7, [ar, ag, ab, 255]);
-  drawPixelTextRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, line1, 31, 190, 1, [lr, lg, lb, 255]);
+  const visibleLangs = getVisibleLanguages(config);
+  const isCompact = visibleLangs.length > 3;
+  const row1Y = isCompact ? 179 : 190;
+  const row2Y = isCompact ? 189 : 201;
+  let chipY = isCompact ? 200 : 212;
 
-  // Row 2: contribution count
-  drawPixelTextRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, line2, 24, 201, 1, [cr, cg, cb, 255]);
+  fillRectRgba(
+    buffer,
+    LOGICAL_WIDTH,
+    LOGICAL_HEIGHT,
+    24,
+    row1Y,
+    4,
+    7,
+    [ar, ag, ab, 255]
+  );
+  drawPixelTextRgba(
+    buffer,
+    LOGICAL_WIDTH,
+    LOGICAL_HEIGHT,
+    line1,
+    31,
+    row1Y,
+    1,
+    [lr, lg, lb, 255]
+  );
 
-  // Row 3: top 3 language chips
-  const langChips = (config.languages ?? []).slice(0, 3);
+  drawPixelTextRgba(
+    buffer,
+    LOGICAL_WIDTH,
+    LOGICAL_HEIGHT,
+    line2,
+    24,
+    row2Y,
+    1,
+    [cr, cg, cb, 255]
+  );
+
   let chipX = 24;
-  for (const lang of langChips) {
+  for (const lang of visibleLangs) {
     const nameShort = lang.name.toUpperCase().slice(0, 10);
+    const chipWidth = 7 + nameShort.length * 6 + 9;
+    if (chipX > 24 && chipX + chipWidth > LOGICAL_WIDTH - 16) {
+      chipX = 24;
+      chipY += 11;
+    }
     const [sr, sg, sb] = hexToRgb(lang.color);
-    fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, chipX, 212, 4, 7, [sr, sg, sb, 255]);
+    fillRectRgba(
+      buffer,
+      LOGICAL_WIDTH,
+      LOGICAL_HEIGHT,
+      chipX,
+      chipY,
+      4,
+      7,
+      [sr, sg, sb, 255]
+    );
     drawPixelTextRgba(
       buffer,
       LOGICAL_WIDTH,
       LOGICAL_HEIGHT,
       nameShort,
       chipX + 7,
-      212,
+      chipY,
       1,
       [lr, lg, lb, 255]
     );
-    chipX += 7 + nameShort.length * 6 + 9;
+    chipX += chipWidth;
   }
 }
 
@@ -299,7 +596,6 @@ function invertCreatureDisplacement(
   t: number
 ): [number, number] {
   if (creature === "jellyfish") {
-    // Asymmetric jet-propulsion pulse: fast crisp bell contraction, gentle open glide
     const pulse =
       (0.62 * Math.sin(t) +
         0.26 * Math.sin(2 * t - 0.5) +
@@ -309,11 +605,9 @@ function invertCreatureDisplacement(
     const u = clamp(lx / drawW + 0.5, 0, 1);
     const v = clamp((ly / drawH) * 2, -1.2, 1.2);
 
-    // Bell dome occupies u in [0, 0.28]; oral arms & tentacles trail across [0.21, 1.0]
     const trailWeight = smoothstep(0.21, 0.29, u);
     const bellWeight = 1 - trailWeight;
 
-    // 1) Anatomical bell head contraction + radial rim pinch + gentle scalloped flare
     const rimFactor = smoothstep(0.02, 0.24, u);
     const bellScaleY = 1.0 - 0.145 * pulse * (0.25 + 0.75 * rimFactor);
     const bellScaleX = 1.0 + 0.075 * pulse * (1.0 - 0.35 * rimFactor);
@@ -323,7 +617,6 @@ function invertCreatureDisplacement(
     const bellSrcX = pivotLx + (lx - pivotLx) / bellScaleX;
     const bellSrcY = (ly - rimRipple) / bellScaleY;
 
-    // 2) Trailing oral arms & filaments: fluid travelling S-curve + axial surge drag
     const trailT = clamp((u - 0.21) / 0.79, 0, 1);
     const vPhase = v * 0.65;
     const primaryAmp = 14.5 * Math.pow(trailT, 1.12);
@@ -344,7 +637,6 @@ function invertCreatureDisplacement(
   }
 
   if (view === "top") {
-    // Top-down Tulkun: full body lateral S-curve swimming + gentle pectoral rowing sweep
     const maxAmp = 16.5 * (0.85 + 0.15 * stageScale);
     const k = 1.45;
     let srcX = lx;
@@ -375,7 +667,6 @@ function invertCreatureDisplacement(
     return [srcX, srcY];
   }
 
-  // Side-view Tulkun: smooth dorso-ventral S-curve propulsion + pectoral fin stroke
   const maxAmp = 15.5 * (0.85 + 0.15 * stageScale);
   const k = 1.35;
   let srcX = lx;
@@ -426,17 +717,21 @@ export function renderCreatureFrameRgba(
     }
   }
 
+  if (config.inWater) {
+    drawUnderwaterBackdrop(out, phase, config);
+  }
+
   const stageInfo = getEvolutionStage(config.commits);
   const stageScale = STAGE_SCALES[stageInfo.stage - 1] ?? 1.0;
   const view = getEffectiveCameraView(config.creature, config.view);
   const t = phase * Math.PI * 2;
 
-  // Stage wake particles behind creature
   drawWakeParticles(out, stageInfo.stage, phase, config);
 
-  // Fit sprite comfortably inside logical viewport while scaling across stages 1-5
+  const hasMultiRowHud = config.showHud && config.languageCount > 3;
   const maxFitW = 342 * stageScale;
-  const maxFitH = (config.showHud ? 136 : 170) * stageScale;
+  const maxFitH =
+    (hasMultiRowHud ? 126 : config.showHud ? 136 : 170) * stageScale;
   const fitScale = Math.min(
     maxFitW / Math.max(1, recoloredSprite.width),
     maxFitH / Math.max(1, recoloredSprite.height)
@@ -445,7 +740,7 @@ export function renderCreatureFrameRgba(
   const drawH = recoloredSprite.height * fitScale;
 
   const centerX = LOGICAL_WIDTH * 0.5;
-  const centerY = config.showHud ? 92 : 115;
+  const centerY = hasMultiRowHud ? 86 : config.showHud ? 92 : 115;
 
   let globalX = 0;
   let globalY = 0;
@@ -518,6 +813,7 @@ export function renderCreatureFrameRgba(
     }
   }
 
+  drawUnderwaterForegroundBubbles(out, phase, config);
   drawPixelHud(out, config);
   return out;
 }
@@ -629,7 +925,6 @@ export function renderShareCardToCanvas(
   ctx.textAlign = "right";
   ctx.fillText(`STAGE ${stageInfo.stage}: ${titleText}`, 1232, 57);
 
-  // Render transparent creature frame without HUD and blit crisply into center stage
   const frameConfig: CreatureConfig = { ...config, showHud: false };
   const frameRgba = renderCreatureFrameRgba(recoloredSprite, frameConfig, phase, {
     forceTransparent: true,
@@ -652,7 +947,6 @@ export function renderShareCardToCanvas(
     ctx.restore();
   }
 
-  // Footer telemetry box
   ctx.fillStyle = "#111622";
   ctx.beginPath();
   ctx.roundRect(28, 514, 1224, 98, 8);
@@ -673,20 +967,24 @@ export function renderShareCardToCanvas(
   ctx.fillText(
     `CONTRIBUTIONS (${windowLabel}): ${formattedCommits}  •  VIEW: ${viewLabel}`,
     44,
-    570
+    568
   );
 
-  const langChips = (config.languages ?? []).slice(0, 3);
+  const langChips = getVisibleLanguages(config);
+  const perRow = langChips.length > 4 ? 4 : 3;
   langChips.forEach((lang, idx) => {
-    const x = 44 + idx * 146;
+    const row = Math.floor(idx / perRow);
+    const col = idx % perRow;
+    const x = 44 + col * 168;
+    const y = langChips.length > 4 ? 584 + row * 18 : 592;
     ctx.fillStyle = lang.color;
     ctx.beginPath();
-    ctx.roundRect(x, 592, 10, 10, 2);
+    ctx.roundRect(x, y, 9, 9, 2);
     ctx.fill();
 
     ctx.fillStyle = "#C9D1D9";
-    ctx.font = `600 13px ${mono}`;
-    ctx.fillText(lang.name.toUpperCase().slice(0, 12), x + 16, 601);
+    ctx.font = `600 12px ${mono}`;
+    ctx.fillText(lang.name.toUpperCase().slice(0, 12), x + 15, y + 8);
   });
 
   ctx.fillStyle = "#8B949E";

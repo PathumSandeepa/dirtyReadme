@@ -1,6 +1,8 @@
 import {
   CAMERA_VIEWS,
   CREATURE_CATALOG,
+  DEFAULT_LANGUAGES,
+  ORIGINAL_CREATURE_PALETTES,
   STAGE_DEFINITIONS,
   type BackgroundMode,
   type CameraView,
@@ -9,6 +11,7 @@ import {
   type CreatureId,
   type CreatureMeta,
   type DerivedPalette,
+  type LanguageCount,
   type LanguageStat,
   type StageDefinition,
 } from "@/domain/creature/entities";
@@ -103,16 +106,58 @@ export function getViewDisplayLabel(
   return getEffectiveCameraView(creature, view).toUpperCase();
 }
 
+export function ensureLanguageSlots(
+  languages: LanguageStat[],
+  count: LanguageCount
+): LanguageStat[] {
+  const merged: LanguageStat[] = [];
+  const seen = new Set<string>();
+
+  for (const lang of languages) {
+    const key = lang.name.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push({
+      ...lang,
+      color: normalizeHex(lang.color, "#3178C6"),
+    });
+  }
+
+  for (const fallback of DEFAULT_LANGUAGES) {
+    if (merged.length >= count) break;
+    const key = fallback.name.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push({ ...fallback });
+    }
+  }
+
+  return merged;
+}
+
+export function getVisibleLanguages(config: CreatureConfig): LanguageStat[] {
+  const count: LanguageCount =
+    config.languageCount === 7 || config.languageCount === 5
+      ? config.languageCount
+      : 3;
+  return ensureLanguageSlots(config.languages, count).slice(0, count);
+}
+
 export function applyLanguageColors(
   baseConfig: CreatureConfig,
-  languages: LanguageStat[]
+  languages?: LanguageStat[]
 ): CreatureConfig {
-  const lang1 = languages[0]?.color ?? "#3178C6";
-  const lang2 = languages[1]?.color ?? "#FF6B00";
-  const lang3 = languages[2]?.color ?? "#00E676";
+  const normalizedLangs = ensureLanguageSlots(
+    languages ?? baseConfig.languages,
+    baseConfig.languageCount
+  );
+  const visible = normalizedLangs.slice(0, baseConfig.languageCount);
+  const lang1 = visible[0]?.color ?? "#3178C6";
+  const lang2 = visible[1]?.color ?? "#F1E05A";
+  const lang3 = visible[2]?.color ?? "#3572A5";
 
-  const primary = mixHex("#36506B", lang1, 0.55);
-  const accent = normalizeHex(lang2, "#FF6B00");
+  const primary = normalizeHex(lang1, "#3178C6");
+  const accent = normalizeHex(lang2, "#F1E05A");
   const energy =
     getLuminance(lang3) < 0.35
       ? mixHex(lang3, "#FFFFFF", 0.35)
@@ -121,14 +166,27 @@ export function applyLanguageColors(
   return {
     ...baseConfig,
     colorMode: "languages",
-    themeId: "custom",
-    languages,
+    languages: normalizedLangs,
     colors: {
       ...baseConfig.colors,
       primary,
       accent,
       energy,
       frame: mixHex("#1F242D", lang1, 0.2),
+    },
+  };
+}
+
+export function applyOriginalColors(
+  baseConfig: CreatureConfig
+): CreatureConfig {
+  const original = ORIGINAL_CREATURE_PALETTES[baseConfig.creature];
+  return {
+    ...baseConfig,
+    colorMode: "canonical",
+    colors: {
+      ...original,
+      background: baseConfig.colors.background,
     },
   };
 }

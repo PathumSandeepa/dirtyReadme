@@ -3,15 +3,19 @@
 import { useMemo, useState } from "react";
 import {
   DEFAULT_CREATURE_CONFIG,
-  THEME_PRESETS,
+  DEFAULT_LANGUAGES,
+  ORIGINAL_CREATURE_PALETTES,
   type BackgroundMode,
   type CameraView,
   type ContributionWindow,
   type CreatureConfig,
   type CreatureId,
+  type LanguageCount,
 } from "@/domain/creature/entities";
 import {
   applyLanguageColors,
+  applyOriginalColors as restoreOriginalCreatureColors,
+  ensureLanguageSlots,
   resolveBackgroundHex,
 } from "@/domain/creature/services";
 import {
@@ -24,15 +28,18 @@ import {
 import {
   addBadgeToStackCard,
   buildMarkerSection,
+  combineAllStackCards,
   getEffectiveReadmeMarkdown,
   moveBadgeBetweenStackCards,
   removeBadgeFromStackCard,
   reorderItems,
   reorderStackCards,
+  restoreOrganizedStackCards,
 } from "@/domain/profile/readmeService";
 import {
   type GitHubProfileSnapshot,
   fetchGitHubProfileSnapshot,
+  getLanguageColor,
   parseGitHubUsername,
 } from "@/infrastructure/github/githubClient";
 
@@ -61,30 +68,13 @@ export function useStudioController() {
   function selectCreature(creature: CreatureId) {
     setCreatureConfig((prev) => {
       const nextView: CameraView = creature === "jellyfish" ? "side" : prev.view;
-      if (creature === "jellyfish" && prev.themeId === "ocean-slate") {
-        const preset = THEME_PRESETS[1];
+      if (prev.colorMode === "canonical") {
         return {
           ...prev,
           creature,
           view: nextView,
-          colorMode: "canonical",
-          themeId: preset.id,
           colors: {
-            ...preset.colors,
-            background: prev.colors.background,
-          },
-        };
-      }
-      if (creature === "tulkun" && prev.themeId === "biolume-azure") {
-        const preset = THEME_PRESETS[0];
-        return {
-          ...prev,
-          creature,
-          view: nextView,
-          colorMode: "canonical",
-          themeId: preset.id,
-          colors: {
-            ...preset.colors,
+            ...ORIGINAL_CREATURE_PALETTES[creature],
             background: prev.colors.background,
           },
         };
@@ -114,37 +104,73 @@ export function useStudioController() {
     }));
   }
 
-  function applyThemePreset(presetId: (typeof THEME_PRESETS)[number]["id"]) {
-    const preset = THEME_PRESETS.find((t) => t.id === presetId);
-    if (!preset) return;
-    setCreatureConfig((prev) => ({
-      ...prev,
-      colorMode: "canonical",
-      themeId: preset.id,
-      colors: {
-        ...preset.colors,
-        background: prev.colors.background,
-      },
-    }));
+  function applyOriginalColors() {
+    setCreatureConfig((prev) => restoreOriginalCreatureColors(prev));
   }
 
-  function syncLanguageColors() {
-    setCreatureConfig((prev) => applyLanguageColors(prev, prev.languages));
+  function applyAutoLanguageColors() {
+    setCreatureConfig((prev) => applyLanguageColors(prev));
   }
 
-  function updateCreatureColor(
-    key: "primary" | "accent" | "energy",
-    hex: string
-  ) {
-    setCreatureConfig((prev) => ({
-      ...prev,
-      colorMode: "custom",
-      themeId: "custom",
-      colors: {
-        ...prev.colors,
-        [key]: hex.toUpperCase(),
-      },
-    }));
+  function setLanguageCount(count: LanguageCount) {
+    setCreatureConfig((prev) => {
+      const nextLangs = ensureLanguageSlots(prev.languages, count);
+      const updated: CreatureConfig = {
+        ...prev,
+        languageCount: count,
+        languages: nextLangs,
+      };
+      return prev.colorMode === "languages"
+        ? applyLanguageColors(updated, nextLangs)
+        : updated;
+    });
+  }
+
+  function updateLanguageColor(index: number, hex: string) {
+    setCreatureConfig((prev) => {
+      const padded = ensureLanguageSlots(prev.languages, prev.languageCount);
+      if (index < 0 || index >= padded.length) return prev;
+      const nextLangs = padded.map((lang, i) =>
+        i === index ? { ...lang, color: hex.toUpperCase() } : lang
+      );
+      return applyLanguageColors(prev, nextLangs);
+    });
+  }
+
+  function updateLanguageName(index: number, name: string) {
+    setCreatureConfig((prev) => {
+      const padded = ensureLanguageSlots(prev.languages, prev.languageCount);
+      if (index < 0 || index >= padded.length) return prev;
+      const nextLangs = padded.map((lang, i) =>
+        i === index ? { ...lang, name } : lang
+      );
+      return { ...prev, languages: nextLangs };
+    });
+  }
+
+  function resetLanguageColors() {
+    setCreatureConfig((prev) => {
+      const base = ensureLanguageSlots(prev.languages, prev.languageCount);
+      const reset = base.map((lang, idx) => {
+        const defaultMatch = DEFAULT_LANGUAGES.find(
+          (d) => d.name.toLowerCase() === lang.name.toLowerCase()
+        );
+        return {
+          ...lang,
+          color:
+            defaultMatch?.color ??
+            getLanguageColor(lang.name) ??
+            DEFAULT_LANGUAGES[idx % DEFAULT_LANGUAGES.length].color,
+        };
+      });
+      return prev.colorMode === "languages"
+        ? applyLanguageColors(prev, reset)
+        : { ...prev, languages: reset };
+    });
+  }
+
+  function setInWater(inWater: boolean) {
+    setCreatureConfig((prev) => ({ ...prev, inWater }));
   }
 
   function setBackgroundMode(mode: BackgroundMode) {
@@ -276,6 +302,34 @@ export function useStudioController() {
     }));
   }
 
+  function combineStackCards() {
+    setReadmeConfig((prev) => {
+      if (prev.stackCards.length <= 1) return prev;
+      const { cards, snapshot: saved } = combineAllStackCards(prev.stackCards);
+      return {
+        ...prev,
+        rawOverride: null,
+        stackCards: cards,
+        savedOrganizedCards: saved,
+      };
+    });
+  }
+
+  function undoCombineStackCards() {
+    setReadmeConfig((prev) => {
+      if (!prev.savedOrganizedCards) return prev;
+      return {
+        ...prev,
+        rawOverride: null,
+        stackCards: restoreOrganizedStackCards(
+          prev.savedOrganizedCards,
+          prev.stackCards
+        ),
+        savedOrganizedCards: null,
+      };
+    });
+  }
+
   function addCustomBadgeToCard(
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
@@ -314,14 +368,18 @@ export function useStudioController() {
           prev.windowMode === "rolling"
             ? snap.rollingCommits
             : snap.annualCommits;
+        const nextLanguages = ensureLanguageSlots(
+          snap.languages,
+          prev.languageCount
+        );
         const updated: CreatureConfig = {
           ...prev,
           username: snap.username,
           commits: nextCommits,
-          languages: snap.languages,
+          languages: nextLanguages,
         };
         return prev.colorMode === "languages"
-          ? applyLanguageColors(updated, snap.languages)
+          ? applyLanguageColors(updated, nextLanguages)
           : updated;
       });
 
@@ -431,9 +489,13 @@ export function useStudioController() {
     selectCreature,
     selectView,
     selectWindow,
-    applyThemePreset,
-    syncLanguageColors,
-    updateCreatureColor,
+    applyOriginalColors,
+    applyAutoLanguageColors,
+    setLanguageCount,
+    updateLanguageColor,
+    updateLanguageName,
+    resetLanguageColors,
+    setInWater,
     setBackgroundMode,
     updateCustomBackground,
     updateReadmeField,
@@ -445,6 +507,8 @@ export function useStudioController() {
     renameStackCard,
     deleteStackCard,
     reorderCards,
+    combineStackCards,
+    undoCombineStackCards,
     addCustomBadgeToCard,
     reorderSubtitleTags,
     syncFromGitHub,

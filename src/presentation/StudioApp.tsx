@@ -144,8 +144,13 @@ export function StudioApp() {
             readmeMarkdown={controller.fullReadmeMarkdown}
             onSelectCreature={controller.selectCreature}
             onSelectView={controller.selectView}
-            onApplyPreset={controller.applyThemePreset}
-            onUpdateColor={controller.updateCreatureColor}
+            onApplyOriginalColors={controller.applyOriginalColors}
+            onApplyAutoLanguageColors={controller.applyAutoLanguageColors}
+            onSetLanguageCount={controller.setLanguageCount}
+            onUpdateLanguageColor={controller.updateLanguageColor}
+            onUpdateLanguageName={controller.updateLanguageName}
+            onResetLanguageColors={controller.resetLanguageColors}
+            onSetInWater={controller.setInWater}
             onSetBackgroundMode={controller.setBackgroundMode}
             onUpdateCustomBg={controller.updateCustomBackground}
             onUpdateCreatureConfig={controller.setCreatureConfig}
@@ -161,6 +166,8 @@ export function StudioApp() {
             onRenameStackCard={controller.renameStackCard}
             onDeleteStackCard={controller.deleteStackCard}
             onReorderStackCards={controller.reorderCards}
+            onCombineStackCards={controller.combineStackCards}
+            onUndoCombineStackCards={controller.undoCombineStackCards}
             onAddCustomBadgeToCard={controller.addCustomBadgeToCard}
             onReorderTags={controller.reorderSubtitleTags}
             onOpenAutoEvolve={() => setAutoEvolveOpen(true)}
