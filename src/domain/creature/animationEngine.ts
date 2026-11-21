@@ -1060,7 +1060,12 @@ export function renderCreatureFrameRgba(
   const drawW = recoloredSprite.width * fitScale;
   const drawH = recoloredSprite.height * fitScale;
 
-  const centerX = LOGICAL_WIDTH * 0.5;
+  const opticalShiftX =
+    config.creature === "jellyfish" ? drawW * 0.06 : drawW * 0.045;
+  const centerX = Math.min(
+    LOGICAL_WIDTH * 0.5 + opticalShiftX,
+    LOGICAL_WIDTH - drawW * 0.5 - 18
+  );
   const centerY = config.showHud
     ? Math.max(54, Math.min(96, (hudTopLogicalY - 6) * 0.49))
     : 115;

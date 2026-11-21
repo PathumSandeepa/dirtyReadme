@@ -6,23 +6,15 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Bold,
   Check,
   ChevronLeft,
   ChevronRight,
-  Code2,
   FileText,
   GripVertical,
-  Heading1,
-  Heading2,
-  Italic,
   Layers,
   LayoutGrid,
   Link2,
-  List,
-  Minus,
   Plus,
-  Quote,
   RefreshCw,
   RotateCcw,
   Tag,
@@ -54,6 +46,7 @@ import {
 } from "@/domain/profile/readmeService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AdvancedMarkdownEditor } from "./AdvancedMarkdownEditor";
 import { ColorPalettePopoverButton } from "./ColorPalettePicker";
 import { PlatformIconPickerButton } from "./PlatformIconPickerButton";
 
@@ -135,7 +128,6 @@ export function ProfileReadmeStepPanel({
   onNextStep,
 }: ProfileReadmeStepPanelProps) {
   const nextIdRef = useRef(1);
-  const advancedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [badgeCategory, setBadgeCategory] = useState<CategoryFilter>("all");
   const [badgeSearch, setBadgeSearch] = useState("");
   const [selectedCardId, setSelectedCardId] = useState<string>(
@@ -347,51 +339,6 @@ export function ProfileReadmeStepPanel({
       );
     }
     onUpdateField("profileTextMode", mode);
-  }
-
-  function applyMarkdownSnippet(
-    prefix: string,
-    suffix = "",
-    placeholder = "text"
-  ) {
-    const el = advancedTextareaRef.current;
-    const current = readmeConfig.advancedProfileMarkdown;
-    if (!el) {
-      onUpdateField(
-        "advancedProfileMarkdown",
-        `${current}${current ? "\n" : ""}${prefix}${placeholder}${suffix}`
-      );
-      return;
-    }
-    const start = el.selectionStart ?? current.length;
-    const end = el.selectionEnd ?? current.length;
-    const selected = current.slice(start, end) || placeholder;
-    const updated =
-      current.slice(0, start) + prefix + selected + suffix + current.slice(end);
-    onUpdateField("advancedProfileMarkdown", updated);
-    window.requestAnimationFrame(() => {
-      el.focus();
-      const cursorStart = start + prefix.length;
-      el.setSelectionRange(cursorStart, cursorStart + selected.length);
-    });
-  }
-
-  function insertAdvancedToken(token: string) {
-    const el = advancedTextareaRef.current;
-    const current = readmeConfig.advancedProfileMarkdown;
-    if (!el) {
-      onUpdateField("advancedProfileMarkdown", `${current}${token}`);
-      return;
-    }
-    const start = el.selectionStart ?? current.length;
-    const end = el.selectionEnd ?? current.length;
-    const updated = current.slice(0, start) + token + current.slice(end);
-    onUpdateField("advancedProfileMarkdown", updated);
-    window.requestAnimationFrame(() => {
-      el.focus();
-      const nextPos = start + token.length;
-      el.setSelectionRange(nextPos, nextPos);
-    });
   }
 
   const isAdvancedText = readmeConfig.profileTextMode === "advanced";
@@ -606,132 +553,21 @@ export function ProfileReadmeStepPanel({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/50 px-2.5 py-2">
-                <div className="flex flex-wrap items-center gap-1">
-                  <button
-                    type="button"
-                    title="Heading 1"
-                    onClick={() => applyMarkdownSnippet("# ", "", "Heading")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Heading1 className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Heading 2"
-                    onClick={() => applyMarkdownSnippet("## ", "", "Section")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Heading2 className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Bold"
-                    onClick={() => applyMarkdownSnippet("**", "**", "bold text")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Bold className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Italic"
-                    onClick={() => applyMarkdownSnippet("*", "*", "italic text")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Italic className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Inline Code"
-                    onClick={() => applyMarkdownSnippet("`", "`", "code")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Code2 className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Link"
-                    onClick={() =>
-                      applyMarkdownSnippet("[", "](https://example.com)", "Link")
-                    }
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Link2 className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Bullet List"
-                    onClick={() => applyMarkdownSnippet("- ", "", "List item")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <List className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Quote"
-                    onClick={() => applyMarkdownSnippet("> ", "", "Quote")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Quote className="size-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Horizontal Divider"
-                    onClick={() => applyMarkdownSnippet("\n---\n", "", "")}
-                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
-                  >
-                    <Minus className="size-3.5" />
-                  </button>
-                </div>
+            <AdvancedMarkdownEditor
+              value={readmeConfig.advancedProfileMarkdown}
+              onChange={(next) =>
+                onUpdateField("advancedProfileMarkdown", next)
+              }
+              creatureConfig={creatureConfig}
+              onSyncFromForm={() =>
+                onUpdateField(
+                  "advancedProfileMarkdown",
+                  buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
+                )
+              }
+            />
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    onUpdateField(
-                      "advancedProfileMarkdown",
-                      buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
-                    )
-                  }
-                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                  <RotateCcw className="size-3" />
-                  Sync from Form
-                </button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 border-b border-border/70 px-2.5 py-1.5">
-                <span className="font-mono text-[10px] text-muted-foreground">
-                  Tokens:
-                </span>
-                {DYNAMIC_TOKENS.map((t) => (
-                  <button
-                    key={t.token}
-                    type="button"
-                    onClick={() => insertAdvancedToken(t.token)}
-                    title={t.description}
-                    className="rounded bg-card px-1.5 py-0.5 font-mono text-[10px] text-foreground ring-1 ring-border hover:bg-muted"
-                  >
-                    {t.token}
-                  </button>
-                ))}
-              </div>
-
-              <textarea
-                ref={advancedTextareaRef}
-                rows={10}
-                value={readmeConfig.advancedProfileMarkdown}
-                onChange={(e) =>
-                  onUpdateField("advancedProfileMarkdown", e.target.value)
-                }
-                placeholder="## Hi there!&#10;&#10;Write your custom README Markdown here..."
-                spellCheck={false}
-                className="w-full bg-background p-3.5 font-mono text-xs leading-relaxed text-foreground focus:outline-none"
-              />
-            </div>
-
-            {(readmeConfig.includeStatsTable ||
-              readmeConfig.templateId === "telemetry-stats") && (
+            {readmeConfig.includeStatsTable && (
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                   Telemetry Table Title
@@ -1511,15 +1347,15 @@ export function ProfileReadmeStepPanel({
             </button>
 
             {showRawEditor && (
-              <div className="mt-3 overflow-hidden rounded-xl border border-border bg-slate-950">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2">
+              <div className="mt-3 overflow-hidden rounded-xl border border-slate-300 bg-white text-slate-900 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
                   <div className="flex flex-wrap gap-1.5">
                     {DYNAMIC_TOKENS.map((t) => (
                       <button
                         key={t.token}
                         type="button"
                         onClick={() => insertToken(t.token)}
-                        className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[10px] text-slate-200 hover:bg-slate-700"
+                        className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-800 hover:bg-slate-100"
                       >
                         {t.token}
                       </button>
@@ -1529,7 +1365,7 @@ export function ProfileReadmeStepPanel({
                     <button
                       type="button"
                       onClick={() => onChangeRawMarkdown(null)}
-                      className="inline-flex items-center gap-1 rounded bg-slate-800 px-2 py-0.5 text-[10px] text-white"
+                      className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] text-slate-800 hover:bg-slate-100"
                     >
                       <RefreshCw className="h-3 w-3" />
                       Resync Form
@@ -1541,7 +1377,7 @@ export function ProfileReadmeStepPanel({
                   value={currentRawText}
                   onChange={(e) => onChangeRawMarkdown(e.target.value)}
                   spellCheck={false}
-                  className="w-full bg-slate-950 p-3 font-mono text-xs leading-relaxed text-slate-200 focus:outline-none"
+                  className="w-full bg-white p-3.5 font-mono text-xs leading-relaxed text-slate-900 placeholder:text-slate-400 focus:outline-none"
                 />
               </div>
             )}

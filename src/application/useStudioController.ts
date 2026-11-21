@@ -257,9 +257,8 @@ export function useStudioController() {
       ...prev,
       templateId,
       rawOverride: null,
-      ...(templateId === "telemetry-stats"
-        ? { includeStatsTable: true, includeShareCard: true }
-        : {}),
+      includeStatsTable: templateId === "telemetry-stats",
+      includeShareCard: templateId === "telemetry-stats",
     }));
   }
 

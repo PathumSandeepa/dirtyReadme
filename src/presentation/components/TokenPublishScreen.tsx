@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
   Download,
   ExternalLink,
@@ -63,6 +64,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { TokenGuideDialog } from "./TokenGuideDialog";
 
 interface TokenPublishScreenProps {
   creatureConfig: CreatureConfig;
@@ -92,6 +94,7 @@ export function TokenPublishScreen({
   const [pushLoading, setPushLoading] = useState(false);
   const [webpBusy, setWebpBusy] = useState(false);
   const [gifBusy, setGifBusy] = useState(false);
+  const [tokenGuideOpen, setTokenGuideOpen] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
   const [repoCheckState, setRepoCheckState] = useState<
     "checking" | "exists" | "missing"
@@ -295,6 +298,17 @@ export function TokenPublishScreen({
                 {username}/{username}
               </code>
             </CardDescription>
+            <div className="pt-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTokenGuideOpen(true)}
+              >
+                <BookOpen data-icon="inline-start" />
+                How to Create Classic Token &amp; Permissions
+              </Button>
+            </div>
           </CardHeader>
 
           <CardContent className="flex flex-col gap-5">
@@ -379,12 +393,21 @@ export function TokenPublishScreen({
                     </p>
                     <div className="flex flex-wrap gap-3">
                       <a
+                        href="https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=repo,workflow"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-primary underline"
+                      >
+                        Create Classic Token (repo)
+                        <ExternalLink className="size-3" />
+                      </a>
+                      <a
                         href="https://github.com/settings/personal-access-tokens/new"
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 font-medium text-primary underline"
                       >
-                        Create Fine-Grained PAT (Contents: Read &amp; write)
+                        Create Fine-Grained PAT (Contents: R/W)
                         <ExternalLink className="size-3" />
                       </a>
                       <a
@@ -399,6 +422,55 @@ export function TokenPublishScreen({
                     </div>
                   </AlertDescription>
                 </Alert>
+
+                <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3.5 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono font-semibold text-foreground">
+                      Required Token Permissions
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setTokenGuideOpen(true)}
+                      className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-primary underline underline-offset-4 hover:opacity-80"
+                    >
+                      <BookOpen className="size-3" />
+                      View Step-by-Step Classic Token Guide
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+                    <span className="font-mono text-[11px] text-foreground">
+                      Classic (<code>ghp_...</code>):
+                    </span>
+                    <Badge variant="secondary" className="font-mono text-[10px]">
+                      repo
+                    </Badge>
+                    {includeWorkflowFiles ? (
+                      <Badge className="font-mono text-[10px]">
+                        + workflow
+                      </Badge>
+                    ) : (
+                      <span className="font-mono text-[10px]">
+                        (+ <code>workflow</code> if enabling 12:00 AM Action)
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+                    <span className="font-mono text-[11px] text-foreground">
+                      Fine-Grained (<code>github_pat_...</code>):
+                    </span>
+                    <Badge variant="secondary" className="font-mono text-[10px]">
+                      Contents: Read &amp; write
+                    </Badge>
+                    {includeWorkflowFiles && (
+                      <Badge className="font-mono text-[10px]">
+                        + Workflows: Read &amp; write
+                      </Badge>
+                    )}
+                    <span className="font-mono text-[10px]">
+                      on <code>{username}/{username}</code>
+                    </span>
+                  </div>
+                </div>
 
                 <form onSubmit={handlePush} className="flex flex-col gap-5">
                   <FieldGroup>
@@ -647,6 +719,13 @@ export function TokenPublishScreen({
           </CardFooter>
         </Card>
       </div>
+
+      <TokenGuideDialog
+        open={tokenGuideOpen}
+        onClose={() => setTokenGuideOpen(false)}
+        username={username}
+        includeWorkflowFiles={includeWorkflowFiles}
+      />
     </div>
   );
 }

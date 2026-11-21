@@ -247,7 +247,7 @@ export function buildMarkerSection(
     lines.push("<!-- CYBER-CREATURE:START -->");
   }
 
-  lines.push(`<p align="${readme.align}">`);
+  lines.push(`<p align="center">`);
   lines.push(`  <a href="https://github.com/${safeUser}/${safeUser}">`);
   lines.push(
     `    <img src="${imgSrc}" width="${readme.imageWidth}" alt="${meta.name} Stage ${stage.stage} ${stage.rank}" />`
@@ -363,7 +363,6 @@ export function buildGeneratedReadmeMarkdown(
 
   const parts: string[] = [];
   const isMinimal = readme.templateId === "minimal-header";
-  const isTelemetry = readme.templateId === "telemetry-stats";
   const isAdvancedText = readme.profileTextMode === "advanced";
 
   if (isAdvancedText) {
@@ -443,17 +442,17 @@ export function buildGeneratedReadmeMarkdown(
 
   parts.push(markerBlock);
 
-  if (!isMinimal && (isTelemetry || readme.includeStatsTable)) {
+  if (!isMinimal && readme.includeStatsTable) {
     parts.push(buildStatsTableSection(creature, readme));
   }
 
-  if (!isMinimal && (isTelemetry || readme.includeShareCard)) {
+  if (!isMinimal && readme.includeShareCard) {
     const shareSrc = getCreatureImageSrc(creature, readme, "share-card.png");
     parts.push(
       [
         `### Annual Share Card`,
         ``,
-        `<p align="${readme.align}">`,
+        `<p align="center">`,
         `  <img src="${shareSrc}" width="${readme.imageWidth}" alt="@${safeUser} Cyber Creature Share Card" />`,
         `</p>`,
       ].join("\n")

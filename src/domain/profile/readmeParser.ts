@@ -206,8 +206,16 @@ export function parseExistingDynamicReadme(
   let blockMatch: RegExpExecArray | null;
   let cardSeq = 1;
   let linkSeq = 1;
+  let detectedContentAlign: "left" | "center" | null = null;
 
   while ((blockMatch = htmlBlockRegex.exec(beforeMarker)) !== null) {
+    const pAlignMatch = blockMatch[0].match(
+      /<p\s+align=["'](left|center|right)["']/i
+    );
+    if (pAlignMatch?.[1] && !detectedContentAlign) {
+      detectedContentAlign =
+        pAlignMatch[1].toLowerCase() === "left" ? "left" : "center";
+    }
     const title = blockMatch[1]?.trim() || "";
     const inner = blockMatch[2] || "";
     const hasLinkBadges = /<a\s+href=/i.test(inner);
@@ -287,6 +295,10 @@ export function parseExistingDynamicReadme(
         });
       }
     }
+  }
+
+  if (detectedContentAlign) {
+    align = detectedContentAlign;
   }
 
   // Reconstruct leftover top text above consumed stack/CTA blocks

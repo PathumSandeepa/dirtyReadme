@@ -185,8 +185,9 @@ export function StudioApp() {
             readmeConfig={controller.readmeConfig}
             readmeMarkdown={controller.fullReadmeMarkdown}
             includeShareCard={
-              controller.readmeConfig.includeShareCard ||
-              controller.readmeConfig.templateId === "telemetry-stats"
+              controller.readmeConfig.templateId !== "minimal-header" &&
+              controller.readmeConfig.templateId !== "auto-evolve-block" &&
+              controller.readmeConfig.includeShareCard
             }
             defaultBranch={controller.snapshot?.profileRepoBranch || "main"}
             initialProfileRepoExists={Boolean(
