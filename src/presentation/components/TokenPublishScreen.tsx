@@ -68,6 +68,7 @@ interface TokenPublishScreenProps {
   readmeMarkdown: string;
   includeShareCard: boolean;
   defaultBranch: string;
+  hasLegacyWorkflow?: boolean;
   onBack: () => void;
 }
 
@@ -77,6 +78,7 @@ export function TokenPublishScreen({
   readmeMarkdown,
   includeShareCard,
   defaultBranch,
+  hasLegacyWorkflow = false,
   onBack,
 }: TokenPublishScreenProps) {
   const [tokenInput, setTokenInput] = useState("");
@@ -386,6 +388,23 @@ export function TokenPublishScreen({
                     </div>
                   )}
                 </div>
+
+                {hasLegacyWorkflow && !includeWorkflowFiles && (
+                  <Alert>
+                    <AlertCircle />
+                    <AlertTitle className="font-mono text-xs font-semibold">
+                      Outdated GitHub Action Workflow Detected
+                    </AlertTitle>
+                    <AlertDescription className="text-xs">
+                      Your repository <code>{username}/{username}</code> has an
+                      earlier <code>evolve-creature.yml</code> workflow targeting{" "}
+                      <code>creature.svg</code>. Check{" "}
+                      <strong>Include 12:00 AM Daily Auto-Evolve GitHub Action</strong>{" "}
+                      above (with <code>Workflows: Read and write</code> PAT permission) to
+                      upgrade it to the new Animated WebP workflow.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </FieldGroup>
 
               {pushError && (

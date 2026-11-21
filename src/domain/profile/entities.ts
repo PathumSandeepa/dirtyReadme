@@ -1,8 +1,15 @@
+import {
+  DEFAULT_PLATFORM_ICON_ID,
+  PLATFORM_ICON_CATALOG,
+} from "./platformIcons";
+
 export type ReadmeTemplateId =
   | "cyber-guardian"
   | "minimal-header"
   | "auto-evolve-block"
   | "telemetry-stats";
+
+export type ProfileTextMode = "structured" | "advanced";
 
 export type TechCategory =
   | "languages"
@@ -73,6 +80,8 @@ export interface ReadmeActionLink {
 
 export interface ReadmeConfig {
   templateId: ReadmeTemplateId;
+  profileTextMode: ProfileTextMode;
+  advancedProfileMarkdown: string;
   headline: string;
   subtitleTags: string[];
   bio: string;
@@ -146,24 +155,49 @@ export const CTA_LOGO_PRESETS: {
   label: string;
   logo?: string;
 }[] = [
-  { id: "github", label: "GitHub", logo: "github" },
-  { id: "googlechrome", label: "Website / Portfolio", logo: "googlechrome" },
-  { id: "x", label: "X / Twitter", logo: "x" },
-  { id: "gmail", label: "Email / Gmail", logo: "gmail" },
-  { id: "youtube", label: "YouTube", logo: "youtube" },
-  { id: "discord", label: "Discord", logo: "discord" },
-  { id: "devdotto", label: "DEV.to", logo: "devdotto" },
-  { id: "medium", label: "Medium", logo: "medium" },
-  { id: "buymeacoffee", label: "Buy Me a Coffee", logo: "buymeacoffee" },
+  ...PLATFORM_ICON_CATALOG.map((item) => ({
+    id: item.id,
+    label: item.label,
+    logo: item.id,
+  })),
   { id: "none", label: "No Icon", logo: undefined },
 ];
 
 export const CTA_QUICK_TEMPLATES: Omit<ReadmeActionLink, "id" | "enabled">[] = [
   {
+    label: "MEDIUM",
+    valueText: "READ ARTICLES",
+    url: "https://medium.com/@{{USERNAME}}",
+    color: "000000",
+    logo: "medium",
+  },
+  {
+    label: "HASHNODE",
+    valueText: "TECH BLOG",
+    url: "https://hashnode.com/@{{USERNAME}}",
+    color: "2962FF",
+    logo: "hashnode",
+  },
+  {
+    label: "SUBSTACK",
+    valueText: "NEWSLETTER",
+    url: "https://substack.com/@{{USERNAME}}",
+    color: "FF6719",
+    logo: "substack",
+  },
+  {
+    label: "DEV.TO",
+    valueText: "POSTS",
+    url: "https://dev.to/{{USERNAME}}",
+    color: "0A0A0A",
+    logo: "devdotto",
+  },
+  {
     label: "LINKEDIN",
     valueText: "CONNECT",
     url: "https://linkedin.com/in/{{USERNAME}}",
     color: "0A66C2",
+    logo: "linkedin",
   },
   {
     label: "X",
@@ -171,6 +205,20 @@ export const CTA_QUICK_TEMPLATES: Omit<ReadmeActionLink, "id" | "enabled">[] = [
     url: "https://x.com/{{USERNAME}}",
     color: "09090B",
     logo: "x",
+  },
+  {
+    label: "YOUTUBE",
+    valueText: "CHANNEL",
+    url: "https://youtube.com/@{{USERNAME}}",
+    color: "FF0000",
+    logo: "youtube",
+  },
+  {
+    label: "DISCORD",
+    valueText: "COMMUNITY",
+    url: "https://discord.gg/{{USERNAME}}",
+    color: "5865F2",
+    logo: "discord",
   },
   {
     label: "EMAIL",
@@ -182,16 +230,9 @@ export const CTA_QUICK_TEMPLATES: Omit<ReadmeActionLink, "id" | "enabled">[] = [
   {
     label: "PORTFOLIO",
     valueText: "VISIT SITE",
-    url: "https://github.com/{{USERNAME}}?tab=repositories",
+    url: "https://example.com",
     color: "4F46E5",
-    logo: "googlechrome",
-  },
-  {
-    label: "YOUTUBE",
-    valueText: "CHANNEL",
-    url: "https://youtube.com/@{{USERNAME}}",
-    color: "FF0000",
-    logo: "youtube",
+    logo: DEFAULT_PLATFORM_ICON_ID,
   },
   {
     label: "SPONSOR",
@@ -452,7 +493,9 @@ const INITIAL_ENABLED_IDS = new Set(
 
 export const DEFAULT_README_CONFIG: ReadmeConfig = {
   templateId: "cyber-guardian",
-  headline: "Your Name | Occupation",
+  profileTextMode: "structured",
+  advancedProfileMarkdown: "",
+  headline: "Your Name | <Occupation here>",
   subtitleTags: [
     "FULL-STACK DEVELOPMENT",
     "SYSTEMS ARCHITECTURE",
@@ -498,7 +541,7 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
       valueText: "PROJECTS & DOCS",
       url: "https://github.com/{{USERNAME}}?tab=repositories",
       color: "4F46E5",
-      logo: "googlechrome",
+      logo: DEFAULT_PLATFORM_ICON_ID,
       enabled: true,
     },
   ],

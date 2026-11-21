@@ -55,6 +55,7 @@ export interface GitHubProfileSnapshot {
   profileRepoExists: boolean;
   profileRepoBranch: string;
   existingProfileReadme: string | null;
+  hasLegacyWorkflow: boolean;
   sourceNote: string;
 }
 
@@ -197,6 +198,7 @@ export async function fetchGitHubProfileSnapshot(
   let profileRepoExists = false;
   let profileRepoBranch = "main";
   let existingProfileReadme: string | null = null;
+  let hasLegacyWorkflow = false;
 
   if (profileRepoRes && profileRepoRes.ok) {
     const repoInfo = (await profileRepoRes.json()) as {
@@ -205,15 +207,20 @@ export async function fetchGitHubProfileSnapshot(
     profileRepoExists = true;
     profileRepoBranch = repoInfo.default_branch || "main";
 
-    try {
-      const readmeRes = await fetch(
-        `https://raw.githubusercontent.com/${encodeURIComponent(user.login)}/${encodeURIComponent(user.login)}/${encodeURIComponent(profileRepoBranch)}/README.md`
-      );
-      if (readmeRes.ok) {
-        existingProfileReadme = await readmeRes.text();
-      }
-    } catch {
-      existingProfileReadme = null;
+    const rawBase = `https://raw.githubusercontent.com/${encodeURIComponent(user.login)}/${encodeURIComponent(user.login)}/${encodeURIComponent(profileRepoBranch)}`;
+    const [readmeRes, wfRes] = await Promise.all([
+      fetch(`${rawBase}/README.md`).catch(() => null),
+      fetch(`${rawBase}/.github/workflows/evolve-creature.yml`).catch(() => null),
+    ]);
+
+    if (readmeRes && readmeRes.ok) {
+      existingProfileReadme = await readmeRes.text();
+    }
+    if (wfRes && wfRes.ok) {
+      const wfText = await wfRes.text();
+      hasLegacyWorkflow =
+        wfText.includes("creature.svg") ||
+        (wfText.includes("branches:") && !wfText.includes("creature.webp"));
     }
   }
 
@@ -297,6 +304,7 @@ export async function fetchGitHubProfileSnapshot(
     profileRepoExists,
     profileRepoBranch,
     existingProfileReadme,
+    hasLegacyWorkflow,
     sourceNote,
   };
 }
@@ -344,10 +352,135 @@ export async function publishFilesToProfileRepo(params: {
     }
   }
 
+  const repoApiBase = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+  const refRes = await fetch(
+    `${repoApiBase}/git/ref/heads/${encodeURIComponent(targetBranch)}`,
+    { headers }
+  );
+
+  if (refRes.ok) {
+    const refJson = (await refRes.json()) as { object?: { sha?: string } };
+    const headCommitSha = refJson.object?.sha;
+    if (headCommitSha) {
+      const commitRes = await fetch(
+        `${repoApiBase}/git/commits/${encodeURIComponent(headCommitSha)}`,
+        { headers }
+      );
+      if (!commitRes.ok) {
+        const errText = await commitRes.text();
+        throw new Error(
+          `Failed reading branch commit (${commitRes.status}): ${errText}`
+        );
+      }
+      const commitJson = (await commitRes.json()) as { tree?: { sha?: string } };
+      const baseTreeSha = commitJson.tree?.sha;
+      if (!baseTreeSha) {
+        throw new Error("Unable to locate base git tree SHA.");
+      }
+
+      const treeEntries: {
+        path: string;
+        mode: "100644";
+        type: "blob";
+        sha: string;
+      }[] = [];
+
+      for (const file of files) {
+        const blobRes = await fetch(`${repoApiBase}/git/blobs`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(
+            file.base64Content !== undefined
+              ? { content: file.base64Content, encoding: "base64" }
+              : { content: file.content ?? "", encoding: "utf-8" }
+          ),
+        });
+        if (!blobRes.ok) {
+          const errText = await blobRes.text();
+          throw new Error(
+            `Failed uploading blob for ${file.path} (${blobRes.status}): ${errText}`
+          );
+        }
+        const blobJson = (await blobRes.json()) as { sha: string };
+        treeEntries.push({
+          path: file.path,
+          mode: "100644",
+          type: "blob",
+          sha: blobJson.sha,
+        });
+      }
+
+      const treeRes = await fetch(`${repoApiBase}/git/trees`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          base_tree: baseTreeSha,
+          tree: treeEntries,
+        }),
+      });
+      if (!treeRes.ok) {
+        const errText = await treeRes.text();
+        throw new Error(
+          `Failed creating commit tree (${treeRes.status}): ${errText}`
+        );
+      }
+      const treeJson = (await treeRes.json()) as { sha: string };
+
+      const newCommitRes = await fetch(`${repoApiBase}/git/commits`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          message: "feat: update animated pixel creature & profile README",
+          tree: treeJson.sha,
+          parents: [headCommitSha],
+        }),
+      });
+      if (!newCommitRes.ok) {
+        const errText = await newCommitRes.text();
+        const hint = files.some((f) => f.path.startsWith(".github/workflows/"))
+          ? " Make sure your PAT includes 'Workflows: Read and write' (or classic 'workflow') scope."
+          : "";
+        throw new Error(
+          `Failed creating commit (${newCommitRes.status}): ${errText}.${hint}`
+        );
+      }
+      const newCommitJson = (await newCommitRes.json()) as { sha: string };
+
+      const patchRefRes = await fetch(
+        `${repoApiBase}/git/refs/heads/${encodeURIComponent(targetBranch)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ sha: newCommitJson.sha }),
+        }
+      );
+      if (!patchRefRes.ok) {
+        const errText = await patchRefRes.text();
+        const hint = files.some((f) => f.path.startsWith(".github/workflows/"))
+          ? " Make sure your PAT includes 'Workflows: Read and write' (or classic 'workflow') scope."
+          : "";
+        throw new Error(
+          `Failed updating branch ref (${patchRefRes.status}): ${errText}.${hint}`
+        );
+      }
+
+      return {
+        updatedPaths: files.map((f) => f.path),
+        repoUrl: `https://github.com/${owner}/${repo}`,
+      };
+    }
+  } else if (refRes.status !== 404 && refRes.status !== 409) {
+    const errText = await refRes.text();
+    throw new Error(
+      `Failed inspecting branch ref (${refRes.status}): ${errText}`
+    );
+  }
+
+  // Fallback for brand-new empty repositories with no initial commit yet
   const updatedPaths: string[] = [];
 
   for (const file of files) {
-    const endpoint = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${file.path}`;
+    const endpoint = `${repoApiBase}/contents/${file.path}`;
     let existingSha: string | undefined;
 
     const getRes = await fetch(
@@ -357,7 +490,7 @@ export async function publishFilesToProfileRepo(params: {
     if (getRes.ok) {
       const existing = (await getRes.json()) as { sha?: string };
       existingSha = existing.sha;
-    } else if (getRes.status === 404) {
+    } else if (getRes.status === 404 || getRes.status === 409) {
       existingSha = undefined;
     } else {
       const errBody = await getRes.text();

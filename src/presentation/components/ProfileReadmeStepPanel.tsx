@@ -6,15 +6,23 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Bold,
   Check,
   ChevronLeft,
   ChevronRight,
+  Code2,
   FileText,
   GripVertical,
+  Heading1,
+  Heading2,
+  Italic,
   Layers,
   LayoutGrid,
   Link2,
+  List,
+  Minus,
   Plus,
+  Quote,
   RefreshCw,
   RotateCcw,
   Tag,
@@ -24,7 +32,6 @@ import {
 } from "lucide-react";
 import type { CreatureConfig } from "@/domain/creature/entities";
 import {
-  CTA_LOGO_PRESETS,
   CTA_QUICK_TEMPLATES,
   DEFAULT_DUMMY_INTRO,
   DYNAMIC_TOKENS,
@@ -37,12 +44,18 @@ import {
   type TechCategory,
 } from "@/domain/profile/entities";
 import {
+  DEFAULT_PLATFORM_ICON_ID,
+  detectPlatformFromUrl,
+} from "@/domain/profile/platformIcons";
+import {
   buildGeneratedReadmeMarkdown,
+  buildStructuredProfileMarkdown,
   reorderItems,
 } from "@/domain/profile/readmeService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ColorPalettePopoverButton } from "./ColorPalettePicker";
+import { PlatformIconPickerButton } from "./PlatformIconPickerButton";
 
 interface ProfileReadmeStepPanelProps {
   creatureConfig: CreatureConfig;
@@ -122,6 +135,7 @@ export function ProfileReadmeStepPanel({
   onNextStep,
 }: ProfileReadmeStepPanelProps) {
   const nextIdRef = useRef(1);
+  const advancedTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [badgeCategory, setBadgeCategory] = useState<CategoryFilter>("all");
   const [badgeSearch, setBadgeSearch] = useState("");
   const [selectedCardId, setSelectedCardId] = useState<string>(
@@ -143,8 +157,10 @@ export function ProfileReadmeStepPanel({
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkText, setNewLinkText] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
-  const [newLinkLogo, setNewLinkLogo] = useState("googlechrome");
+  const [newLinkLogo, setNewLinkLogo] = useState(DEFAULT_PLATFORM_ICON_ID);
   const [newLinkColor, setNewLinkColor] = useState("#4F46E5");
+  const [manualNewLinkLogo, setManualNewLinkLogo] = useState(false);
+  const [manualNewLinkColor, setManualNewLinkColor] = useState(false);
   const [showRawEditor, setShowRawEditor] = useState(false);
 
   const activeCardId = readmeConfig.stackCards.some(
@@ -279,6 +295,9 @@ export function ProfileReadmeStepPanel({
     const normalizedUrl = normalizeActionUrl(newLinkUrl);
     if (!newLinkLabel.trim() || !normalizedUrl) return;
     const seq = nextIdRef.current++;
+    const resolvedLogo = manualNewLinkLogo
+      ? newLinkLogo
+      : detectPlatformFromUrl(normalizedUrl).id;
     onUpdateField("actionLinks", [
       ...readmeConfig.actionLinks,
       {
@@ -287,13 +306,17 @@ export function ProfileReadmeStepPanel({
         valueText: (newLinkText.trim() || "OPEN").toUpperCase(),
         url: normalizedUrl,
         color: newLinkColor.replace("#", ""),
-        ...(newLinkLogo && newLinkLogo !== "none" ? { logo: newLinkLogo } : {}),
+        logo: resolvedLogo || DEFAULT_PLATFORM_ICON_ID,
         enabled: true,
       },
     ]);
     setNewLinkLabel("");
     setNewLinkText("");
     setNewLinkUrl("");
+    setNewLinkLogo(DEFAULT_PLATFORM_ICON_ID);
+    setNewLinkColor("#4F46E5");
+    setManualNewLinkLogo(false);
+    setManualNewLinkColor(false);
   }
 
   function handleQuickAddCta(tpl: (typeof CTA_QUICK_TEMPLATES)[number]) {
@@ -316,249 +339,415 @@ export function ProfileReadmeStepPanel({
     onChangeRawMarkdown(`${base}\n${token}`);
   }
 
+  function handleSwitchProfileTextMode(mode: "structured" | "advanced") {
+    if (mode === "advanced" && !readmeConfig.advancedProfileMarkdown.trim()) {
+      onUpdateField(
+        "advancedProfileMarkdown",
+        buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
+      );
+    }
+    onUpdateField("profileTextMode", mode);
+  }
+
+  function applyMarkdownSnippet(
+    prefix: string,
+    suffix = "",
+    placeholder = "text"
+  ) {
+    const el = advancedTextareaRef.current;
+    const current = readmeConfig.advancedProfileMarkdown;
+    if (!el) {
+      onUpdateField(
+        "advancedProfileMarkdown",
+        `${current}${current ? "\n" : ""}${prefix}${placeholder}${suffix}`
+      );
+      return;
+    }
+    const start = el.selectionStart ?? current.length;
+    const end = el.selectionEnd ?? current.length;
+    const selected = current.slice(start, end) || placeholder;
+    const updated =
+      current.slice(0, start) + prefix + selected + suffix + current.slice(end);
+    onUpdateField("advancedProfileMarkdown", updated);
+    window.requestAnimationFrame(() => {
+      el.focus();
+      const cursorStart = start + prefix.length;
+      el.setSelectionRange(cursorStart, cursorStart + selected.length);
+    });
+  }
+
+  function insertAdvancedToken(token: string) {
+    const el = advancedTextareaRef.current;
+    const current = readmeConfig.advancedProfileMarkdown;
+    if (!el) {
+      onUpdateField("advancedProfileMarkdown", `${current}${token}`);
+      return;
+    }
+    const start = el.selectionStart ?? current.length;
+    const end = el.selectionEnd ?? current.length;
+    const updated = current.slice(0, start) + token + current.slice(end);
+    onUpdateField("advancedProfileMarkdown", updated);
+    window.requestAnimationFrame(() => {
+      el.focus();
+      const nextPos = start + token.length;
+      el.setSelectionRange(nextPos, nextPos);
+    });
+  }
+
+  const isAdvancedText = readmeConfig.profileTextMode === "advanced";
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="mb-4 flex items-center gap-2.5">
-          <User className="h-5 w-5 text-foreground/85" />
-          <div>
-            <h2 className="text-base font-semibold text-foreground">
-              Customize Every Text on Your Profile
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Edit headings, intro paragraph, tags, sidebar details, and captions freely.
-            </p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <User className="h-5 w-5 text-foreground/85" />
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                Customize Every Text on Your Profile
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {isAdvancedText
+                  ? "Write your entire profile intro block using Markdown formatting."
+                  : "Edit your README headline, specialty tags, intro paragraph, and CTA line."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 rounded-lg border bg-muted/40 p-0.5">
+            <button
+              type="button"
+              onClick={() => handleSwitchProfileTextMode("structured")}
+              className={`rounded-md px-3 py-1 font-mono text-xs font-semibold transition ${
+                !isAdvancedText
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Form Fields
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSwitchProfileTextMode("advanced")}
+              className={`rounded-md px-3 py-1 font-mono text-xs font-semibold transition ${
+                isAdvancedText
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Advanced Editor
+            </button>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {!isAdvancedText ? (
+          <div className="space-y-4">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Display Name
-              </label>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label className="text-xs font-medium text-foreground/85">
+                  README Main Headline
+                </label>
+                {readmeConfig.headline.includes("<Occupation here>") && (
+                  <span className="font-mono text-[11px] text-amber-500">
+                    Replace &lt;Occupation here&gt; with your role
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
-                value={readmeConfig.profileDisplayName}
-                onChange={(e) =>
-                  onUpdateField("profileDisplayName", e.target.value)
-                }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
+                value={readmeConfig.headline}
+                onChange={(e) => onUpdateField("headline", e.target.value)}
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm font-medium text-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
 
             <div>
               <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Location
+                Role Tagline Chips (Drag to reorder)
               </label>
-              <input
-                type="text"
-                value={readmeConfig.profileLocation}
-                onChange={(e) =>
-                  onUpdateField("profileLocation", e.target.value)
-                }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Role / Organization
-              </label>
-              <input
-                type="text"
-                value={readmeConfig.profileCompany}
-                onChange={(e) =>
-                  onUpdateField("profileCompany", e.target.value)
-                }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Website URL
-              </label>
-              <input
-                type="text"
-                value={readmeConfig.profileWebsite}
-                onChange={(e) =>
-                  onUpdateField("profileWebsite", e.target.value)
-                }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              Sidebar Status Bio
-            </label>
-            <input
-              type="text"
-              value={readmeConfig.profileStatusBio}
-              onChange={(e) =>
-                onUpdateField("profileStatusBio", e.target.value)
-              }
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              README Main Headline
-            </label>
-            <input
-              type="text"
-              value={readmeConfig.headline}
-              onChange={(e) => onUpdateField("headline", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm font-medium text-foreground focus:border-primary focus:bg-background focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              Role Tagline Chips (Drag to reorder)
-            </label>
-            <div className="mb-2.5 flex flex-wrap gap-2">
-              {readmeConfig.subtitleTags.map((tag, idx) => (
-                <div
-                  key={`${tag}-${idx}`}
-                  draggable
-                  onDragStart={() => setDraggedTagIdx(idx)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => {
-                    if (draggedTagIdx !== null) {
-                      onReorderTags(draggedTagIdx, idx);
-                    }
-                    setDraggedTagIdx(null);
-                  }}
-                  className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground active:cursor-grabbing"
-                >
-                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={tag}
-                    onChange={(e) => {
-                      const updated = [...readmeConfig.subtitleTags];
-                      updated[idx] = e.target.value;
-                      onUpdateField("subtitleTags", updated);
+              <div className="mb-2.5 flex flex-wrap gap-2">
+                {readmeConfig.subtitleTags.map((tag, idx) => (
+                  <div
+                    key={`${tag}-${idx}`}
+                    draggable
+                    onDragStart={() => setDraggedTagIdx(idx)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (draggedTagIdx !== null) {
+                        onReorderTags(draggedTagIdx, idx);
+                      }
+                      setDraggedTagIdx(null);
                     }}
-                    className="w-32 bg-transparent font-mono text-xs focus:outline-none"
-                  />
+                    className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground active:cursor-grabbing"
+                  >
+                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={tag}
+                      onChange={(e) => {
+                        const updated = [...readmeConfig.subtitleTags];
+                        updated[idx] = e.target.value;
+                        onUpdateField("subtitleTags", updated);
+                      }}
+                      className="w-32 bg-transparent font-mono text-xs focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateField(
+                          "subtitleTags",
+                          readmeConfig.subtitleTags.filter((_, i) => i !== idx)
+                        )
+                      }
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <form onSubmit={handleAddTag} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  placeholder="Add role tag (e.g. CLOUD ARCHITECT)"
+                  className="flex-1 rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  className="rounded-xl border bg-card px-4 py-2 text-sm font-medium text-foreground/85 hover:bg-muted/50"
+                >
+                  Add Tag
+                </button>
+              </form>
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label className="text-xs font-medium text-foreground/85">
+                  About / Intro Paragraph
+                </label>
+                <button
+                  type="button"
+                  onClick={() => onUpdateField("bio", DEFAULT_DUMMY_INTRO)}
+                  className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                >
+                  <RotateCcw className="size-3" />
+                  Use Sample Intro
+                </button>
+              </div>
+              <textarea
+                rows={3}
+                value={readmeConfig.bio}
+                placeholder={DEFAULT_DUMMY_INTRO}
+                onChange={(e) => onUpdateField("bio", e.target.value)}
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+                Call To Action Line
+              </label>
+              <input
+                type="text"
+                value={readmeConfig.ctaLine}
+                onChange={(e) => onUpdateField("ctaLine", e.target.value)}
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+                  Extra Section Heading (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={readmeConfig.customSectionTitle}
+                  onChange={(e) =>
+                    onUpdateField("customSectionTitle", e.target.value)
+                  }
+                  placeholder="e.g. Current Focus"
+                  className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+                  Telemetry Table Title
+                </label>
+                <input
+                  type="text"
+                  value={readmeConfig.statsTableTitle}
+                  onChange={(e) =>
+                    onUpdateField("statsTableTitle", e.target.value)
+                  }
+                  className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+                Extra Custom Markdown Block (Optional)
+              </label>
+              <textarea
+                rows={2}
+                value={readmeConfig.customFooterMarkdown}
+                onChange={(e) =>
+                  onUpdateField("customFooterMarkdown", e.target.value)
+                }
+                placeholder="Write any extra Markdown lines or links..."
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-xl border border-border bg-muted/30">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/50 px-2.5 py-2">
+                <div className="flex flex-wrap items-center gap-1">
                   <button
                     type="button"
-                    onClick={() =>
-                      onUpdateField(
-                        "subtitleTags",
-                        readmeConfig.subtitleTags.filter((_, i) => i !== idx)
-                      )
-                    }
-                    className="text-muted-foreground hover:text-destructive"
+                    title="Heading 1"
+                    onClick={() => applyMarkdownSnippet("# ", "", "Heading")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
                   >
-                    ×
+                    <Heading1 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Heading 2"
+                    onClick={() => applyMarkdownSnippet("## ", "", "Section")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Heading2 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Bold"
+                    onClick={() => applyMarkdownSnippet("**", "**", "bold text")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Bold className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Italic"
+                    onClick={() => applyMarkdownSnippet("*", "*", "italic text")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Italic className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Inline Code"
+                    onClick={() => applyMarkdownSnippet("`", "`", "code")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Code2 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Link"
+                    onClick={() =>
+                      applyMarkdownSnippet("[", "](https://example.com)", "Link")
+                    }
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Link2 className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Bullet List"
+                    onClick={() => applyMarkdownSnippet("- ", "", "List item")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <List className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Quote"
+                    onClick={() => applyMarkdownSnippet("> ", "", "Quote")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Quote className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    title="Horizontal Divider"
+                    onClick={() => applyMarkdownSnippet("\n---\n", "", "")}
+                    className="rounded border border-border bg-card p-1.5 text-foreground hover:bg-muted"
+                  >
+                    <Minus className="size-3.5" />
                   </button>
                 </div>
-              ))}
-            </div>
-            <form onSubmit={handleAddTag} className="flex gap-2">
-              <input
-                type="text"
-                value={newTagInput}
-                onChange={(e) => setNewTagInput(e.target.value)}
-                placeholder="Add role tag (e.g. CLOUD ARCHITECT)"
-                className="flex-1 rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-              <button
-                type="submit"
-                className="rounded-xl border bg-card px-4 py-2 text-sm font-medium text-foreground/85 hover:bg-muted/50"
-              >
-                Add Tag
-              </button>
-            </form>
-          </div>
 
-          <div>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <label className="text-xs font-medium text-foreground/85">
-                About / Intro Paragraph
-              </label>
-              <button
-                type="button"
-                onClick={() => onUpdateField("bio", DEFAULT_DUMMY_INTRO)}
-                className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
-              >
-                <RotateCcw className="size-3" />
-                Use Sample Intro
-              </button>
-            </div>
-            <textarea
-              rows={3}
-              value={readmeConfig.bio}
-              placeholder={DEFAULT_DUMMY_INTRO}
-              onChange={(e) => onUpdateField("bio", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-            />
-          </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onUpdateField(
+                      "advancedProfileMarkdown",
+                      buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
+                    )
+                  }
+                  className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  <RotateCcw className="size-3" />
+                  Sync from Form
+                </button>
+              </div>
 
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              Call To Action Line
-            </label>
-            <input
-              type="text"
-              value={readmeConfig.ctaLine}
-              onChange={(e) => onUpdateField("ctaLine", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-            />
-          </div>
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-border/70 px-2.5 py-1.5">
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  Tokens:
+                </span>
+                {DYNAMIC_TOKENS.map((t) => (
+                  <button
+                    key={t.token}
+                    type="button"
+                    onClick={() => insertAdvancedToken(t.token)}
+                    title={t.description}
+                    className="rounded bg-card px-1.5 py-0.5 font-mono text-[10px] text-foreground ring-1 ring-border hover:bg-muted"
+                  >
+                    {t.token}
+                  </button>
+                ))}
+              </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Extra Section Heading (Optional)
-              </label>
-              <input
-                type="text"
-                value={readmeConfig.customSectionTitle}
+              <textarea
+                ref={advancedTextareaRef}
+                rows={10}
+                value={readmeConfig.advancedProfileMarkdown}
                 onChange={(e) =>
-                  onUpdateField("customSectionTitle", e.target.value)
+                  onUpdateField("advancedProfileMarkdown", e.target.value)
                 }
-                placeholder="e.g. Current Focus"
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
+                placeholder="## Hi there!&#10;&#10;Write your custom README Markdown here..."
+                spellCheck={false}
+                className="w-full bg-background p-3.5 font-mono text-xs leading-relaxed text-foreground focus:outline-none"
               />
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Telemetry Table Title
-              </label>
-              <input
-                type="text"
-                value={readmeConfig.statsTableTitle}
-                onChange={(e) =>
-                  onUpdateField("statsTableTitle", e.target.value)
-                }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
+            {(readmeConfig.includeStatsTable ||
+              readmeConfig.templateId === "telemetry-stats") && (
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+                  Telemetry Table Title
+                </label>
+                <input
+                  type="text"
+                  value={readmeConfig.statsTableTitle}
+                  onChange={(e) =>
+                    onUpdateField("statsTableTitle", e.target.value)
+                  }
+                  className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
+                />
+              </div>
+            )}
           </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              Extra Custom Markdown Block (Optional)
-            </label>
-            <textarea
-              rows={2}
-              value={readmeConfig.customFooterMarkdown}
-              onChange={(e) =>
-                onUpdateField("customFooterMarkdown", e.target.value)
-              }
-              placeholder="Write any extra Markdown lines or links..."
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Drag & Drop Multi-Card Tech Stack Builder */}
@@ -1018,36 +1207,34 @@ export function ProfileReadmeStepPanel({
                     type="text"
                     value={link.url}
                     onChange={(e) => {
+                      const nextUrl = e.target.value;
+                      const detected = detectPlatformFromUrl(nextUrl);
                       const updated = [...readmeConfig.actionLinks];
-                      updated[idx] = { ...link, url: e.target.value };
+                      updated[idx] = {
+                        ...link,
+                        url: nextUrl,
+                        logo: detected.id,
+                      };
                       onUpdateField("actionLinks", updated);
                     }}
-                    placeholder="https://... or {{USERNAME}}"
+                    placeholder="https://medium.com/@... or any link"
                     className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground/85 sm:col-span-6"
                   />
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <select
-                      value={link.logo || "none"}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                    <PlatformIconPickerButton
+                      value={link.logo ?? DEFAULT_PLATFORM_ICON_ID}
+                      onChange={(iconId) => {
                         const updated = [...readmeConfig.actionLinks];
                         updated[idx] = {
                           ...link,
-                          logo: val === "none" ? undefined : val,
+                          logo: iconId,
                         };
                         onUpdateField("actionLinks", updated);
                       }}
-                      className="rounded-lg border bg-card px-2 py-1 text-xs text-foreground"
-                    >
-                      {CTA_LOGO_PRESETS.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          Icon: {preset.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                     <ColorPalettePopoverButton
                       value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
                       onChange={(hex) => {
@@ -1149,25 +1336,37 @@ export function ProfileReadmeStepPanel({
             <input
               type="text"
               value={newLinkUrl}
-              onChange={(e) => setNewLinkUrl(e.target.value)}
-              placeholder="https://... or domain.com"
+              onChange={(e) => {
+                const nextUrl = e.target.value;
+                setNewLinkUrl(nextUrl);
+                const detected = detectPlatformFromUrl(nextUrl);
+                if (!manualNewLinkLogo) {
+                  setNewLinkLogo(detected.id);
+                }
+                if (!manualNewLinkColor) {
+                  setNewLinkColor(`#${detected.hex}`);
+                }
+              }}
+              placeholder="https://medium.com/@... or domain.com"
               className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-6"
             />
-            <select
-              value={newLinkLogo}
-              onChange={(e) => setNewLinkLogo(e.target.value)}
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-6"
-            >
-              {CTA_LOGO_PRESETS.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  Icon: {preset.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1.5 sm:col-span-6">
+              <PlatformIconPickerButton
+                value={newLinkLogo}
+                onChange={(iconId) => {
+                  setManualNewLinkLogo(true);
+                  setNewLinkLogo(iconId);
+                }}
+                className="h-9 flex-1 justify-between rounded-xl px-3"
+              />
+            </div>
             <div className="flex gap-1.5 sm:col-span-6">
               <ColorPalettePopoverButton
                 value={newLinkColor}
-                onChange={setNewLinkColor}
+                onChange={(hex) => {
+                  setManualNewLinkColor(true);
+                  setNewLinkColor(hex);
+                }}
                 label="New CTA Badge Color"
                 compact
                 className="h-9 rounded-lg px-2.5"

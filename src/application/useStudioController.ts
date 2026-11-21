@@ -27,6 +27,7 @@ import {
   type ReadmeConfig,
   type ReadmeTemplateId,
 } from "@/domain/profile/entities";
+import { detectPlatformFromUrl } from "@/domain/profile/platformIcons";
 import {
   addBadgeToStackCard,
   buildMarkerSection,
@@ -460,7 +461,7 @@ export function useStudioController() {
                     .toUpperCase(),
                   url: snap.website,
                   color: "4F46E5",
-                  logo: "googlechrome",
+                  logo: detectPlatformFromUrl(snap.website).id,
                   enabled: true,
                 },
               ]
@@ -487,8 +488,10 @@ export function useStudioController() {
           profileLocation: snap.location || prev.profileLocation,
           profileCompany: snap.company || prev.profileCompany,
           profileWebsite: snap.website || `https://github.com/${snap.username}`,
-          headline: `${snap.displayName} | Occupation`,
-          bio: snap.bio || DEFAULT_DUMMY_INTRO,
+          profileTextMode: "structured",
+          advancedProfileMarkdown: "",
+          headline: `${snap.displayName} | <Occupation here>`,
+          bio: DEFAULT_DUMMY_INTRO.replaceAll("{{USERNAME}}", snap.username),
           actionLinks: nextLinks,
           stackCards: nextCards,
         };

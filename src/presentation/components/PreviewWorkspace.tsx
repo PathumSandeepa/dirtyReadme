@@ -56,6 +56,163 @@ import { ShareCardCanvasView } from "./ShareCardCanvasView";
 export type PreviewTab = "profile" | "share-card" | "stages";
 type CodeSubTab = "visual" | "markdown";
 
+function renderInlineMarkdown(text: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const tokenRegex =
+    /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = tokenRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      nodes.push(
+        <strong key={key++} className="font-semibold">
+          {token.slice(2, -2)}
+        </strong>
+      );
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      nodes.push(
+        <em key={key++} className="italic">
+          {token.slice(1, -1)}
+        </em>
+      );
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      nodes.push(
+        <code
+          key={key++}
+          className="rounded bg-black/15 px-1.5 py-0.5 font-mono text-xs dark:bg-white/10"
+        >
+          {token.slice(1, -1)}
+        </code>
+      );
+    } else if (token.startsWith("[")) {
+      const linkMatch = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+      if (linkMatch) {
+        nodes.push(
+          <a
+            key={key++}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#2f81f7] underline"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      } else {
+        nodes.push(token);
+      }
+    }
+    lastIndex = match.index + token.length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+  return nodes;
+}
+
+function AdvancedMarkdownPreview({
+  markdown,
+  isDark,
+}: {
+  markdown: string;
+  isDark: boolean;
+}) {
+  const lines = markdown.split(/\r?\n/);
+  const blocks: React.ReactNode[] = [];
+  let listItems: string[] = [];
+  let key = 0;
+
+  const flushList = () => {
+    if (listItems.length === 0) return;
+    blocks.push(
+      <ul key={key++} className="list-disc space-y-1 pl-5 text-left text-sm">
+        {listItems.map((item, i) => (
+          <li key={i}>{renderInlineMarkdown(item)}</li>
+        ))}
+      </ul>
+    );
+    listItems = [];
+  };
+
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+    if (/^[-*]\s+/.test(trimmed)) {
+      listItems.push(trimmed.replace(/^[-*]\s+/, ""));
+      continue;
+    }
+    flushList();
+
+    if (/^---+$/.test(trimmed)) {
+      blocks.push(
+        <hr
+          key={key++}
+          className={isDark ? "border-[#30363d]" : "border-[#d0d7de]"}
+        />
+      );
+    } else if (trimmed.startsWith("# ")) {
+      blocks.push(
+        <h1
+          key={key++}
+          className={`border-b pb-2 text-2xl font-bold ${
+            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
+          }`}
+        >
+          {renderInlineMarkdown(trimmed.slice(2))}
+        </h1>
+      );
+    } else if (trimmed.startsWith("## ")) {
+      blocks.push(
+        <h2
+          key={key++}
+          className={`border-b pb-2 text-xl font-semibold ${
+            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
+          }`}
+        >
+          {renderInlineMarkdown(trimmed.slice(3))}
+        </h2>
+      );
+    } else if (trimmed.startsWith("### ") || trimmed.startsWith("#### ")) {
+      const content = trimmed.replace(/^#{3,4}\s+/, "");
+      blocks.push(
+        <h3 key={key++} className="text-base font-semibold">
+          {renderInlineMarkdown(content)}
+        </h3>
+      );
+    } else if (trimmed.startsWith("> ")) {
+      blocks.push(
+        <blockquote
+          key={key++}
+          className={`border-l-2 pl-3 text-sm opacity-85 ${
+            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
+          }`}
+        >
+          {renderInlineMarkdown(trimmed.slice(2))}
+        </blockquote>
+      );
+    } else {
+      blocks.push(
+        <p key={key++} className="text-sm leading-relaxed opacity-90">
+          {renderInlineMarkdown(trimmed)}
+        </p>
+      );
+    }
+  }
+  flushList();
+
+  return <div className="flex flex-col gap-2.5">{blocks}</div>;
+}
+
 interface PreviewWorkspaceProps {
   editorTab: "creature" | "readme";
   previewTab: PreviewTab;
@@ -109,16 +266,11 @@ export function PreviewWorkspace({
     (l) => l.enabled && l.label.trim()
   );
 
-  const displayName =
-    readmeConfig.profileDisplayName.trim() || snapshot?.displayName || username;
-  const statusBio =
-    readmeConfig.profileStatusBio.trim() || snapshot?.bio || "";
-  const location =
-    readmeConfig.profileLocation.trim() || snapshot?.location || "";
-  const company =
-    readmeConfig.profileCompany.trim() || snapshot?.company || "";
-  const website =
-    readmeConfig.profileWebsite.trim() || snapshot?.website || "";
+  const displayName = snapshot?.displayName || username;
+  const statusBio = snapshot?.bio || "";
+  const location = snapshot?.location || "";
+  const company = snapshot?.company || "";
+  const website = snapshot?.website || "";
 
   const handleCopy = async (id: string, content: string) => {
     await copyToClipboard(content);
@@ -171,6 +323,7 @@ export function PreviewWorkspace({
   const isMarkerOnly = readmeConfig.templateId === "auto-evolve-block";
   const isTelemetry = readmeConfig.templateId === "telemetry-stats";
   const isAlignedLeft = readmeConfig.align === "left";
+  const isAdvancedText = readmeConfig.profileTextMode === "advanced";
 
   return (
     <div className="flex flex-col gap-4">
@@ -457,49 +610,64 @@ export function PreviewWorkspace({
                       >
                         {!isMarkerOnly && (
                           <>
-                            {readmeConfig.headline.trim() && (
-                              <h2
-                                className={`border-b pb-2.5 text-xl font-semibold ${
-                                  githubTheme === "dark"
-                                    ? "border-[#30363d]"
-                                    : "border-[#d0d7de]"
-                                }`}
-                              >
-                                {resolveDynamicTokens(
-                                  readmeConfig.headline,
-                                  creatureConfig
+                            {isAdvancedText ? (
+                              readmeConfig.advancedProfileMarkdown.trim() && (
+                                <AdvancedMarkdownPreview
+                                  markdown={resolveDynamicTokens(
+                                    readmeConfig.advancedProfileMarkdown,
+                                    creatureConfig
+                                  )}
+                                  isDark={githubTheme === "dark"}
+                                />
+                              )
+                            ) : (
+                              <>
+                                {readmeConfig.headline.trim() && (
+                                  <h2
+                                    className={`border-b pb-2.5 text-xl font-semibold ${
+                                      githubTheme === "dark"
+                                        ? "border-[#30363d]"
+                                        : "border-[#d0d7de]"
+                                    }`}
+                                  >
+                                    {resolveDynamicTokens(
+                                      readmeConfig.headline,
+                                      creatureConfig
+                                    )}
+                                  </h2>
                                 )}
-                              </h2>
-                            )}
 
-                            {!isMinimal && readmeConfig.subtitleTags.length > 0 && (
-                              <p
-                                className={`text-xs font-semibold uppercase tracking-wide ${
-                                  githubTheme === "dark"
-                                    ? "text-[#8b949e]"
-                                    : "text-[#656d76]"
-                                }`}
-                              >
-                                {readmeConfig.subtitleTags.join(" | ")}
-                              </p>
-                            )}
+                                {!isMinimal &&
+                                  readmeConfig.subtitleTags.length > 0 && (
+                                    <p
+                                      className={`text-xs font-semibold uppercase tracking-wide ${
+                                        githubTheme === "dark"
+                                          ? "text-[#8b949e]"
+                                          : "text-[#656d76]"
+                                      }`}
+                                    >
+                                      {readmeConfig.subtitleTags.join(" | ")}
+                                    </p>
+                                  )}
 
-                            {readmeConfig.bio.trim() && (
-                              <p className="text-sm leading-relaxed opacity-90">
-                                {resolveDynamicTokens(
-                                  readmeConfig.bio,
-                                  creatureConfig
+                                {readmeConfig.bio.trim() && (
+                                  <p className="text-sm leading-relaxed opacity-90">
+                                    {resolveDynamicTokens(
+                                      readmeConfig.bio,
+                                      creatureConfig
+                                    )}
+                                  </p>
                                 )}
-                              </p>
-                            )}
 
-                            {!isMinimal && readmeConfig.ctaLine.trim() && (
-                              <p className="text-sm font-medium opacity-95">
-                                {resolveDynamicTokens(
-                                  readmeConfig.ctaLine,
-                                  creatureConfig
+                                {!isMinimal && readmeConfig.ctaLine.trim() && (
+                                  <p className="text-sm font-medium opacity-95">
+                                    {resolveDynamicTokens(
+                                      readmeConfig.ctaLine,
+                                      creatureConfig
+                                    )}
+                                  </p>
                                 )}
-                              </p>
+                              </>
                             )}
 
                             {!isMinimal && (
@@ -694,7 +862,8 @@ export function PreviewWorkspace({
                             </div>
                           )}
 
-                        {!isMarkerOnly &&
+                        {!isAdvancedText &&
+                          !isMarkerOnly &&
                           readmeConfig.customFooterMarkdown.trim() && (
                             <div
                               className={`rounded-lg border p-3 text-left text-xs ${

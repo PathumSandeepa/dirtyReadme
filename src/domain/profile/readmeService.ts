@@ -11,6 +11,7 @@ import type {
   ReadmeConfig,
   TechStackCard,
 } from "@/domain/profile/entities";
+import { getPlatformIconById } from "@/domain/profile/platformIcons";
 
 function escapeShieldsSegment(text: string): string {
   return encodeURIComponent(
@@ -42,8 +43,11 @@ export function buildActionLinkBadgeUrl(
     style: "for-the-badge",
     labelColor: "1F242D",
   });
-  if (link.logo) params.set("logo", link.logo);
-  params.set("logoColor", "white");
+  if (link.logo !== "none") {
+    const icon = getPlatformIconById(link.logo);
+    params.set("logo", icon.customLogoDataUri || icon.id);
+    params.set("logoColor", "white");
+  }
   return `https://img.shields.io/badge/${left}-${right}-${color}?${params.toString()}`;
 }
 
@@ -300,22 +304,15 @@ export function buildStatsTableSection(
   return rows.join("\n");
 }
 
-export function buildGeneratedReadmeMarkdown(
+export function buildStructuredProfileMarkdown(
   creature: CreatureConfig,
   readme: ReadmeConfig
 ): string {
-  const safeUser = creature.username.trim() || "your-username";
-  const markerBlock = buildMarkerSection(creature, readme);
-  if (readme.templateId === "auto-evolve-block") {
-    return markerBlock;
-  }
-
   const parts: string[] = [];
   const resolvedHeadline = resolveDynamicTokens(readme.headline, creature).trim();
   const resolvedBio = resolveDynamicTokens(readme.bio, creature).trim();
   const resolvedCta = resolveDynamicTokens(readme.ctaLine, creature).trim();
   const isMinimal = readme.templateId === "minimal-header";
-  const isTelemetry = readme.templateId === "telemetry-stats";
 
   if (resolvedHeadline) {
     parts.push(`## ${resolvedHeadline}`);
@@ -337,6 +334,72 @@ export function buildGeneratedReadmeMarkdown(
 
   if (resolvedCta && !isMinimal) {
     parts.push(resolvedCta);
+  }
+
+  if (!isMinimal && readme.customFooterMarkdown.trim()) {
+    const heading = resolveDynamicTokens(
+      readme.customSectionTitle,
+      creature
+    ).trim();
+    const body = resolveDynamicTokens(
+      readme.customFooterMarkdown.trim(),
+      creature
+    );
+    parts.push(heading ? `### ${heading}\n\n${body}` : body);
+  }
+
+  return parts.join("\n\n");
+}
+
+export function buildGeneratedReadmeMarkdown(
+  creature: CreatureConfig,
+  readme: ReadmeConfig
+): string {
+  const safeUser = creature.username.trim() || "your-username";
+  const markerBlock = buildMarkerSection(creature, readme);
+  if (readme.templateId === "auto-evolve-block") {
+    return markerBlock;
+  }
+
+  const parts: string[] = [];
+  const isMinimal = readme.templateId === "minimal-header";
+  const isTelemetry = readme.templateId === "telemetry-stats";
+  const isAdvancedText = readme.profileTextMode === "advanced";
+
+  if (isAdvancedText) {
+    const advancedResolved = resolveDynamicTokens(
+      readme.advancedProfileMarkdown,
+      creature
+    ).trim();
+    if (advancedResolved) {
+      parts.push(advancedResolved);
+    }
+  } else {
+    const resolvedHeadline = resolveDynamicTokens(readme.headline, creature).trim();
+    const resolvedBio = resolveDynamicTokens(readme.bio, creature).trim();
+    const resolvedCta = resolveDynamicTokens(readme.ctaLine, creature).trim();
+
+    if (resolvedHeadline) {
+      parts.push(`## ${resolvedHeadline}`);
+    }
+
+    if (readme.subtitleTags.length > 0 && !isMinimal) {
+      const tagLine = readme.subtitleTags
+        .map((t) => resolveDynamicTokens(t, creature).trim().toUpperCase())
+        .filter(Boolean)
+        .join(" | ");
+      if (tagLine) {
+        parts.push(`**${tagLine}**`);
+      }
+    }
+
+    if (resolvedBio) {
+      parts.push(resolvedBio);
+    }
+
+    if (resolvedCta && !isMinimal) {
+      parts.push(resolvedCta);
+    }
   }
 
   if (!isMinimal) {
@@ -397,7 +460,7 @@ export function buildGeneratedReadmeMarkdown(
     );
   }
 
-  if (!isMinimal && readme.customFooterMarkdown.trim()) {
+  if (!isAdvancedText && !isMinimal && readme.customFooterMarkdown.trim()) {
     const heading = resolveDynamicTokens(
       readme.customSectionTitle,
       creature

@@ -187,6 +187,7 @@ export function StudioApp() {
               controller.readmeConfig.templateId === "telemetry-stats"
             }
             defaultBranch={controller.snapshot?.profileRepoBranch || "main"}
+            hasLegacyWorkflow={Boolean(controller.snapshot?.hasLegacyWorkflow)}
             onBack={() => setScreen("customize")}
           />
         )}

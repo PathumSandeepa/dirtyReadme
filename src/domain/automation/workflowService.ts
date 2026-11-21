@@ -58,10 +58,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
 
@@ -84,6 +84,7 @@ jobs:
           git add creature.webp README.md creature-config.json 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "chore: 12AM daily profile & creature telemetry update"
+            git pull --rebase origin "\${{ github.ref_name }}"
             git push
           else
             echo "No profile telemetry changes detected."
