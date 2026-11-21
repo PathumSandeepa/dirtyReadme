@@ -445,19 +445,19 @@ export function ProfileReadmeStepPanel({
           }}
           className={`rounded-xl border-2 border-dashed p-4 transition ${
             dropZoneActive
-              ? "border-slate-900 bg-muted border-primary bg-accent/60"
-              : "bg-muted/40 "
+              ? "border-primary bg-accent/60"
+              : "bg-muted/40"
           }`}
         >
-          <div className="mb-2.5 flex items-center justify-between text-xs font-semibold text-muted-foreground ">
+          <div className="mb-2.5 flex items-center justify-between text-xs font-semibold text-muted-foreground">
             <span>Active Tech Stack ({activeBadges.length}) — Drag to Reorder</span>
-            <span className="font-normal text-slate-400">
+            <span className="font-normal text-muted-foreground">
               Drop skills here
             </span>
           </div>
 
           {activeBadges.length === 0 ? (
-            <p className="py-4 text-center text-sm text-slate-400">
+            <p className="py-4 text-center text-sm text-muted-foreground">
               Drag or click skills below to add them to your README.
             </p>
           ) : (
@@ -480,25 +480,25 @@ export function ProfileReadmeStepPanel({
                     e.stopPropagation();
                     handleDropOnBadge(badge.id);
                   }}
-                  className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-white px-2.5 py-1.5 text-xs font-medium text-foreground shadow-xs transition active:cursor-grabbing   ${
+                  className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-card px-2.5 py-1.5 text-xs font-medium text-card-foreground shadow-xs transition active:cursor-grabbing ${
                     dragOverBadgeId === badge.id
-                      ? "border-slate-900 ring-2 ring-slate-900/20 border-primary"
-                      : "border-border dark:border-[#454e5e]"
+                      ? "border-primary ring-2 ring-primary/25"
+                      : "border-border"
                   }`}
                 >
-                  <GripVertical className="h-3.5 w-3.5 text-slate-400" />
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
                   <span
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: `#${badge.color}` }}
                   />
                   <span>{badge.label}</span>
-                  <div className="ml-1 flex items-center gap-0.5 border-l border-border pl-1 ">
+                  <div className="ml-1 flex items-center gap-0.5 border-l border-border pl-1">
                     <button
                       type="button"
                       disabled={idx === 0}
                       onClick={() => onMoveBadge(badge.id, -1)}
                       aria-label={`Move ${badge.label} left`}
-                      className="rounded p-0.5 text-slate-400 hover:bg-muted hover:text-foreground disabled:opacity-30 dark:hover:bg-zinc-800"
+                      className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
                       <ChevronLeft className="h-3 w-3" />
                     </button>
@@ -507,7 +507,7 @@ export function ProfileReadmeStepPanel({
                       disabled={idx === activeBadges.length - 1}
                       onClick={() => onMoveBadge(badge.id, 1)}
                       aria-label={`Move ${badge.label} right`}
-                      className="rounded p-0.5 text-slate-400 hover:bg-muted hover:text-foreground disabled:opacity-30 dark:hover:bg-zinc-800"
+                      className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
                       <ChevronRight className="h-3 w-3" />
                     </button>
@@ -515,7 +515,7 @@ export function ProfileReadmeStepPanel({
                       type="button"
                       onClick={() => toggleBadge(badge.id, false)}
                       aria-label={`Remove ${badge.label}`}
-                      className="rounded p-0.5 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                      className="rounded p-0.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
                     >
                       ×
                     </button>
@@ -526,7 +526,7 @@ export function ProfileReadmeStepPanel({
           )}
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 flex flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-1">
               {(
@@ -539,8 +539,8 @@ export function ProfileReadmeStepPanel({
                   onClick={() => setBadgeCategory(cat)}
                   className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition ${
                     badgeCategory === cat
-                      ? "bg-slate-900 text-white "
-                      : "bg-muted text-muted-foreground hover:bg-slate-200 "
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
                   {cat}
@@ -552,11 +552,11 @@ export function ProfileReadmeStepPanel({
               value={badgeSearch}
               onChange={(e) => setBadgeSearch(e.target.value)}
               placeholder="Search skills..."
-              className="rounded-lg border bg-muted/50 px-3 py-1 text-xs text-foreground placeholder-slate-400 focus:border-primary focus:bg-background focus:outline-none "
+              className="rounded-lg border border-border bg-muted/50 px-3 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
 
-          <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded-xl border border-border bg-muted/50/40 p-3 ">
+          <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded-xl border border-border bg-muted/40 p-3">
             {availableBadges.map((badge) => (
               <button
                 key={badge.id}
@@ -565,9 +565,9 @@ export function ProfileReadmeStepPanel({
                 onDragStart={() => setDraggedBadgeId(badge.id)}
                 onDragEnd={() => setDraggedBadgeId(null)}
                 onClick={() => toggleBadge(badge.id, true)}
-                className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-card px-2.5 py-1 text-xs font-medium text-foreground/85 transition hover:border-slate-400 hover:bg-muted/50 active:cursor-grabbing "
+                className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-card-foreground transition hover:border-primary/60 hover:bg-accent/50 active:cursor-grabbing"
               >
-                <Plus className="h-3 w-3 text-slate-400" />
+                <Plus className="h-3 w-3 text-muted-foreground" />
                 <span
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ backgroundColor: `#${badge.color}` }}
@@ -720,14 +720,14 @@ export function ProfileReadmeStepPanel({
                 onClick={() => onUpdateField("templateId", tpl.id)}
                 className={`rounded-xl border p-3 text-left transition ${
                   readmeConfig.templateId === tpl.id
-                    ? "border-primary bg-accent/60 ring-1 ring-slate-900 border-primary bg-accent/60"
-                    : "bg-card hover:bg-muted/50 "
+                    ? "border-primary bg-accent/60 ring-1 ring-primary"
+                    : "border-border bg-card hover:bg-muted/50"
                 }`}
               >
-                <div className="text-xs font-semibold text-foreground ">
+                <div className="text-xs font-semibold text-foreground">
                   {tpl.name}
                 </div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground ">
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
                   {tpl.description}
                 </div>
               </button>
@@ -745,13 +745,13 @@ export function ProfileReadmeStepPanel({
             ).map((opt) => (
               <label
                 key={opt.key}
-                className="flex cursor-pointer items-center gap-2 rounded-xl border bg-muted/50 px-3 py-2.5 text-foreground/85 "
+                className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-foreground"
               >
                 <input
                   type="checkbox"
                   checked={readmeConfig[opt.key]}
                   onChange={(e) => onUpdateField(opt.key, e.target.checked)}
-                  className="accent-slate-900 "
+                  className="accent-primary"
                 />
                 <span>{opt.label}</span>
               </label>

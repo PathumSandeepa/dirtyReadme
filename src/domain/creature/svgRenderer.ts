@@ -17,7 +17,7 @@ export const SVG_HEIGHT = 460;
 export const SHARE_CARD_WIDTH = 1280;
 export const SHARE_CARD_HEIGHT = 640;
 
-const PIXEL_SIZE = 4;
+const PX = 3;
 
 export function escapeXml(input: string): string {
   return input
@@ -31,540 +31,1065 @@ export function escapeXml(input: string): string {
 export function buildAnimationStyles(speed: number): string {
   const s = Math.max(0.25, Math.min(3, speed || 1));
   const dur = (baseSec: number) => `${(baseSec / s).toFixed(2)}s`;
+  const delay = (baseSec: number) => `${(baseSec / s).toFixed(2)}s`;
 
   return `
-    .cc-body-float {
-      animation: ccSwimBody ${dur(4.4)} ease-in-out infinite;
-      transform-box: fill-box;
-      transform-origin: center;
+    .cc-swim-body {
+      animation: ccSwimBody ${dur(4.2)} ease-in-out infinite;
     }
-    .cc-wing-near {
-      animation: ccWingNear ${dur(3.8)} ease-in-out infinite;
+    .cc-shoulder {
+      animation: ccShoulder ${dur(3.6)} ease-in-out infinite;
+    }
+    .cc-wing-tip {
+      animation: ccWingTip ${dur(3.6)} ease-in-out infinite;
+      animation-delay: ${delay(-0.45)};
+    }
+    .cc-wing-mirror {
+      animation: ccWingMirror ${dur(3.6)} ease-in-out infinite;
     }
     .cc-wing-far {
-      animation: ccWingFar ${dur(3.8)} ease-in-out infinite;
+      animation: ccWingFar ${dur(3.6)} ease-in-out infinite;
+      animation-delay: ${delay(-1.6)};
     }
-    .cc-tail-swim {
-      animation: ccTailSwim ${dur(3.2)} ease-in-out infinite;
+    .cc-tail-s1 {
+      animation: ccTailWave ${dur(2.8)} ease-in-out infinite;
     }
-    .cc-fluke-wave {
-      animation: ccFlukeWave ${dur(3.2)} ease-in-out infinite;
+    .cc-tail-s2 {
+      animation: ccTailWave ${dur(2.8)} ease-in-out infinite;
+      animation-delay: ${delay(-0.55)};
     }
-    .cc-jelly-swim {
-      animation: ccJellySwim ${dur(4.6)} ease-in-out infinite;
-      transform-box: fill-box;
-      transform-origin: center;
+    .cc-tail-s3 {
+      animation: ccFlukeFlex ${dur(2.8)} ease-in-out infinite;
+      animation-delay: ${delay(-1.05)};
+    }
+    .cc-jelly-surge {
+      animation: ccJellySurge ${dur(3.4)} cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     }
     .cc-jelly-bell {
-      animation: ccJellyBell ${dur(3.2)} ease-in-out infinite;
+      animation: ccJellyBell ${dur(3.4)} ease-in-out infinite;
     }
-    .cc-jelly-arm-1 {
-      animation: ccJellyArmA ${dur(3.6)} ease-in-out infinite;
+    .cc-wave-a1 {
+      animation: ccTentWave ${dur(3.2)} ease-in-out infinite;
     }
-    .cc-jelly-arm-2 {
-      animation: ccJellyArmB ${dur(4.2)} ease-in-out infinite;
+    .cc-wave-a2 {
+      animation: ccTentWave ${dur(3.2)} ease-in-out infinite;
+      animation-delay: ${delay(-0.65)};
     }
-    .cc-jelly-arm-3 {
-      animation: ccJellyArmC ${dur(3.9)} ease-in-out infinite;
+    .cc-wave-a3 {
+      animation: ccTentWave ${dur(3.2)} ease-in-out infinite;
+      animation-delay: ${delay(-1.3)};
     }
-    .cc-jelly-whip-1 {
-      animation: ccJellyWhipA ${dur(4.8)} ease-in-out infinite;
+    .cc-wave-b1 {
+      animation: ccTentWave ${dur(3.8)} ease-in-out infinite;
+      animation-delay: ${delay(-0.9)};
     }
-    .cc-jelly-whip-2 {
-      animation: ccJellyWhipB ${dur(5.2)} ease-in-out infinite;
+    .cc-wave-b2 {
+      animation: ccTentWave ${dur(3.8)} ease-in-out infinite;
+      animation-delay: ${delay(-1.65)};
+    }
+    .cc-wave-b3 {
+      animation: ccTentWave ${dur(3.8)} ease-in-out infinite;
+      animation-delay: ${delay(-2.4)};
     }
     .cc-pulse {
       animation: ccPulse ${dur(2.2)} ease-in-out infinite;
     }
     @keyframes ccSwimBody {
-      0%, 100% { transform: translate(0px, -6px) rotate(-1.2deg); }
-      50% { transform: translate(-4px, 6px) rotate(1.2deg); }
+      0%, 100% { transform: translate(3px, -5px) rotate(-1.1deg); }
+      50% { transform: translate(-5px, 5px) rotate(1.1deg); }
     }
-    @keyframes ccWingNear {
-      0%, 100% { transform: rotate(-7deg) translateY(-2px); }
-      50% { transform: rotate(8deg) translateY(3px); }
+    @keyframes ccShoulder {
+      0%, 100% { transform: rotate(-6deg); }
+      50% { transform: rotate(7deg); }
     }
-    @keyframes ccWingFar {
-      0%, 100% { transform: rotate(6deg) translateY(2px); }
-      50% { transform: rotate(-6deg) translateY(-2px); }
+    @keyframes ccWingTip {
+      0%, 100% { transform: rotate(-7deg); }
+      50% { transform: rotate(8deg); }
     }
-    @keyframes ccTailSwim {
-      0%, 100% { transform: rotate(-5.5deg) translateY(-2px); }
-      50% { transform: rotate(6deg) translateY(2px); }
-    }
-    @keyframes ccFlukeWave {
-      0%, 100% { transform: rotate(7deg); }
+    @keyframes ccWingMirror {
+      0%, 100% { transform: rotate(6deg); }
       50% { transform: rotate(-7deg); }
     }
-    @keyframes ccJellySwim {
-      0%, 100% { transform: translate(2px, -5px) rotate(-0.8deg); }
-      45% { transform: translate(-7px, 4px) rotate(0.9deg); }
+    @keyframes ccWingFar {
+      0%, 100% { transform: rotate(5deg); }
+      50% { transform: rotate(-6deg); }
+    }
+    @keyframes ccTailWave {
+      0%, 100% { transform: rotate(-4.5deg); }
+      50% { transform: rotate(4.5deg); }
+    }
+    @keyframes ccFlukeFlex {
+      0%, 100% { transform: rotate(-6.5deg); }
+      50% { transform: rotate(6.5deg); }
+    }
+    @keyframes ccJellySurge {
+      0% { transform: translate(6px, -3px); }
+      38% { transform: translate(-10px, 2px); }
+      100% { transform: translate(6px, -3px); }
     }
     @keyframes ccJellyBell {
-      0%, 100% { transform: scale(1.03, 0.96); }
-      45% { transform: scale(0.94, 1.05); }
+      0% { transform: scale(1.04, 0.94); }
+      35% { transform: scale(0.91, 1.07); }
+      100% { transform: scale(1.04, 0.94); }
     }
-    @keyframes ccJellyArmA {
-      0%, 100% { transform: rotate(-4.2deg) translateY(-2px); }
-      50% { transform: rotate(4.8deg) translateY(3px); }
-    }
-    @keyframes ccJellyArmB {
-      0%, 100% { transform: rotate(4.5deg) translateY(2px); }
-      50% { transform: rotate(-4.5deg) translateY(-2px); }
-    }
-    @keyframes ccJellyArmC {
-      0%, 100% { transform: rotate(-3deg) translate(2px, 3px); }
-      50% { transform: rotate(3.8deg) translate(-2px, -3px); }
-    }
-    @keyframes ccJellyWhipA {
-      0%, 100% { transform: rotate(-5.5deg); }
-      50% { transform: rotate(6deg); }
-    }
-    @keyframes ccJellyWhipB {
-      0%, 100% { transform: rotate(5.5deg); }
-      50% { transform: rotate(-5.5deg); }
+    @keyframes ccTentWave {
+      0%, 100% { transform: rotate(-4.2deg); }
+      50% { transform: rotate(4.2deg); }
     }
     @keyframes ccPulse {
-      0%, 100% { opacity: 0.65; }
+      0%, 100% { opacity: 0.6; }
       50% { opacity: 1; }
     }
   `;
 }
 
 function getStageScale(stage: number): number {
-  const scales = [0.78, 0.86, 0.93, 1.0, 1.06];
+  const scales = [0.78, 0.86, 0.94, 1.0, 1.06];
   return scales[Math.max(0, Math.min(4, stage - 1))];
 }
 
-function getViewTransform(view: CameraView, stage: number): string {
+function buildStageWrapper(stage: number, markup: string): string {
   const s = getStageScale(stage);
-  const cx = 460;
-  const cy = 205;
-  if (view === "dive") {
-    return `translate(${cx}, ${cy}) rotate(-10) scale(${(s * 0.96).toFixed(3)}) translate(${-cx}, ${-cy})`;
-  }
-  if (view === "top") {
-    return `translate(${cx}, ${cy}) scale(${(s * 1.05).toFixed(3)}, ${(s * 0.91).toFixed(3)}) translate(${-cx}, ${-cy})`;
-  }
-  return `translate(${cx}, ${cy}) scale(${s.toFixed(3)}) translate(${-cx}, ${-cy})`;
+  const cx = 450;
+  const cy = 195;
+  return `<g transform="translate(${cx}, ${cy}) scale(${s.toFixed(3)}) translate(${-cx}, ${-cy})">${markup}</g>`;
 }
 
-function renderPixelTulkun(
-  p: DerivedPalette,
+interface PixelPalette {
+  slateDark: string;
+  slateMain: string;
+  slateLight: string;
+  stripeBlue: string;
+  whitePure: string;
+  whiteMid: string;
+  whiteShadow: string;
+  crestGold: string;
+  crestShadow: string;
+  energyBright: string;
+}
+
+function toPixelPalette(p: DerivedPalette): PixelPalette {
+  return {
+    slateDark: mixHex(p.armorMain, "#0A121C", 0.45),
+    slateMain: p.armorMain,
+    slateLight: mixHex(p.armorMain, "#9EC5EC", 0.3),
+    stripeBlue: p.energyMain,
+    whitePure: "#F3F6FA",
+    whiteMid: "#B8C4D4",
+    whiteShadow: "#738296",
+    crestGold: p.accentMain,
+    crestShadow: mixHex(p.accentMain, "#5A3B12", 0.36),
+    energyBright: p.energyBright,
+  };
+}
+
+function renderChainedSeg(
+  canvas: PixelCanvas,
+  pivotGx: number,
+  pivotGy: number,
+  cssClass: string,
+  phase: number | undefined,
+  phaseLag: number,
+  ampDeg: number,
+  childMarkup = ""
+): string {
+  const px = pivotGx * PX;
+  const py = pivotGy * PX;
+  const transformAttr =
+    phase !== undefined
+      ? `rotate(${(Math.sin(phase * Math.PI * 2 - phaseLag) * ampDeg).toFixed(2)}, ${px}, ${py})`
+      : "";
+  const classAttr = phase === undefined ? cssClass : "";
+  return `
+    <g transform="${transformAttr}" class="${classAttr}" style="transform-origin: ${px}px ${py}px;">
+      ${canvas.toSvgRects(PX)}
+      ${childMarkup}
+    </g>
+  `;
+}
+
+function renderTulkunSide(
+  pp: PixelPalette,
   stage: number,
   phase?: number
 ): string {
-  const slateDark = mixHex(p.armorMain, "#0A121C", 0.45);
-  const slateMain = p.armorMain;
-  const slateLight = mixHex(p.armorMain, "#9EC5EC", 0.28);
-  const stripeBlue = p.energyMain;
-  const whitePure = "#F3F6FA";
-  const whiteMid = "#B8C4D4";
-  const whiteShadow = "#758498";
-  const crestGold = p.accentMain;
-  const crestShadow = mixHex(p.accentMain, "#5A3B12", 0.35);
-
-  const farFlipperCanvas = new PixelCanvas();
-  farFlipperCanvas.fillPolygon(
+  const farCanvas = new PixelCanvas();
+  farCanvas.fillPolygon(
     [
-      [75, 36],
-      [81, 36],
-      [94, 57],
-      [90, 60],
-      [82, 50],
+      [100, 48],
+      [108, 48],
+      [125, 76],
+      [119, 80],
+      [108, 66],
     ],
-    (gx, gy, nx) => {
-      if (nx < 0.28) return whiteMid;
-      return (gx + gy) % 2 === 0 ? slateDark : slateMain;
-    }
+    (gx, gy, nx) => (nx < 0.28 ? pp.whiteMid : (gx + gy) % 2 === 0 ? pp.slateDark : pp.slateMain)
   );
-  farFlipperCanvas.fillPolygon(
+  farCanvas.fillPolygon(
     [
-      [130, 42],
-      [144, 42],
-      [148, 52],
-      [141, 55],
-      [133, 49],
+      [172, 56],
+      [190, 56],
+      [196, 69],
+      [186, 73],
+      [176, 65],
     ],
-    (gx, gy) => ((gx + gy) % 2 === 0 ? slateMain : slateDark)
+    (gx, gy) => ((gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark)
   );
 
-  const tailCanvas = new PixelCanvas();
-  tailCanvas.fillPolygon(
+  const tailS1 = new PixelCanvas();
+  tailS1.fillPolygon(
     [
-      [123, 31],
-      [145, 29],
-      [158, 28],
-      [158, 34],
-      [146, 37],
-      [125, 40],
+      [162, 41],
+      [188, 39],
+      [188, 49],
+      [163, 53],
+    ],
+    (gx, gy, _nx, ny) =>
+      ny > 0.72 ? pp.stripeBlue : (gx + gy) % 2 === 0 && ny < 0.45 ? pp.slateMain : pp.slateDark
+  );
+
+  const tailS2 = new PixelCanvas();
+  tailS2.fillPolygon(
+    [
+      [185, 39],
+      [212, 37],
+      [212, 45],
+      [185, 49],
     ],
     (gx, gy, _nx, ny) => {
-      if (ny > 0.72) return stripeBlue;
-      if (ny < 0.25 && (gx === 142 || gx === 143)) return whitePure;
-      return (gx + gy) % 2 === 0 && ny < 0.45 ? slateMain : slateDark;
+      if (ny > 0.72) return pp.stripeBlue;
+      if (ny < 0.25 && gx >= 191 && gx <= 193) return pp.whitePure;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
     }
   );
 
   const flukeCanvas = new PixelCanvas();
   flukeCanvas.fillPolygon(
     [
-      [153, 30],
-      [172, 21],
-      [187, 17],
-      [181, 24],
-      [164, 32],
+      [207, 39],
+      [231, 27],
+      [252, 22],
+      [244, 31],
+      [220, 42],
     ],
-    (gx, gy, _nx, ny) => {
-      if (ny < 0.28) return slateLight;
-      return (gx + gy) % 2 === 0 ? slateMain : slateDark;
-    }
+    (gx, gy, _nx, ny) =>
+      ny < 0.28 ? pp.slateLight : (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark
   );
   flukeCanvas.fillPolygon(
     [
-      [154, 32],
-      [168, 33],
-      [188, 36],
-      [180, 40],
-      [156, 36],
+      [208, 42],
+      [228, 44],
+      [253, 48],
+      [242, 53],
+      [210, 46],
     ],
-    (gx, gy, _nx, ny) => {
-      if (ny > 0.72) return stripeBlue;
-      return (gx + gy) % 2 === 0 ? slateDark : slateMain;
-    }
+    (gx, gy, _nx, ny) =>
+      ny > 0.72 ? pp.stripeBlue : (gx + gy) % 2 === 0 ? pp.slateDark : pp.slateMain
   );
 
   const bodyCanvas = new PixelCanvas();
   bodyCanvas.fillPolygon(
     [
-      [48, 36],
-      [51, 30],
-      [62, 23],
-      [79, 18],
-      [101, 19],
-      [120, 26],
-      [132, 31],
-      [132, 41],
-      [115, 44],
-      [96, 45],
-      [78, 43],
-      [53, 39],
+      [62, 48],
+      [67, 40],
+      [82, 31],
+      [105, 24],
+      [135, 25],
+      [162, 35],
+      [166, 41],
+      [166, 54],
+      [148, 58],
+      [126, 59],
+      [102, 57],
+      [69, 52],
     ],
     (gx, gy, _nx, ny) => {
-      if (ny > 0.78) return stripeBlue;
-      if (ny < 0.24 && gx >= 82 && gx <= 86) return whitePure;
-      if (ny < 0.25 && gx >= 106 && gx <= 108 && stage >= 3) return whitePure;
-      if (ny < 0.3) return (gx + gy) % 2 === 0 ? slateLight : slateMain;
-      return (gx + gy) % 2 === 0 ? slateMain : slateDark;
+      if (ny > 0.78) return pp.stripeBlue;
+      if (ny < 0.24 && gx >= 109 && gx <= 115) return pp.whitePure;
+      if (ny < 0.25 && gx >= 141 && gx <= 144 && stage >= 3) return pp.whitePure;
+      if (ny < 0.28) return (gx + gy) % 2 === 0 ? pp.slateLight : pp.slateMain;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
     }
   );
 
-  bodyCanvas.fillEllipse(71, 41, 22, 13, (gx, gy, nx, ny) => {
-    if (gy < 34) return null;
-    if (ny > 0.62) {
-      return (gx + gy) % 2 === 0 ? whiteMid : whiteShadow;
-    }
-    if (ny > 0.25) {
-      return (gx + gy) % 2 === 0 ? whitePure : whiteMid;
-    }
-    if (gx < 58 && ny < 0.1) return whitePure;
-    return whitePure;
+  bodyCanvas.fillEllipse(94, 54, 29, 17, (gx, gy, _nx, ny) => {
+    if (gy < 45) return null;
+    if (ny > 0.65) return (gx + gy) % 2 === 0 ? pp.whiteMid : pp.whiteShadow;
+    if (ny > 0.28) return (gx + gy) % 2 === 0 ? pp.whitePure : pp.whiteMid;
+    return pp.whitePure;
   });
 
-  for (let gx = 48; gx <= 82; gx++) {
-    const t = (gx - 48) / 34;
-    const jawY = Math.round(35 + Math.sin(t * Math.PI) * 2 + (t > 0.5 ? (t - 0.5) * 6 : 0));
-    bodyCanvas.setPixel(gx, jawY, slateDark);
-    if (gx >= 53 && gx <= 60 && gx % 4 === 0) {
-      bodyCanvas.setPixel(gx, jawY - 1, whitePure);
-      bodyCanvas.setPixel(gx + 1, jawY + 2, slateMain);
+  for (let gx = 63; gx <= 108; gx++) {
+    const t = (gx - 63) / 45;
+    const jawY = Math.round(46 + Math.sin(t * Math.PI) * 3 + (t > 0.5 ? (t - 0.5) * 8 : 0));
+    bodyCanvas.setPixel(gx, jawY, pp.slateDark);
+    if (gx >= 69 && gx <= 80 && gx % 5 === 0) {
+      bodyCanvas.setPixel(gx, jawY - 1, pp.whitePure);
     }
   }
-
-  for (let k = 0; k < 4; k++) {
-    const px = 63 + k * 4;
-    for (let dy = 0; dy < 5; dy++) {
-      bodyCanvas.setPixel(px + Math.floor(dy / 2), 38 + dy, slateDark);
+  for (let k = 0; k < 5; k++) {
+    const px = 82 + k * 5;
+    for (let dy = 0; dy < 7; dy++) {
+      bodyCanvas.setPixel(px + Math.floor(dy / 2), 51 + dy, pp.slateDark);
     }
   }
 
   bodyCanvas.fillPolygon(
     [
-      [55, 29],
-      [68, 22],
-      [78, 21],
-      [81, 26],
-      [71, 29],
+      [72, 38],
+      [90, 29],
+      [104, 28],
+      [108, 34],
+      [94, 38],
     ],
     (gx, gy, _nx, ny) => {
-      if (gx >= 69 && gx <= 74 && gy <= 24) return slateDark;
-      return ny > 0.7 ? crestShadow : crestGold;
+      if (gx >= 92 && gx <= 98 && gy <= 32) return pp.slateDark;
+      return ny > 0.72 ? pp.crestShadow : pp.crestGold;
     }
   );
-
-  bodyCanvas.setPixel(76, 30, crestGold);
-  bodyCanvas.setPixel(77, 30, crestGold);
-  bodyCanvas.setPixel(76, 31, crestShadow);
-  bodyCanvas.setPixel(77, 31, crestGold);
-
-  bodyCanvas.fillEllipse(57, 33, 3, 1.5, whitePure);
-  bodyCanvas.setPixel(55, 33, slateDark);
+  bodyCanvas.fillRect(101, 40, 3, 2, pp.crestGold);
+  bodyCanvas.fillEllipse(75, 44, 4, 2, pp.whitePure);
+  bodyCanvas.setPixel(73, 44, pp.slateDark);
 
   if (stage >= 5) {
-    bodyCanvas.setPixel(84, 17, p.energyBright);
-    bodyCanvas.setPixel(85, 17, p.energyBright);
-    bodyCanvas.setPixel(107, 23, p.energyBright);
+    bodyCanvas.fillRect(112, 23, 3, 1, pp.energyBright);
+    bodyCanvas.fillRect(142, 30, 2, 1, pp.energyBright);
   }
 
-  const nearWingCanvas = new PixelCanvas();
-  nearWingCanvas.fillPolygon(
+  const wingUpper = new PixelCanvas();
+  wingUpper.fillPolygon(
     [
-      [89, 31],
-      [98, 30],
-      [118, 49],
-      [140, 71],
-      [135, 73],
-      [108, 53],
-      [89, 37],
+      [118, 42],
+      [129, 41],
+      [149, 60],
+      [143, 64],
+      [119, 49],
     ],
-    (gx, gy, _nx, ny) => {
-      const diag = (gy - 31) - (gx - 89) * 0.92;
-      if (diag < -0.5) return whitePure;
-      if (diag < 1.6) return whiteMid;
-      if (ny > 0.5 && diag > 2.2) return slateMain;
-      return slateDark;
+    (gx, gy) => {
+      const diag = gy - 42 - (gx - 118) * 0.92;
+      if (diag < -0.5) return pp.whitePure;
+      if (diag < 2) return pp.whiteMid;
+      return pp.slateDark;
     }
   );
-  nearWingCanvas.setPixel(91, 32, whitePure);
-  nearWingCanvas.setPixel(92, 32, whitePure);
 
-  const angleRad = phase !== undefined ? phase * Math.PI * 2 : 0;
-  const floatT =
+  const wingTip = new PixelCanvas();
+  wingTip.fillPolygon(
+    [
+      [144, 59],
+      [149, 59],
+      [186, 95],
+      [180, 98],
+      [141, 64],
+    ],
+    (gx, gy, _nx, ny) => {
+      const diag = gy - 59 - (gx - 144) * 0.95;
+      if (diag < -0.2) return pp.whitePure;
+      if (diag < 2.2) return pp.whiteMid;
+      return ny > 0.4 ? pp.slateMain : pp.slateDark;
+    }
+  );
+
+  const farWingXml = renderChainedSeg(farCanvas, 104, 49, "cc-wing-far", phase, 1.5, 6);
+  const flukeXml = renderChainedSeg(flukeCanvas, 210, 41, "cc-tail-s3", phase, 1.6, 6.5);
+  const tailS2Xml = renderChainedSeg(tailS2, 187, 43, "cc-tail-s2", phase, 0.9, 4.5, flukeXml);
+  const tailS1Xml = renderChainedSeg(tailS1, 165, 45, "cc-tail-s1", phase, 0.2, 4.5, tailS2Xml);
+  const wingTipXml = renderChainedSeg(wingTip, 146, 61, "cc-wing-tip", phase, 0.7, 7.5);
+  const nearWingXml = renderChainedSeg(wingUpper, 122, 44, "cc-shoulder", phase, 0, 6, wingTipXml);
+
+  const bodyTranslate =
     phase !== undefined
-      ? `translate(${(-2 - Math.cos(angleRad) * 2).toFixed(2)}, ${(Math.sin(angleRad) * 6).toFixed(2)}) rotate(${(Math.sin(angleRad) * 1.2).toFixed(2)}, 420, 145)`
+      ? `translate(${(-1 - Math.cos(phase * Math.PI * 2) * 3).toFixed(2)}, ${(Math.sin(phase * Math.PI * 2) * 5).toFixed(2)}) rotate(${(Math.sin(phase * Math.PI * 2) * 1.1).toFixed(2)}, 440, 145)`
       : "";
-  const wingNearT =
-    phase !== undefined ? `rotate(${(Math.sin(angleRad) * 7.5).toFixed(2)}, 372, 132)` : "";
-  const wingFarT =
-    phase !== undefined ? `rotate(${(-Math.sin(angleRad) * 6).toFixed(2)}, 312, 148)` : "";
-  const tailT =
-    phase !== undefined ? `rotate(${(Math.sin(angleRad - 0.7) * 5.8).toFixed(2)}, 504, 140)` : "";
-  const flukeT =
-    phase !== undefined ? `rotate(${(-Math.sin(angleRad - 1.3) * 7).toFixed(2)}, 620, 128)` : "";
-
-  const staticGroup = phase !== undefined;
 
   return `
-    <g transform="${floatT}" class="${staticGroup ? "" : "cc-body-float"}">
-      <g transform="${wingFarT}" class="${staticGroup ? "" : "cc-wing-far"}" style="transform-origin: 312px 148px;">
-        ${farFlipperCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
-      <g transform="${tailT}" class="${staticGroup ? "" : "cc-tail-swim"}" style="transform-origin: 504px 140px;">
-        ${tailCanvas.toSvgRects(PIXEL_SIZE)}
-        <g transform="${flukeT}" class="${staticGroup ? "" : "cc-fluke-wave"}" style="transform-origin: 620px 128px;">
-          ${flukeCanvas.toSvgRects(PIXEL_SIZE)}
-        </g>
-      </g>
-      ${bodyCanvas.toSvgRects(PIXEL_SIZE)}
-      <g transform="${wingNearT}" class="${staticGroup ? "" : "cc-wing-near"}" style="transform-origin: 372px 132px;">
-        ${nearWingCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
+    <g transform="${bodyTranslate}" class="${phase === undefined ? "cc-swim-body" : ""}" style="transform-origin: 440px 145px;">
+      ${farWingXml}
+      ${tailS1Xml}
+      ${bodyCanvas.toSvgRects(PX)}
+      ${nearWingXml}
     </g>
   `;
 }
 
-function renderPixelJellyfish(
+function renderTulkunDive(
+  pp: PixelPalette,
+  stage: number,
+  phase?: number
+): string {
+  const upperFarWing = new PixelCanvas();
+  upperFarWing.fillPolygon(
+    [
+      [126, 44],
+      [135, 38],
+      [168, 20],
+      [162, 31],
+      [133, 50],
+    ],
+    (gx, gy) => ((gx + gy) % 2 === 0 ? pp.slateLight : pp.slateMain)
+  );
+
+  const tailS1 = new PixelCanvas();
+  tailS1.fillPolygon(
+    [
+      [158, 42],
+      [195, 29],
+      [198, 37],
+      [163, 53],
+    ],
+    (gx, gy, _nx, ny) =>
+      ny > 0.74 ? pp.stripeBlue : (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark
+  );
+
+  const flukeCanvas = new PixelCanvas();
+  flukeCanvas.fillPolygon(
+    [
+      [193, 31],
+      [226, 12],
+      [234, 17],
+      [205, 35],
+    ],
+    (gx, gy) => ((gx + gy) % 2 === 0 ? pp.slateLight : pp.slateMain)
+  );
+  flukeCanvas.fillPolygon(
+    [
+      [195, 34],
+      [233, 27],
+      [228, 35],
+      [197, 39],
+    ],
+    (gx, gy) => ((gx + gy) % 2 === 0 ? pp.slateDark : pp.slateMain)
+  );
+
+  const bodyCanvas = new PixelCanvas();
+  bodyCanvas.fillPolygon(
+    [
+      [58, 79],
+      [58, 70],
+      [70, 56],
+      [96, 44],
+      [130, 39],
+      [162, 41],
+      [165, 53],
+      [138, 63],
+      [106, 73],
+      [72, 83],
+    ],
+    (gx, gy, _nx, ny) => {
+      if (ny > 0.78) return pp.stripeBlue;
+      if (ny < 0.25 && gx >= 112 && gx <= 118) return pp.whitePure;
+      if (ny < 0.3) return (gx + gy) % 2 === 0 ? pp.slateLight : pp.slateMain;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
+    }
+  );
+
+  bodyCanvas.fillEllipse(85, 76, 25, 13, (gx, gy, _nx, ny) => {
+    if (gy < 68) return null;
+    if (ny > 0.55) return (gx + gy) % 2 === 0 ? pp.whiteMid : pp.whiteShadow;
+    return (gx + gy) % 2 === 0 ? pp.whitePure : pp.whiteMid;
+  });
+
+  bodyCanvas.fillPolygon(
+    [
+      [67, 63],
+      [88, 49],
+      [105, 45],
+      [104, 52],
+      [83, 62],
+    ],
+    (gx, gy) => (gx >= 89 && gx <= 94 && gy <= 52 ? pp.slateDark : pp.crestGold)
+  );
+  bodyCanvas.fillRect(92, 60, 3, 2, pp.crestGold);
+  bodyCanvas.fillEllipse(68, 71, 3, 1.5, pp.whitePure);
+
+  if (stage >= 4) {
+    bodyCanvas.fillRect(114, 41, 3, 2, pp.energyBright);
+  }
+
+  const lowerNearWing = new PixelCanvas();
+  lowerNearWing.fillPolygon(
+    [
+      [111, 61],
+      [123, 57],
+      [158, 92],
+      [169, 108],
+      [159, 108],
+      [129, 82],
+      [109, 68],
+    ],
+    (gx, gy) => {
+      const diag = gy - 61 - (gx - 111) * 0.95;
+      if (diag < -0.5) return pp.whitePure;
+      if (diag < 2) return pp.whiteMid;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
+    }
+  );
+
+  const farWingXml = renderChainedSeg(upperFarWing, 130, 44, "cc-wing-far", phase, 1.4, 5);
+  const flukeXml = renderChainedSeg(flukeCanvas, 195, 34, "cc-tail-s3", phase, 1.2, 6);
+  const tailXml = renderChainedSeg(tailS1, 161, 46, "cc-tail-s1", phase, 0.3, 4.5, flukeXml);
+  const nearWingXml = renderChainedSeg(lowerNearWing, 114, 62, "cc-shoulder", phase, 0, 6.5);
+
+  const diveFloat =
+    phase !== undefined
+      ? `translate(${(-Math.cos(phase * Math.PI * 2) * 3).toFixed(2)}, ${(Math.sin(phase * Math.PI * 2) * 5).toFixed(2)})`
+      : "";
+
+  return `
+    <g transform="${diveFloat}" class="${phase === undefined ? "cc-swim-body" : ""}" style="transform-origin: 420px 175px;">
+      ${farWingXml}
+      ${tailXml}
+      ${bodyCanvas.toSvgRects(PX)}
+      ${nearWingXml}
+    </g>
+  `;
+}
+
+function renderTulkunTop(
+  pp: PixelPalette,
+  stage: number,
+  phase?: number
+): string {
+  const topWing = new PixelCanvas();
+  topWing.fillPolygon(
+    [
+      [104, 49],
+      [118, 49],
+      [148, 22],
+      [156, 15],
+      [144, 15],
+      [115, 36],
+    ],
+    (gx, gy, _nx, ny) => {
+      if (ny < 0.25) return pp.whitePure;
+      if (ny < 0.45) return pp.whiteMid;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
+    }
+  );
+
+  const bottomWing = new PixelCanvas();
+  bottomWing.fillPolygon(
+    [
+      [104, 69],
+      [118, 69],
+      [148, 96],
+      [156, 103],
+      [144, 103],
+      [115, 82],
+    ],
+    (gx, gy, _nx, ny) => {
+      if (ny > 0.75) return pp.whitePure;
+      if (ny > 0.55) return pp.whiteMid;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
+    }
+  );
+
+  const tailCanvas = new PixelCanvas();
+  tailCanvas.fillPolygon(
+    [
+      [164, 53],
+      [204, 56],
+      [204, 62],
+      [164, 65],
+    ],
+    (gx, gy, _nx, ny) =>
+      Math.abs(ny - 0.5) > 0.35 ? pp.stripeBlue : (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark
+  );
+  tailCanvas.fillPolygon(
+    [
+      [172, 53],
+      [186, 44],
+      [190, 49],
+      [176, 56],
+    ],
+    pp.slateDark
+  );
+  tailCanvas.fillPolygon(
+    [
+      [172, 65],
+      [186, 74],
+      [190, 69],
+      [176, 62],
+    ],
+    pp.slateDark
+  );
+
+  const flukeCanvas = new PixelCanvas();
+  flukeCanvas.fillPolygon(
+    [
+      [201, 58],
+      [226, 36],
+      [234, 34],
+      [216, 59],
+      [234, 84],
+      [226, 82],
+      [201, 60],
+    ],
+    (gx, gy, nx) => {
+      if (nx > 0.72) return pp.slateLight;
+      return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
+    }
+  );
+
+  const bodyCanvas = new PixelCanvas();
+  bodyCanvas.fillEllipse(104, 59, 44, 14, (gx, gy, nx, ny) => {
+    const absY = Math.abs(ny);
+    if (absY < 0.14 && gx > 85 && gx % 16 === 0) return pp.whitePure;
+    if (absY > 0.8) return pp.stripeBlue;
+    if (nx < -0.82 && absY > 0.25) return pp.whiteMid;
+    return (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark;
+  });
+
+  bodyCanvas.fillPolygon(
+    [
+      [130, 51],
+      [168, 53],
+      [168, 65],
+      [130, 67],
+    ],
+    (gx, gy, _nx, ny) =>
+      ny < 0.2 || ny > 0.8 ? pp.stripeBlue : (gx + gy) % 2 === 0 ? pp.slateMain : pp.slateDark
+  );
+
+  bodyCanvas.fillPolygon(
+    [
+      [66, 54],
+      [94, 49],
+      [96, 55],
+      [74, 57],
+    ],
+    pp.crestGold
+  );
+  bodyCanvas.fillPolygon(
+    [
+      [66, 64],
+      [94, 69],
+      [96, 63],
+      [74, 61],
+    ],
+    pp.crestGold
+  );
+  bodyCanvas.fillRect(62, 57, 4, 4, pp.whitePure);
+
+  if (stage >= 4) {
+    bodyCanvas.fillRect(110, 58, 4, 2, pp.energyBright);
+    bodyCanvas.fillRect(142, 58, 3, 2, pp.energyBright);
+  }
+
+  const topWingXml = renderChainedSeg(topWing, 110, 50, "cc-wing-mirror", phase, 0, 6.5);
+  const botWingXml = renderChainedSeg(bottomWing, 110, 68, "cc-shoulder", phase, 0, 6.5);
+  const flukeXml = renderChainedSeg(flukeCanvas, 203, 59, "cc-tail-s3", phase, 1.3, 6);
+  const tailXml = renderChainedSeg(tailCanvas, 165, 59, "cc-tail-s1", phase, 0.3, 4, flukeXml);
+
+  const floatTop =
+    phase !== undefined
+      ? `translate(${(-Math.cos(phase * Math.PI * 2) * 3).toFixed(2)}, ${(Math.sin(phase * Math.PI * 2) * 3).toFixed(2)})`
+      : "";
+
+  return `
+    <g transform="${floatTop}" class="${phase === undefined ? "cc-swim-body" : ""}" style="transform-origin: 420px 175px;">
+      ${topWingXml}
+      ${botWingXml}
+      ${tailXml}
+      ${bodyCanvas.toSvgRects(PX)}
+    </g>
+  `;
+}
+
+function makeJellyShader(
+  glowIce: string,
+  bellBright: string,
+  bellMid: string,
+  bellDeep: string
+) {
+  return (gx: number, gy: number, t: number, ny: number) => {
+    const dither = (gx + gy) % 2 === 0;
+    if (Math.abs(ny) > 0.56) return dither ? glowIce : bellBright;
+    if (t > 0.65) return dither ? bellBright : bellMid;
+    return dither ? bellBright : bellDeep;
+  };
+}
+
+function renderTentacleRibbonChain(
+  startGx: number,
+  startGy: number,
+  totalLen: number,
+  amp: number,
+  thickness: number,
+  shader: ReturnType<typeof makeJellyShader> | string,
+  phase: number | undefined,
+  variant: "a" | "b"
+): string {
+  const segLen = Math.round(totalLen / 3);
+  const s1Canvas = new PixelCanvas();
+  const s2Canvas = new PixelCanvas();
+  const s3Canvas = new PixelCanvas();
+
+  const buildSeg = (
+    canvas: PixelCanvas,
+    x0: number,
+    y0: number,
+    len: number,
+    phaseBase: number,
+    scaleStart: number,
+    scaleEnd: number
+  ): [number, number] => {
+    const samples: { x: number; y: number; r: number }[] = [];
+    const steps = 20;
+    let endX = x0;
+    let endY = y0;
+    for (let i = 0; i <= steps; i++) {
+      const localT = i / steps;
+      const globalT = (phaseBase + localT) / 3;
+      const x = x0 + localT * len;
+      const y = y0 + Math.sin(globalT * Math.PI * 3.4) * amp;
+      const taper = scaleStart + (scaleEnd - scaleStart) * localT;
+      const ruffle =
+        typeof shader === "string"
+          ? 1
+          : Math.abs(Math.sin(globalT * 24)) * 0.9 + 0.65;
+      samples.push({ x, y, r: Math.max(0.55, thickness * taper * ruffle) });
+      endX = x;
+      endY = y;
+    }
+    canvas.fillSplineRibbon(samples, shader);
+    return [endX, endY];
+  };
+
+  const [j1x, j1y] = buildSeg(s1Canvas, startGx, startGy, segLen, 0, 1.0, 0.78);
+  const [j2x, j2y] = buildSeg(s2Canvas, j1x, j1y, segLen, 1, 0.78, 0.52);
+  buildSeg(s3Canvas, j2x, j2y, segLen, 2, 0.52, 0.25);
+
+  const lagBase = variant === "a" ? 0 : 1.1;
+  const s3Xml = renderChainedSeg(s3Canvas, j2x, j2y, `cc-wave-${variant}3`, phase, lagBase + 1.8, 5);
+  const s2Xml = renderChainedSeg(s2Canvas, j1x, j1y, `cc-wave-${variant}2`, phase, lagBase + 0.9, 4.2, s3Xml);
+  return renderChainedSeg(s1Canvas, startGx, startGy, `cc-wave-${variant}1`, phase, lagBase, 3.8, s2Xml);
+}
+
+function renderPixelJellyfishView(
   p: DerivedPalette,
+  view: CameraView,
   stage: number,
   phase?: number
 ): string {
   const glowIce = mixHex(p.armorHighlight, "#FFFFFF", 0.55);
   const bellBright =
     p.armorMain === "#36506B" ? "#7AD2FF" : mixHex(p.armorMain, "#96E4FF", 0.48);
-  const bellMid =
-    p.armorMain === "#36506B" ? "#2E82E6" : p.armorMain;
-  const bellDeep =
-    p.armorMain === "#36506B" ? "#16449C" : p.armorShadow;
-  const rimAccent =
-    p.armorMain === "#36506B" ? "#10285E" : p.frameDark;
+  const bellMid = p.armorMain === "#36506B" ? "#2E82E6" : p.armorMain;
+  const bellDeep = p.armorMain === "#36506B" ? "#16449C" : p.armorShadow;
+  const rimAccent = p.armorMain === "#36506B" ? "#10285E" : p.frameDark;
   const sporeColor = p.energyBright;
+  const frillShader = makeJellyShader(glowIce, bellBright, bellMid, bellDeep);
 
-  const whipBackCanvas = new PixelCanvas();
-  const buildWhip = (
-    canvas: PixelCanvas,
-    startX: number,
-    startY: number,
-    endX: number,
-    arcAmp: number,
-    freq: number,
-    hue: string
-  ) => {
-    const samples: { x: number; y: number; r: number }[] = [];
-    const steps = 48;
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const x = startX + (endX - startX) * t;
-      const y =
-        startY +
-        Math.sin(t * Math.PI * freq) * arcAmp * (0.4 + t * 0.8) +
-        (t * t * (arcAmp > 0 ? 10 : -11));
-      samples.push({ x, y, r: t < 0.35 ? 0.85 : 0.6 });
-    }
-    canvas.fillSplineRibbon(samples, hue);
-  };
+  const lenScale = stage <= 1 ? 0.78 : stage === 2 ? 0.88 : 1.0;
 
-  buildWhip(whipBackCanvas, 60, 26, 178, -9, 1.5, bellMid);
-  if (stage >= 2) {
-    buildWhip(whipBackCanvas, 58, 56, 184, 11, 1.4, bellBright);
-  }
+  if (view === "top") {
+    const armTop = renderTentacleRibbonChain(
+      82,
+      46,
+      Math.round(145 * lenScale),
+      -5.5,
+      2.7,
+      frillShader,
+      phase,
+      "a"
+    );
+    const armMid = renderTentacleRibbonChain(
+      82,
+      58,
+      Math.round(162 * lenScale),
+      3.5,
+      3.4,
+      frillShader,
+      phase,
+      "b"
+    );
+    const armBot = renderTentacleRibbonChain(
+      82,
+      70,
+      Math.round(145 * lenScale),
+      5.5,
+      2.7,
+      frillShader,
+      phase,
+      "a"
+    );
+    const whipTop = renderTentacleRibbonChain(
+      76,
+      32,
+      Math.round(168 * lenScale),
+      -9,
+      0.85,
+      bellBright,
+      phase,
+      "b"
+    );
+    const whipBot = renderTentacleRibbonChain(
+      76,
+      84,
+      Math.round(168 * lenScale),
+      9,
+      0.85,
+      glowIce,
+      phase,
+      "a"
+    );
 
-  const armUpperCanvas = new PixelCanvas();
-  const armCenterCanvas = new PixelCanvas();
-  const armLowerCanvas = new PixelCanvas();
-
-  const paintRuffledArm = (
-    canvas: PixelCanvas,
-    startX: number,
-    baseY: number,
-    len: number,
-    freq: number,
-    amp: number,
-    thickness: number
-  ) => {
-    const samples: { x: number; y: number; r: number }[] = [];
-    const count = 42;
-    for (let i = 0; i <= count; i++) {
-      const t = i / count;
-      const x = startX + t * len;
-      const wave =
-        Math.sin(t * Math.PI * freq) * amp +
-        Math.cos(t * Math.PI * freq * 2.1) * (amp * 0.35);
-      const taper = 1 - t * 0.62;
-      const ruffle = Math.abs(Math.sin(t * 22)) * 1.2 + 0.6;
-      samples.push({
-        x,
-        y: baseY + wave,
-        r: Math.max(0.8, thickness * taper * ruffle),
-      });
-    }
-    canvas.fillSplineRibbon(samples, (gx, gy, t, ny) => {
+    const topBell = new PixelCanvas();
+    topBell.fillEllipse(66, 58, 22, 31, (gx, gy, nx, ny) => {
+      if (nx > 0.72) return null;
       const dither = (gx + gy) % 2 === 0;
-      if (Math.abs(ny) > 0.55) {
-        return dither ? glowIce : bellBright;
-      }
-      if (t > 0.65) {
-        return dither ? bellBright : bellMid;
-      }
-      return dither ? bellBright : bellDeep;
+      const dist = Math.sqrt(nx * nx + ny * ny);
+      const rad = Math.sin(ny * 12) > 0.3;
+      if (dist > 0.86 || nx < -0.75) return dither ? glowIce : bellBright;
+      if (nx > 0.42 && Math.abs(ny) < 0.85) return dither ? bellDeep : rimAccent;
+      return rad ? (dither ? glowIce : bellBright) : dither ? bellBright : bellMid;
     });
-  };
 
-  paintRuffledArm(armUpperCanvas, 58, 35, 114, 2.2, 4.5, 2.6);
-  paintRuffledArm(armCenterCanvas, 56, 42, 128, 2.6, 5.2, 3.4);
-  if (stage >= 2) {
-    paintRuffledArm(armLowerCanvas, 58, 49, 110, 2.1, -4.4, 2.5);
+    const bellT =
+      phase !== undefined
+        ? `translate(198, 174) scale(${(0.985 + Math.cos(phase * Math.PI * 2) * 0.055).toFixed(3)}, ${(1.01 - Math.cos(phase * Math.PI * 2) * 0.05).toFixed(3)}) translate(-198, -174)`
+        : "";
+    const surgeT =
+      phase !== undefined
+        ? `translate(${(-2 + Math.sin(phase * Math.PI * 2) * 6).toFixed(2)}, ${(Math.cos(phase * Math.PI * 2) * 3).toFixed(2)})`
+        : "";
+
+    return `
+      <g transform="${surgeT}" class="${phase === undefined ? "cc-jelly-surge" : ""}">
+        ${whipTop}
+        ${whipBot}
+        ${armTop}
+        ${armMid}
+        ${armBot}
+        <g transform="${bellT}" class="${phase === undefined ? "cc-jelly-bell" : ""}" style="transform-origin: 198px 174px;">
+          ${topBell.toSvgRects(PX)}
+        </g>
+      </g>
+    `;
   }
 
-  const whipFrontCanvas = new PixelCanvas();
-  buildWhip(whipFrontCanvas, 61, 29, 192, -13, 1.2, bellBright);
-  buildWhip(whipFrontCanvas, 61, 53, 194, 14, 1.3, glowIce);
-  if (stage >= 3) {
-    buildWhip(whipFrontCanvas, 59, 44, 186, 6, 2.0, bellMid);
+  if (view === "dive") {
+    const diveFrill1 = renderTentacleRibbonChain(
+      85,
+      54,
+      Math.round(150 * lenScale),
+      5.5,
+      3.1,
+      frillShader,
+      phase,
+      "a"
+    );
+    const diveFrill2 = renderTentacleRibbonChain(
+      88,
+      66,
+      Math.round(142 * lenScale),
+      -5,
+      2.7,
+      frillShader,
+      phase,
+      "b"
+    );
+    const diveWhip1 = renderTentacleRibbonChain(
+      76,
+      44,
+      Math.round(166 * lenScale),
+      -8,
+      0.85,
+      glowIce,
+      phase,
+      "a"
+    );
+    const diveWhip2 = renderTentacleRibbonChain(
+      88,
+      78,
+      Math.round(162 * lenScale),
+      9,
+      0.8,
+      bellBright,
+      phase,
+      "b"
+    );
+
+    const diveBell = new PixelCanvas();
+    diveBell.fillEllipse(66, 62, 22, 26, (gx, gy, nx, ny) => {
+      if (nx > 0.52) return null;
+      const dither = (gx + gy) % 2 === 0;
+      const dist = Math.sqrt(nx * nx + ny * ny);
+      if (dist > 0.88 || nx < -0.78) return dither ? glowIce : bellBright;
+      if (Math.sin(ny * 9) > 0.35) return dither ? glowIce : bellBright;
+      return dither ? bellBright : bellMid;
+    });
+    diveBell.fillEllipse(80, 62, 10, 23, (gx, gy, nx, ny) => {
+      const dist = Math.sqrt(nx * nx + ny * ny);
+      if (dist > 0.94) return null;
+      if (dist > 0.72) return (gx + gy) % 2 === 0 ? bellBright : rimAccent;
+      if (dist < 0.28) return glowIce;
+      return (gx + gy) % 2 === 0 ? bellDeep : rimAccent;
+    });
+
+    const bellT =
+      phase !== undefined
+        ? `translate(210, 186) scale(${(0.985 + Math.cos(phase * Math.PI * 2) * 0.055).toFixed(3)}, ${(1.01 - Math.cos(phase * Math.PI * 2) * 0.05).toFixed(3)}) translate(-210, -186)`
+        : "";
+    const diveSurge =
+      phase !== undefined
+        ? `translate(${(-2 + Math.sin(phase * Math.PI * 2) * 6).toFixed(2)}, ${(Math.cos(phase * Math.PI * 2) * 4).toFixed(2)})`
+        : "";
+
+    return `
+      <g transform="translate(450, 195) rotate(-14) translate(-450, -195)">
+        <g transform="${diveSurge}" class="${phase === undefined ? "cc-jelly-surge" : ""}">
+          ${diveWhip1}
+          ${diveFrill1}
+          ${diveFrill2}
+          ${diveWhip2}
+          <g transform="${bellT}" class="${phase === undefined ? "cc-jelly-bell" : ""}" style="transform-origin: 210px 186px;">
+            ${diveBell.toSvgRects(PX)}
+          </g>
+        </g>
+      </g>
+    `;
   }
 
-  const bellCanvas = new PixelCanvas();
-  bellCanvas.fillEllipse(49, 42, 16, 21, (gx, gy, nx, ny) => {
+  const sideWhipTop = renderTentacleRibbonChain(
+    75,
+    38,
+    Math.round(166 * lenScale),
+    -9,
+    0.85,
+    bellMid,
+    phase,
+    "b"
+  );
+  const sideWhipBot = renderTentacleRibbonChain(
+    74,
+    78,
+    Math.round(170 * lenScale),
+    10,
+    0.85,
+    bellBright,
+    phase,
+    "a"
+  );
+  const sideFrillTop = renderTentacleRibbonChain(
+    77,
+    50,
+    Math.round(148 * lenScale),
+    4.8,
+    2.6,
+    frillShader,
+    phase,
+    "a"
+  );
+  const sideFrillMid = renderTentacleRibbonChain(
+    74,
+    58,
+    Math.round(164 * lenScale),
+    5.6,
+    3.5,
+    frillShader,
+    phase,
+    "b"
+  );
+  const sideFrillBot =
+    stage >= 2
+      ? renderTentacleRibbonChain(
+          77,
+          66,
+          Math.round(145 * lenScale),
+          -4.6,
+          2.6,
+          frillShader,
+          phase,
+          "a"
+        )
+      : "";
+  const sideWhipFrontTop = renderTentacleRibbonChain(
+    76,
+    43,
+    Math.round(174 * lenScale),
+    -11,
+    0.75,
+    glowIce,
+    phase,
+    "a"
+  );
+  const sideWhipFrontBot = renderTentacleRibbonChain(
+    76,
+    73,
+    Math.round(176 * lenScale),
+    11,
+    0.75,
+    glowIce,
+    phase,
+    "b"
+  );
+
+  const sideBell = new PixelCanvas();
+  sideBell.fillEllipse(65, 58, 21, 27, (gx, gy, nx, ny) => {
     if (nx > 0.62) return null;
     const dist = Math.sqrt(nx * nx + ny * ny);
     const dither = (gx + gy) % 2 === 0;
     const rib = Math.sin(ny * 10) > 0.35;
 
-    if (nx < -0.78 || dist > 0.88) {
-      return dither ? glowIce : bellBright;
-    }
+    if (nx < -0.78 || dist > 0.88) return dither ? glowIce : bellBright;
     if (nx > 0.36) {
-      if (Math.round(gy) % 5 === 0) return rimAccent;
+      if (Math.round(gy) % 6 === 0) return rimAccent;
       return dither ? bellMid : bellDeep;
     }
-    if (rib) {
-      return dither ? glowIce : bellBright;
-    }
+    if (rib) return dither ? glowIce : bellBright;
     return dither ? bellBright : bellMid;
   });
 
-  bellCanvas.fillEllipse(57, 42, 6, 17, (gx, gy, _nx, ny) => {
-    if (gx > 61) return null;
-    if (Math.abs(ny) > 0.85) return bellBright;
+  sideBell.fillEllipse(75, 58, 7, 22, (gx, gy, _nx, ny) => {
+    if (gx > 80) return null;
+    if (Math.abs(ny) > 0.86) return bellBright;
     return (gx + gy) % 2 === 0 ? bellDeep : bellMid;
   });
 
-  for (let sy = 25; sy <= 59; sy += 4) {
-    bellCanvas.setPixel(59, sy, glowIce);
-    bellCanvas.setPixel(60, sy + 1, bellBright);
-    if (sy % 8 === 1) {
-      bellCanvas.setPixel(57, sy, rimAccent);
+  for (let sy = 36; sy <= 80; sy += 5) {
+    sideBell.setPixel(77, sy, glowIce);
+    sideBell.setPixel(78, sy + 1, bellBright);
+    if (sy % 10 === 1) {
+      sideBell.setPixel(75, sy, rimAccent);
     }
   }
 
   if (stage >= 3) {
-    bellCanvas.setPixel(40, 29, glowIce);
-    bellCanvas.setPixel(37, 42, glowIce);
-    bellCanvas.setPixel(41, 55, glowIce);
+    sideBell.fillRect(54, 41, 2, 2, glowIce);
+    sideBell.fillRect(49, 58, 2, 2, glowIce);
+    sideBell.fillRect(54, 75, 2, 2, glowIce);
   }
   if (stage >= 4) {
-    bellCanvas.setPixel(54, 19, sporeColor);
-    bellCanvas.setPixel(108, 22, sporeColor);
-    bellCanvas.setPixel(142, 61, glowIce);
+    sideBell.setPixel(72, 26, sporeColor);
+    sideBell.setPixel(132, 30, sporeColor);
+    sideBell.setPixel(168, 82, glowIce);
   }
   if (stage >= 5) {
-    bellCanvas.setPixel(168, 28, sporeColor);
-    bellCanvas.setPixel(176, 52, sporeColor);
-    bellCanvas.setPixel(32, 36, glowIce);
+    sideBell.setPixel(196, 36, sporeColor);
+    sideBell.setPixel(208, 74, sporeColor);
   }
 
-  const angleRad = phase !== undefined ? phase * Math.PI * 2 : 0;
-  const swimT =
-    phase !== undefined
-      ? `translate(${(-3 + Math.sin(angleRad) * 4.5).toFixed(2)}, ${(Math.cos(angleRad) * 4.5).toFixed(2)}) rotate(${(Math.sin(angleRad) * 0.8).toFixed(2)}, 440, 168)`
-      : "";
-  const bellScaleX = phase !== undefined ? 0.985 + Math.cos(angleRad) * 0.045 : 1;
-  const bellScaleY = phase !== undefined ? 1.005 - Math.cos(angleRad) * 0.045 : 1;
   const bellT =
     phase !== undefined
-      ? `translate(224, 168) scale(${bellScaleX.toFixed(3)}, ${bellScaleY.toFixed(3)}) translate(-224, -168)`
+      ? `translate(195, 174) scale(${(0.985 + Math.cos(phase * Math.PI * 2) * 0.055).toFixed(3)}, ${(1.01 - Math.cos(phase * Math.PI * 2) * 0.05).toFixed(3)}) translate(-195, -174)`
       : "";
-  const arm1T =
-    phase !== undefined ? `rotate(${(Math.sin(angleRad) * 4.6).toFixed(2)}, 228, 148)` : "";
-  const arm2T =
-    phase !== undefined ? `rotate(${(-Math.sin(angleRad + 1.1) * 4.5).toFixed(2)}, 226, 168)` : "";
-  const arm3T =
-    phase !== undefined ? `rotate(${(Math.sin(angleRad + 2.1) * 3.8).toFixed(2)}, 228, 188)` : "";
-  const whip1T =
-    phase !== undefined ? `rotate(${(Math.sin(angleRad + 0.5) * 5.8).toFixed(2)}, 232, 130)` : "";
-  const whip2T =
-    phase !== undefined ? `rotate(${(-Math.sin(angleRad + 1.5) * 5.8).toFixed(2)}, 232, 200)` : "";
-
-  const staticGroup = phase !== undefined;
+  const swimT =
+    phase !== undefined
+      ? `translate(${(-2 + Math.sin(phase * Math.PI * 2) * 6).toFixed(2)}, ${(Math.cos(phase * Math.PI * 2) * 3.5).toFixed(2)})`
+      : "";
 
   return `
-    <g transform="${swimT}" class="${staticGroup ? "" : "cc-jelly-swim"}">
-      <g transform="${whip1T}" class="${staticGroup ? "" : "cc-jelly-whip-1"}" style="transform-origin: 232px 130px;">
-        ${whipBackCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
-      <g transform="${arm1T}" class="${staticGroup ? "" : "cc-jelly-arm-1"}" style="transform-origin: 228px 148px;">
-        ${armUpperCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
-      <g transform="${arm2T}" class="${staticGroup ? "" : "cc-jelly-arm-2"}" style="transform-origin: 226px 168px;">
-        ${armCenterCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
-      <g transform="${arm3T}" class="${staticGroup ? "" : "cc-jelly-arm-3"}" style="transform-origin: 228px 188px;">
-        ${armLowerCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
-      <g transform="${whip2T}" class="${staticGroup ? "" : "cc-jelly-whip-2"}" style="transform-origin: 232px 200px;">
-        ${whipFrontCanvas.toSvgRects(PIXEL_SIZE)}
-      </g>
-      <g transform="${bellT}" class="${staticGroup ? "" : "cc-jelly-bell"}" style="transform-origin: 224px 168px;">
-        ${bellCanvas.toSvgRects(PIXEL_SIZE)}
+    <g transform="${swimT}" class="${phase === undefined ? "cc-jelly-surge" : ""}">
+      ${sideWhipTop}
+      ${sideWhipBot}
+      ${sideFrillTop}
+      ${sideFrillMid}
+      ${sideFrillBot}
+      ${sideWhipFrontTop}
+      ${sideWhipFrontBot}
+      <g transform="${bellT}" class="${phase === undefined ? "cc-jelly-bell" : ""}" style="transform-origin: 195px 174px;">
+        ${sideBell.toSvgRects(PX)}
       </g>
     </g>
   `;
@@ -619,19 +1144,33 @@ function renderPixelHud(config: CreatureConfig, p: DerivedPalette): string {
 
 export function renderCreatureGeometryOnly(
   config: CreatureConfig,
-  _idPrefix = "cc",
+  idPrefix = "cc",
   phase?: number
 ): string {
   const p = derivePalette(config);
+  const pp = toPixelPalette(p);
   const { stage } = getEvolutionStage(config.commits);
-  const viewTransform = getViewTransform(config.view, stage);
 
-  const creatureMarkup =
-    config.creature === "jellyfish"
-      ? renderPixelJellyfish(p, stage, phase)
-      : renderPixelTulkun(p, stage, phase);
+  if (config.creature === "jellyfish") {
+    return buildStageWrapper(
+      stage,
+      `<g data-creature="${idPrefix}">${renderPixelJellyfishView(p, config.view, stage, phase)}</g>`
+    );
+  }
 
-  return `<g transform="${viewTransform}">${creatureMarkup}</g>`;
+  let bodyMarkup = "";
+  if (config.view === "dive") {
+    bodyMarkup = renderTulkunDive(pp, stage, phase);
+  } else if (config.view === "top") {
+    bodyMarkup = renderTulkunTop(pp, stage, phase);
+  } else {
+    bodyMarkup = renderTulkunSide(pp, stage, phase);
+  }
+
+  return buildStageWrapper(
+    stage,
+    `<g data-creature="${idPrefix}">${bodyMarkup}</g>`
+  );
 }
 
 export function buildCreatureInnerSvg(
