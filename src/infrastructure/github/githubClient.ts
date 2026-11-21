@@ -55,6 +55,7 @@ export interface GitHubProfileSnapshot {
   profileRepoExists: boolean;
   profileRepoBranch: string;
   existingProfileReadme: string | null;
+  existingCreatureConfig: Record<string, unknown> | null;
   hasLegacyWorkflow: boolean;
   sourceNote: string;
 }
@@ -119,6 +120,39 @@ export function parseGitHubUsername(rawInput: string): string {
   }
 
   return trimmed.replace(/^@+/, "").split(/[/?#\s]/)[0] || "";
+}
+
+export async function checkProfileRepoExists(username: string): Promise<{
+  exists: boolean;
+  defaultBranch: string;
+  rateLimited?: boolean;
+}> {
+  const clean = parseGitHubUsername(username);
+  if (!clean || clean === "your-username") {
+    return { exists: false, defaultBranch: "main" };
+  }
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${encodeURIComponent(clean)}/${encodeURIComponent(clean)}`,
+      {
+        headers: { Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (res.ok) {
+      const info = (await res.json()) as { default_branch?: string };
+      return {
+        exists: true,
+        defaultBranch: info.default_branch || "main",
+      };
+    }
+    if (res.status === 404) {
+      return { exists: false, defaultBranch: "main" };
+    }
+    return { exists: false, defaultBranch: "main", rateLimited: true };
+  } catch {
+    return { exists: false, defaultBranch: "main", rateLimited: true };
+  }
 }
 
 export async function fetchGitHubProfileSnapshot(
@@ -198,6 +232,7 @@ export async function fetchGitHubProfileSnapshot(
   let profileRepoExists = false;
   let profileRepoBranch = "main";
   let existingProfileReadme: string | null = null;
+  let existingCreatureConfig: Record<string, unknown> | null = null;
   let hasLegacyWorkflow = false;
 
   if (profileRepoRes && profileRepoRes.ok) {
@@ -208,9 +243,14 @@ export async function fetchGitHubProfileSnapshot(
     profileRepoBranch = repoInfo.default_branch || "main";
 
     const rawBase = `https://raw.githubusercontent.com/${encodeURIComponent(user.login)}/${encodeURIComponent(user.login)}/${encodeURIComponent(profileRepoBranch)}`;
-    const [readmeRes, wfRes] = await Promise.all([
-      fetch(`${rawBase}/README.md`).catch(() => null),
-      fetch(`${rawBase}/.github/workflows/evolve-creature.yml`).catch(() => null),
+    const [readmeRes, wfRes, cfgRes] = await Promise.all([
+      fetch(`${rawBase}/README.md`, { cache: "no-store" }).catch(() => null),
+      fetch(`${rawBase}/.github/workflows/evolve-creature.yml`, {
+        cache: "no-store",
+      }).catch(() => null),
+      fetch(`${rawBase}/creature-config.json`, { cache: "no-store" }).catch(
+        () => null
+      ),
     ]);
 
     if (readmeRes && readmeRes.ok) {
@@ -221,6 +261,16 @@ export async function fetchGitHubProfileSnapshot(
       hasLegacyWorkflow =
         wfText.includes("creature.svg") ||
         (wfText.includes("branches:") && !wfText.includes("creature.webp"));
+    }
+    if (cfgRes && cfgRes.ok) {
+      try {
+        const parsed = (await cfgRes.json()) as unknown;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          existingCreatureConfig = parsed as Record<string, unknown>;
+        }
+      } catch {
+        existingCreatureConfig = null;
+      }
     }
   }
 
@@ -304,6 +354,7 @@ export async function fetchGitHubProfileSnapshot(
     profileRepoExists,
     profileRepoBranch,
     existingProfileReadme,
+    existingCreatureConfig,
     hasLegacyWorkflow,
     sourceNote,
   };

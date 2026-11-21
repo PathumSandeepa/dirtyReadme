@@ -1419,7 +1419,7 @@ export function ProfileReadmeStepPanel({
               <input
                 type="range"
                 aria-label="Creature Banner Width"
-                min={480}
+                min={320}
                 max={920}
                 step={20}
                 value={readmeConfig.imageWidth}
@@ -1431,6 +1431,25 @@ export function ProfileReadmeStepPanel({
                 }}
                 className="h-2 w-full cursor-pointer accent-primary"
               />
+              <div className="grid grid-cols-4 gap-1.5">
+                {[480, 640, 760, 920].map((presetW) => {
+                  const active = readmeConfig.imageWidth === presetW;
+                  return (
+                    <button
+                      key={presetW}
+                      type="button"
+                      onClick={() => onUpdateField("imageWidth", presetW)}
+                      className={`rounded-md border py-1 font-mono text-[11px] transition ${
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "bg-muted/40 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {presetW}px
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

@@ -5,7 +5,12 @@ import {
 } from "@/domain/creature/entities";
 import { GLYPHS_5X7 } from "@/domain/creature/pixelArt";
 import { getCreatureMeta, getSpriteKey } from "@/domain/creature/services";
-import type { ReadmeConfig } from "@/domain/profile/entities";
+import {
+  TECH_STACK_CATALOG,
+  type ReadmeConfig,
+} from "@/domain/profile/entities";
+
+const BUILTIN_BADGE_IDS = new Set(TECH_STACK_CATALOG.map((b) => b.id));
 
 export function getMidnightCronForTimezone(offsetMinutesEast: number): string {
   let utcMinutes = (24 * 60 - offsetMinutesEast) % (24 * 60);
@@ -19,15 +24,34 @@ export function generateCreatureConfigJson(
   creatureConfig: CreatureConfig,
   readmeConfig: ReadmeConfig
 ): string {
+  const customBadges = readmeConfig.badges.filter(
+    (b) => !BUILTIN_BADGE_IDS.has(b.id)
+  );
   return JSON.stringify(
     {
       ...creatureConfig,
       readme: {
+        templateId: readmeConfig.templateId,
+        profileTextMode: readmeConfig.profileTextMode,
+        advancedProfileMarkdown: readmeConfig.advancedProfileMarkdown,
+        headline: readmeConfig.headline,
+        subtitleTags: readmeConfig.subtitleTags,
+        bio: readmeConfig.bio,
+        ctaLine: readmeConfig.ctaLine,
+        statsTableTitle: readmeConfig.statsTableTitle,
         align: readmeConfig.align,
         imageWidth: readmeConfig.imageWidth,
         useOutputBranchUrl: readmeConfig.useOutputBranchUrl,
         includeMarkers: readmeConfig.includeMarkers,
-        statsTableTitle: readmeConfig.statsTableTitle,
+        includeShareCard: readmeConfig.includeShareCard,
+        includeStatsTable: readmeConfig.includeStatsTable,
+        customSectionTitle: readmeConfig.customSectionTitle,
+        customFooterMarkdown: readmeConfig.customFooterMarkdown,
+        stackCards: readmeConfig.stackCards,
+        savedOrganizedCards: readmeConfig.savedOrganizedCards,
+        customBadges,
+        actionLinks: readmeConfig.actionLinks,
+        rawOverride: readmeConfig.rawOverride,
       },
     },
     null,

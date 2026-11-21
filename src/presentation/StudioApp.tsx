@@ -142,6 +142,8 @@ export function StudioApp() {
             customBgHex={controller.customBgHex}
             snapshot={controller.snapshot}
             readmeMarkdown={controller.fullReadmeMarkdown}
+            restoredNotice={controller.restoredNotice}
+            onDismissRestoredNotice={controller.dismissRestoredNotice}
             onSelectCreature={controller.selectCreature}
             onSelectView={controller.selectView}
             onSelectWindow={controller.selectWindow}
@@ -187,6 +189,9 @@ export function StudioApp() {
               controller.readmeConfig.templateId === "telemetry-stats"
             }
             defaultBranch={controller.snapshot?.profileRepoBranch || "main"}
+            initialProfileRepoExists={Boolean(
+              controller.snapshot?.profileRepoExists
+            )}
             hasLegacyWorkflow={Boolean(controller.snapshot?.hasLegacyWorkflow)}
             onBack={() => setScreen("customize")}
           />

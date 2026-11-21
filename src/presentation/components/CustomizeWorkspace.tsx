@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Cpu, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Cpu, FileText, X } from "lucide-react";
 import type {
   BackgroundMode,
   CameraView,
@@ -32,6 +32,8 @@ interface CustomizeWorkspaceProps {
   customBgHex: string;
   snapshot: GitHubProfileSnapshot | null;
   readmeMarkdown: string;
+  restoredNotice?: string | null;
+  onDismissRestoredNotice?: () => void;
   onSelectCreature: (creature: CreatureId) => void;
   onSelectView: (view: CameraView) => void;
   onSelectWindow: (windowMode: ContributionWindow) => void;
@@ -87,6 +89,8 @@ export function CustomizeWorkspace({
   customBgHex,
   snapshot,
   readmeMarkdown,
+  restoredNotice,
+  onDismissRestoredNotice,
   onSelectCreature,
   onSelectView,
   onSelectWindow,
@@ -130,6 +134,25 @@ export function CustomizeWorkspace({
 
   return (
     <div className="flex flex-col gap-6">
+      {restoredNotice && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-xs text-foreground">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
+            <span>{restoredNotice}</span>
+          </div>
+          {onDismissRestoredNotice && (
+            <button
+              type="button"
+              onClick={onDismissRestoredNotice}
+              aria-label="Dismiss restored notice"
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <X className="size-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
           <Tabs

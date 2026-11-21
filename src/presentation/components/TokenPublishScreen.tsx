@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
   Download,
   ExternalLink,
+  FolderGit2,
   KeyRound,
   Lock,
   RefreshCw,
@@ -38,6 +39,7 @@ import {
   exportShareCardPngBlob,
 } from "@/infrastructure/browser/webpEncoder";
 import {
+  checkProfileRepoExists,
   publishFilesToProfileRepo,
   type PublishFileInput,
 } from "@/infrastructure/github/githubClient";
@@ -68,6 +70,7 @@ interface TokenPublishScreenProps {
   readmeMarkdown: string;
   includeShareCard: boolean;
   defaultBranch: string;
+  initialProfileRepoExists: boolean;
   hasLegacyWorkflow?: boolean;
   onBack: () => void;
 }
@@ -78,9 +81,11 @@ export function TokenPublishScreen({
   readmeMarkdown,
   includeShareCard,
   defaultBranch,
+  initialProfileRepoExists,
   hasLegacyWorkflow = false,
   onBack,
 }: TokenPublishScreenProps) {
+  const username = creatureConfig.username.trim() || "your-username";
   const [tokenInput, setTokenInput] = useState("");
   const [includeWorkflowFiles, setIncludeWorkflowFiles] = useState(false);
   const [timezoneMode, setTimezoneMode] = useState<"local" | "utc">("local");
@@ -88,13 +93,53 @@ export function TokenPublishScreen({
   const [webpBusy, setWebpBusy] = useState(false);
   const [gifBusy, setGifBusy] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [repoCheckState, setRepoCheckState] = useState<
+    "checking" | "exists" | "missing"
+  >(
+    username === "your-username"
+      ? "missing"
+      : initialProfileRepoExists
+        ? "exists"
+        : "checking"
+  );
+  const [resolvedBranch, setResolvedBranch] = useState(defaultBranch || "main");
   const [publishResult, setPublishResult] = useState<{
     username: string;
     repoUrl: string;
     updatedPaths: string[];
   } | null>(null);
 
-  const username = creatureConfig.username.trim() || "your-username";
+  useEffect(() => {
+    if (!username || username === "your-username") return;
+    let cancelled = false;
+    checkProfileRepoExists(username).then((res) => {
+      if (cancelled) return;
+      if (res.rateLimited) {
+        setRepoCheckState(initialProfileRepoExists ? "exists" : "missing");
+        return;
+      }
+      setRepoCheckState(res.exists ? "exists" : "missing");
+      if (res.defaultBranch) {
+        setResolvedBranch(res.defaultBranch);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [username, initialProfileRepoExists]);
+
+  const handleRecheckRepo = async () => {
+    setRepoCheckState("checking");
+    const res = await checkProfileRepoExists(username);
+    if (res.rateLimited) {
+      setRepoCheckState(initialProfileRepoExists ? "exists" : "missing");
+      return;
+    }
+    setRepoCheckState(res.exists ? "exists" : "missing");
+    if (res.defaultBranch) {
+      setResolvedBranch(res.defaultBranch);
+    }
+  };
 
   const localCron = useMemo(() => {
     const offsetMinutesEast = -new Date().getTimezoneOffset();
@@ -171,6 +216,11 @@ export function TokenPublishScreen({
           content: readmeMarkdown,
           message: "feat: update dynamic GitHub profile README",
         },
+        {
+          path: "creature-config.json",
+          content: generateCreatureConfigJson(creatureConfig, readmeConfig),
+          message: "ci: save creature & README studio configuration",
+        },
       ];
 
       if (includeShareCard) {
@@ -191,11 +241,6 @@ export function TokenPublishScreen({
             message: "ci: store base pixel creature sprite for 12AM updates",
           },
           {
-            path: "creature-config.json",
-            content: generateCreatureConfigJson(creatureConfig, readmeConfig),
-            message: "ci: save creature & README marker configuration",
-          },
-          {
             path: ".github/workflows/evolve-creature.yml",
             content: generateEvolveWorkflowYaml(creatureConfig, cronExpression),
             message: "ci: add 12:00 AM daily creature auto-evolve workflow",
@@ -212,7 +257,7 @@ export function TokenPublishScreen({
         token: tokenInput,
         owner: username,
         repo: username,
-        branch: defaultBranch || "main",
+        branch: resolvedBranch || "main",
         files,
       });
 
@@ -253,235 +298,313 @@ export function TokenPublishScreen({
           </CardHeader>
 
           <CardContent className="flex flex-col gap-5">
-            <Alert>
-              <ShieldCheck />
-              <AlertTitle className="font-mono text-xs font-semibold">
-                In-Memory Token Security Guarantee
-              </AlertTitle>
-              <AlertDescription className="flex flex-col gap-2 text-xs">
-                <p>
-                  This static app never stores tokens in cookies, localStorage, or any
-                  server. Your PAT exists strictly in memory during the GitHub API push
-                  and clears automatically afterward. Copy and context-menu actions are
-                  disabled on the input field.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <a
-                    href="https://github.com/settings/personal-access-tokens/new"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-medium text-primary underline"
-                  >
-                    Create Fine-Grained PAT (Contents: Read &amp; write)
-                    <ExternalLink className="size-3" />
-                  </a>
-                  <a
-                    href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-medium text-muted-foreground underline"
-                  >
-                    GitHub Privacy Statement
-                    <ExternalLink className="size-3" />
-                  </a>
-                </div>
-              </AlertDescription>
-            </Alert>
-
-            <form onSubmit={handlePush} className="flex flex-col gap-5">
-              <FieldGroup>
-                <Field data-invalid={pushError ? true : undefined}>
-                  <div className="flex items-center justify-between">
-                    <FieldLabel
-                      htmlFor="pat-single-input"
-                      className="flex items-center gap-1.5 font-mono text-xs"
-                    >
-                      <KeyRound className="size-3.5" />
-                      GitHub Personal Access Token
-                    </FieldLabel>
-                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
-                      <Lock className="size-3" />
-                      Copy blocked
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="pat-single-input"
-                      type="password"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={tokenInput}
-                      onChange={(e) => {
-                        setTokenInput(e.target.value);
-                        if (pushError) setPushError(null);
-                      }}
-                      onCopy={(e) => e.preventDefault()}
-                      onCut={(e) => e.preventDefault()}
-                      onDragStart={(e) => e.preventDefault()}
-                      onContextMenu={(e) => e.preventDefault()}
-                      placeholder="github_pat_... or ghp_..."
-                      className="select-none font-mono"
-                    />
-                    {tokenInput && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setTokenInput("")}
-                        title="Clear token from memory"
-                      >
-                        <Trash2 />
-                      </Button>
-                    )}
-                  </div>
-                </Field>
-
-                <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3.5">
-                  <Field orientation="horizontal">
-                    <Checkbox
-                      id="auto-evolve-check"
-                      checked={includeWorkflowFiles}
-                      onCheckedChange={(val) =>
-                        setIncludeWorkflowFiles(Boolean(val))
-                      }
-                    />
-                    <div className="flex flex-col gap-1">
-                      <FieldLabel
-                        htmlFor="auto-evolve-check"
-                        className="font-mono text-xs font-semibold"
-                      >
-                        Include 12:00 AM Daily Auto-Evolve GitHub Action
-                      </FieldLabel>
-                      <FieldDescription className="text-xs">
-                        Requires <code>workflow</code> scope on your PAT. Automatically
-                        re-renders <code>creature.webp</code> &amp; updates{" "}
-                        <code>README.md</code> every midnight.
-                      </FieldDescription>
-                    </div>
-                  </Field>
-
-                  {includeWorkflowFiles && (
-                    <div className="grid grid-cols-2 gap-2 pl-6">
-                      <button
-                        type="button"
-                        onClick={() => setTimezoneMode("local")}
-                        className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
-                          timezoneMode === "local"
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "bg-card text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        12:00 AM Local ({localCron})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTimezoneMode("utc")}
-                        className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
-                          timezoneMode === "utc"
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "bg-card text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        12:00 AM UTC (0 0 * * *)
-                      </button>
-                    </div>
+            {repoCheckState !== "exists" ? (
+              <div className="flex flex-col gap-4">
+                <Alert variant={repoCheckState === "missing" ? "destructive" : "default"}>
+                  {repoCheckState === "checking" ? (
+                    <RefreshCw className="animate-spin" />
+                  ) : (
+                    <FolderGit2 />
                   )}
-                </div>
-
-                {hasLegacyWorkflow && !includeWorkflowFiles && (
-                  <Alert>
-                    <AlertCircle />
-                    <AlertTitle className="font-mono text-xs font-semibold">
-                      Outdated GitHub Action Workflow Detected
-                    </AlertTitle>
-                    <AlertDescription className="text-xs">
-                      Your repository <code>{username}/{username}</code> has an
-                      earlier <code>evolve-creature.yml</code> workflow targeting{" "}
-                      <code>creature.svg</code>. Check{" "}
-                      <strong>Include 12:00 AM Daily Auto-Evolve GitHub Action</strong>{" "}
-                      above (with <code>Workflows: Read and write</code> PAT permission) to
-                      upgrade it to the new Animated WebP workflow.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </FieldGroup>
-
-              {pushError && (
-                <Alert variant="destructive">
-                  <AlertCircle />
-                  <AlertTitle className="font-mono text-xs">Push Failed</AlertTitle>
-                  <AlertDescription className="text-xs">{pushError}</AlertDescription>
-                </Alert>
-              )}
-
-              {publishResult && (
-                <Alert>
-                  <CheckCircle2 />
                   <AlertTitle className="font-mono text-xs font-semibold">
-                    Published {publishResult.updatedPaths.join(", ")}
+                    {repoCheckState === "checking"
+                      ? `Checking ${username}/${username} on GitHub...`
+                      : `Profile Repository ${username}/${username} Not Found`}
                   </AlertTitle>
-                  <AlertDescription className="mt-2 flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      render={
-                        <a
-                          href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        />
-                      }
-                    >
-                      View GitHub Profile
-                      <ExternalLink data-icon="inline-end" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={
-                        <a
-                          href={publishResult.repoUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        />
-                      }
-                    >
-                      Open Repo
-                      <ExternalLink data-icon="inline-end" />
-                    </Button>
+                  <AlertDescription className="flex flex-col gap-2 text-xs">
+                    {repoCheckState === "checking" ? (
+                      <p>
+                        Verifying that your public GitHub profile repository exists
+                        before requesting a Personal Access Token.
+                      </p>
+                    ) : (
+                      <>
+                        <p>
+                          A public repository named{" "}
+                          <code>
+                            {username}/{username}
+                          </code>{" "}
+                          must exist on GitHub before pushing. Token entry is hidden
+                          until the repository is detected.
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            render={
+                              <a
+                                href="https://github.com/new"
+                                target="_blank"
+                                rel="noreferrer"
+                              />
+                            }
+                          >
+                            Create {username}/{username}
+                            <ExternalLink data-icon="inline-end" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleRecheckRepo}
+                          >
+                            <RefreshCw data-icon="inline-start" />
+                            Re-check Repository
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </AlertDescription>
                 </Alert>
-              )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onBack}
-                  disabled={pushLoading}
-                >
-                  <ArrowLeft data-icon="inline-start" />
-                  Back
-                </Button>
-
-                <Button
-                  type="submit"
-                  disabled={pushLoading || !tokenInput.trim()}
-                >
-                  {pushLoading ? (
-                    <>
-                      <RefreshCw data-icon="inline-start" className="animate-spin" />
-                      Pushing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap data-icon="inline-start" />
-                      Push Changes to README
-                    </>
-                  )}
-                </Button>
+                <div className="flex justify-start">
+                  <Button type="button" variant="outline" onClick={onBack}>
+                    <ArrowLeft data-icon="inline-start" />
+                    Back
+                  </Button>
+                </div>
               </div>
-            </form>
+            ) : (
+              <>
+                <Alert>
+                  <ShieldCheck />
+                  <AlertTitle className="font-mono text-xs font-semibold">
+                    In-Memory Token Security Guarantee
+                  </AlertTitle>
+                  <AlertDescription className="flex flex-col gap-2 text-xs">
+                    <p>
+                      This static app never stores tokens in cookies, localStorage, or
+                      any server. Your PAT exists strictly in memory during the GitHub API
+                      push and clears automatically afterward. Copy and context-menu
+                      actions are disabled on the input field.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <a
+                        href="https://github.com/settings/personal-access-tokens/new"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-primary underline"
+                      >
+                        Create Fine-Grained PAT (Contents: Read &amp; write)
+                        <ExternalLink className="size-3" />
+                      </a>
+                      <a
+                        href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-muted-foreground underline"
+                      >
+                        GitHub Privacy Statement
+                        <ExternalLink className="size-3" />
+                      </a>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+
+                <form onSubmit={handlePush} className="flex flex-col gap-5">
+                  <FieldGroup>
+                    <Field data-invalid={pushError ? true : undefined}>
+                      <div className="flex items-center justify-between">
+                        <FieldLabel
+                          htmlFor="pat-single-input"
+                          className="flex items-center gap-1.5 font-mono text-xs"
+                        >
+                          <KeyRound className="size-3.5" />
+                          GitHub Personal Access Token
+                        </FieldLabel>
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
+                          <Lock className="size-3" />
+                          Copy blocked
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="pat-single-input"
+                          type="password"
+                          autoComplete="off"
+                          spellCheck={false}
+                          value={tokenInput}
+                          onChange={(e) => {
+                            setTokenInput(e.target.value);
+                            if (pushError) setPushError(null);
+                          }}
+                          onCopy={(e) => e.preventDefault()}
+                          onCut={(e) => e.preventDefault()}
+                          onDragStart={(e) => e.preventDefault()}
+                          onContextMenu={(e) => e.preventDefault()}
+                          placeholder="github_pat_... or ghp_..."
+                          className="select-none font-mono"
+                        />
+                        {tokenInput && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setTokenInput("")}
+                            title="Clear token from memory"
+                          >
+                            <Trash2 />
+                          </Button>
+                        )}
+                      </div>
+                    </Field>
+
+                    <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3.5">
+                      <Field orientation="horizontal">
+                        <Checkbox
+                          id="auto-evolve-check"
+                          checked={includeWorkflowFiles}
+                          onCheckedChange={(val) =>
+                            setIncludeWorkflowFiles(Boolean(val))
+                          }
+                        />
+                        <div className="flex flex-col gap-1">
+                          <FieldLabel
+                            htmlFor="auto-evolve-check"
+                            className="font-mono text-xs font-semibold"
+                          >
+                            Include 12:00 AM Daily Auto-Evolve GitHub Action
+                          </FieldLabel>
+                          <FieldDescription className="text-xs">
+                            Requires <code>workflow</code> scope on your PAT.
+                            Automatically re-renders <code>creature.webp</code> &amp;
+                            updates <code>README.md</code> every midnight.
+                          </FieldDescription>
+                        </div>
+                      </Field>
+
+                      {includeWorkflowFiles && (
+                        <div className="grid grid-cols-2 gap-2 pl-6">
+                          <button
+                            type="button"
+                            onClick={() => setTimezoneMode("local")}
+                            className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
+                              timezoneMode === "local"
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "bg-card text-foreground hover:bg-muted"
+                            }`}
+                          >
+                            12:00 AM Local ({localCron})
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTimezoneMode("utc")}
+                            className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
+                              timezoneMode === "utc"
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "bg-card text-foreground hover:bg-muted"
+                            }`}
+                          >
+                            12:00 AM UTC (0 0 * * *)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {hasLegacyWorkflow && !includeWorkflowFiles && (
+                      <Alert>
+                        <AlertCircle />
+                        <AlertTitle className="font-mono text-xs font-semibold">
+                          Outdated GitHub Action Workflow Detected
+                        </AlertTitle>
+                        <AlertDescription className="text-xs">
+                          Your repository <code>{username}/{username}</code> has an
+                          earlier <code>evolve-creature.yml</code> workflow targeting{" "}
+                          <code>creature.svg</code>. Check{" "}
+                          <strong>
+                            Include 12:00 AM Daily Auto-Evolve GitHub Action
+                          </strong>{" "}
+                          above (with <code>Workflows: Read and write</code> PAT
+                          permission) to upgrade it to the new Animated WebP workflow.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </FieldGroup>
+
+                  {pushError && (
+                    <Alert variant="destructive">
+                      <AlertCircle />
+                      <AlertTitle className="font-mono text-xs">
+                        Push Failed
+                      </AlertTitle>
+                      <AlertDescription className="text-xs">
+                        {pushError}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {publishResult && (
+                    <Alert>
+                      <CheckCircle2 />
+                      <AlertTitle className="font-mono text-xs font-semibold">
+                        Published {publishResult.updatedPaths.join(", ")}
+                      </AlertTitle>
+                      <AlertDescription className="mt-2 flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          render={
+                            <a
+                              href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            />
+                          }
+                        >
+                          View GitHub Profile
+                          <ExternalLink data-icon="inline-end" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={
+                            <a
+                              href={publishResult.repoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            />
+                          }
+                        >
+                          Open Repo
+                          <ExternalLink data-icon="inline-end" />
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onBack}
+                      disabled={pushLoading}
+                    >
+                      <ArrowLeft data-icon="inline-start" />
+                      Back
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      disabled={pushLoading || !tokenInput.trim()}
+                    >
+                      {pushLoading ? (
+                        <>
+                          <RefreshCw
+                            data-icon="inline-start"
+                            className="animate-spin"
+                          />
+                          Pushing...
+                        </>
+                      ) : (
+                        <>
+                          <Zap data-icon="inline-start" />
+                          Push Changes to README
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </>
+            )}
           </CardContent>
 
           <Separator />

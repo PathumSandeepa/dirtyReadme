@@ -1,6 +1,6 @@
 # dynamic-readme-creature
 
-A sprite-based, **S-curve animated marine creature** and full **GitHub Profile README Studio** that evolves automatically with your GitHub contributions (`0 → 2,500+`), exports smooth **Animated WebP** and **Animated GIF** graphics, syncs **3, 5, or 7 programming language colors** directly onto your creature, and stays fresh at **12:00 AM** every day.
+An **open-source**, sprite-based, **S-curve animated marine creature** and full **GitHub Profile README Studio** that evolves automatically with your GitHub contributions (`0 → 2,500+`), exports smooth **Animated WebP** and **Animated GIF** graphics, syncs **3, 5, or 7 programming language colors** directly onto your creature, restores your existing customizations on return, and stays updated at **12:00 AM** every day.
 
 <p align="center">
   <a href="https://pathumsandeepa.github.io/dynamic-readme-creature/">
@@ -27,7 +27,8 @@ A sprite-based, **S-curve animated marine creature** and full **GitHub Profile R
 - **Original Colors or Discrete 3, 5, or 7 Language Zones:** Keep original creature pixel artwork with automatically matched HUD swatches, or map `3`, `5`, or `7` customizable language colors directly onto distinct anatomical zones of the creature (no gradient wash).
 - **Commit-Driven Growth & Customizable Pixel HUD:** Automatically evolves across 5 clearly scaled stages (`0.46x` to `1.05x`) using **Current Year** or **All Time** GitHub contributions, with full HUD customization (`Pixel`, `Mono`, `Sans`, `Serif`, weight, size, color palette, and `Left`/`Center`/`Right` alignment).
 - **Multi-Card Drag & Drop Tech Stack Builder:** Starts with 3 organized tech cards and **202+ verified skills & badges** across 11 categories, with one-click **Combine All**, single-click **Undo Combine**, and real-time live README preview.
-- **Full Profile README Builder & Direct Push:** Customize your intro paragraph, role tags, CTA links, layout alignment, banner width, social share card, and optional **12:00 AM daily GitHub Action**.
+- **Form Fields & Advanced Markdown Editor + Auto-Detected CTA Platform Icons:** Write your profile bio with guided form inputs or switch seamlessly to the built-in Markdown toolbar editor, add CTA buttons with **77+ curated platform icons** (`Medium`, `Hashnode`, `Substack`, `DEV.to`, `LinkedIn`, `YouTube`, etc.) automatically detected from your URL (with a default Website icon fallback), and resize the creature banner width dynamically (`320px` to `920px`).
+- **Automatic Config Restoration & Atomic Safe Push:** Returning users syncing their username automatically reload saved settings from `creature-config.json` or parse their existing `dynamic-readme-creature` markers in `README.md`. Publishing verifies `{username}/{username}` exists before accepting an in-memory PAT, pushes cleanly in a single atomic commit, and keeps **12:00 AM daily Node 24 GitHub Actions** (`actions/checkout@v7`, `actions/setup-node@v7`) in sync.
 
 ---
 
@@ -69,9 +70,9 @@ A sprite-based, **S-curve animated marine creature** and full **GitHub Profile R
 
 ---
 
-## Clone & Contribute (Improve This Project)
+## Open-Source Contributing (Clone & Improve)
 
-Contributions, new pixel creatures, animation refinements, and UI improvements are always welcome!
+`dynamic-readme-creature` is a **100% open-source** MIT-licensed project. Contributions, new pixel creatures, animation refinements, platform icon presets, and UI improvements are always welcome!
 
 ### 1. Clone the repository
 
@@ -97,14 +98,15 @@ Open [http://localhost:3000](http://localhost:3000) to test changes live in your
 src/
 ├── domain/
 │   ├── creature/       # Creature entities, S-curve RGBA animation engine, palette mapping
-│   ├── profile/        # Tech stack catalog (200+ items), multi-card stack & README builder
+│   ├── profile/        # Tech stack catalog (200+ items), 77+ platform icons, README builder & parser
 │   └── automation/     # 12:00 AM GitHub Action & standalone WebP evolution script generator
-├── application/        # Studio state controller (useStudioController.ts)
-├── infrastructure/     # Browser WebP/GIF encoders, sprite loader & GitHub API client
+├── application/        # Studio state controller & returning-user repo hydration
+├── infrastructure/     # Browser WebP/GIF encoders, sprite loader & atomic GitHub API client
 └── presentation/       # Next.js studio UI components & react-color-palette pickers
 scripts/
-├── extract-sprites.mjs # Extracts transparent RGBA sprites from assets/source/
-└── generate-showcase.mjs # Generates animated WebP & share-card assets in public/showcase/
+├── extract-sprites.mjs        # Extracts transparent RGBA sprites from assets/source/
+├── generate-platform-icons.mjs # Generates typed platform icon catalog from simple-icons
+└── generate-showcase.mjs      # Generates animated WebP & share-card assets in public/showcase/
 ```
 
 ### 4. Verify before opening a Pull Request

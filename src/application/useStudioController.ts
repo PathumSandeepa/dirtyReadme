@@ -29,6 +29,11 @@ import {
 } from "@/domain/profile/entities";
 import { detectPlatformFromUrl } from "@/domain/profile/platformIcons";
 import {
+  hydrateFromCreatureConfigJson,
+  isDynamicCreatureReadme,
+  parseExistingDynamicReadme,
+} from "@/domain/profile/readmeParser";
+import {
   addBadgeToStackCard,
   buildMarkerSection,
   combineAllStackCards,
@@ -58,6 +63,7 @@ export function useStudioController() {
   const [snapshot, setSnapshot] = useState<GitHubProfileSnapshot | null>(null);
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
 
   const markerBlock = useMemo(
     () => buildMarkerSection(creatureConfig, readmeConfig),
@@ -398,9 +404,55 @@ export function useStudioController() {
     setCreatureConfig((prev) => ({ ...prev, username: parsedUsername }));
     setSyncLoading(true);
     setSyncError(null);
+    setRestoredNotice(null);
     try {
       const snap = await fetchGitHubProfileSnapshot(parsedUsername, authToken);
       setSnapshot(snap);
+
+      if (snap.existingCreatureConfig) {
+        const hydrated = hydrateFromCreatureConfigJson(
+          snap.existingCreatureConfig,
+          snap,
+          DEFAULT_CREATURE_CONFIG,
+          DEFAULT_README_CONFIG
+        );
+        setCreatureConfig(hydrated.creatureConfig);
+        setReadmeConfig(hydrated.readmeConfig);
+        setCustomBgHex(hydrated.customBgHex);
+        setRestoredNotice(
+          `Restored your saved creature & README customizations from ${snap.username}/${snap.username}.`
+        );
+        return snap;
+      }
+
+      if (isDynamicCreatureReadme(snap.existingProfileReadme)) {
+        const parsed = parseExistingDynamicReadme(
+          snap.existingProfileReadme!,
+          DEFAULT_CREATURE_CONFIG,
+          DEFAULT_README_CONFIG
+        );
+        setCreatureConfig((prev) => {
+          const mergedCreature: CreatureConfig = {
+            ...prev,
+            ...parsed.creaturePatch,
+            username: snap.username,
+            commits:
+              prev.windowMode === "all-time"
+                ? snap.allTimeCommits
+                : snap.annualCommits,
+            languages: ensureLanguageSlots(snap.languages, prev.languageCount),
+          };
+          return mergedCreature.colorMode === "languages"
+            ? applyLanguageColors(mergedCreature, mergedCreature.languages)
+            : mergedCreature;
+        });
+        setReadmeConfig(parsed.readmeConfig);
+        setRestoredNotice(
+          `Loaded your previous README customizations from ${snap.username}/${snap.username}.`
+        );
+        return snap;
+      }
+
       setCreatureConfig((prev) => {
         const nextCommits =
           prev.windowMode === "all-time"
@@ -513,6 +565,7 @@ export function useStudioController() {
     setCustomBgHex("#0D1117");
     setSnapshot(null);
     setSyncError(null);
+    setRestoredNotice(null);
   }
 
   return {
@@ -524,6 +577,8 @@ export function useStudioController() {
     snapshot,
     syncLoading,
     syncError,
+    restoredNotice,
+    dismissRestoredNotice: () => setRestoredNotice(null),
     markerBlock,
     fullReadmeMarkdown,
     selectCreature,

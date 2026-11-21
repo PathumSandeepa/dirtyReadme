@@ -742,125 +742,138 @@ export function PreviewWorkspace({
                           </>
                         )}
 
-                        <div
-                          className={`flex ${
-                            isAlignedLeft ? "justify-start" : "justify-center"
-                          }`}
-                        >
-                          <div
-                            className="w-full"
-                            style={{
-                              maxWidth: `${Math.min(
-                                920,
-                                Math.max(360, readmeConfig.imageWidth)
-                              )}px`,
-                            }}
-                          >
-                            <CreatureAnimatedView
-                              config={creatureConfig}
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-
-                        {!isMarkerOnly &&
-                          (isTelemetry || readmeConfig.includeStatsTable) && (
-                            <div className="pt-2 text-left">
-                              <h3 className="mb-2 text-sm font-semibold">
-                                {resolveDynamicTokens(
-                                  readmeConfig.statsTableTitle ||
-                                    "Telemetry Snapshot",
-                                  creatureConfig
-                                )}
-                              </h3>
+                        {(() => {
+                          const bannerWidthPercent = Math.min(
+                            100,
+                            Math.max(35, (readmeConfig.imageWidth / 920) * 100)
+                          );
+                          return (
+                            <>
                               <div
-                                className={`overflow-hidden rounded-lg border text-xs ${
-                                  githubTheme === "dark"
-                                    ? "border-[#30363d]"
-                                    : "border-[#d0d7de]"
+                                className={`flex ${
+                                  isAlignedLeft ? "justify-start" : "justify-center"
                                 }`}
                               >
-                                <table className="w-full border-collapse">
-                                  <thead>
-                                    <tr
-                                      className={
+                                <div
+                                  style={{ width: `${bannerWidthPercent}%` }}
+                                >
+                                  <CreatureAnimatedView
+                                    config={creatureConfig}
+                                    className="w-full"
+                                  />
+                                </div>
+                              </div>
+
+                              {!isMarkerOnly &&
+                                (isTelemetry || readmeConfig.includeStatsTable) && (
+                                  <div className="pt-2 text-left">
+                                    <h3 className="mb-2 text-sm font-semibold">
+                                      {resolveDynamicTokens(
+                                        readmeConfig.statsTableTitle ||
+                                          "Telemetry Snapshot",
+                                        creatureConfig
+                                      )}
+                                    </h3>
+                                    <div
+                                      className={`overflow-hidden rounded-lg border text-xs ${
                                         githubTheme === "dark"
-                                          ? "bg-[#161b22]"
-                                          : "bg-[#f6f8fa]"
-                                      }
+                                          ? "border-[#30363d]"
+                                          : "border-[#d0d7de]"
+                                      }`}
                                     >
-                                      <th className="px-3 py-2 text-left font-medium">
-                                        Metric
-                                      </th>
-                                      <th className="px-3 py-2 text-left font-medium">
-                                        Value
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody
-                                    className={`divide-y ${
-                                      githubTheme === "dark"
-                                        ? "divide-[#30363d]"
-                                        : "divide-[#d0d7de]"
+                                      <table className="w-full border-collapse">
+                                        <thead>
+                                          <tr
+                                            className={
+                                              githubTheme === "dark"
+                                                ? "bg-[#161b22]"
+                                                : "bg-[#f6f8fa]"
+                                            }
+                                          >
+                                            <th className="px-3 py-2 text-left font-medium">
+                                              Metric
+                                            </th>
+                                            <th className="px-3 py-2 text-left font-medium">
+                                              Value
+                                            </th>
+                                          </tr>
+                                        </thead>
+                                        <tbody
+                                          className={`divide-y ${
+                                            githubTheme === "dark"
+                                              ? "divide-[#30363d]"
+                                              : "divide-[#d0d7de]"
+                                          }`}
+                                        >
+                                          <tr>
+                                            <td className="px-3 py-1.5 opacity-80">
+                                              Creature Model
+                                            </td>
+                                            <td className="px-3 py-1.5 font-medium">
+                                              {meta.name} ({viewLabel})
+                                            </td>
+                                          </tr>
+                                          <tr>
+                                            <td className="px-3 py-1.5 opacity-80">
+                                              Evolution Stage
+                                            </td>
+                                            <td className="px-3 py-1.5 font-medium">
+                                              Stage {stage.stage}: {stage.rank}
+                                            </td>
+                                          </tr>
+                                          <tr>
+                                            <td className="px-3 py-1.5 opacity-80">
+                                              Contributions
+                                            </td>
+                                            <td className="px-3 py-1.5 font-mono">
+                                              {creatureConfig.commits.toLocaleString(
+                                                "en-US"
+                                              )}
+                                            </td>
+                                          </tr>
+                                          <tr>
+                                            <td className="px-3 py-1.5 opacity-80">
+                                              Top Stack ({visibleLanguages.length})
+                                            </td>
+                                            <td className="px-3 py-1.5">
+                                              {visibleLanguages
+                                                .map((l) => l.name)
+                                                .join(" · ")}
+                                            </td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+
+                              {!isMarkerOnly &&
+                                (isTelemetry || readmeConfig.includeShareCard) && (
+                                  <div
+                                    className={`flex ${
+                                      isAlignedLeft
+                                        ? "justify-start"
+                                        : "justify-center"
                                     }`}
                                   >
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Creature Model
-                                      </td>
-                                      <td className="px-3 py-1.5 font-medium">
-                                        {meta.name} ({viewLabel})
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Evolution Stage
-                                      </td>
-                                      <td className="px-3 py-1.5 font-medium">
-                                        Stage {stage.stage}: {stage.rank}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Contributions
-                                      </td>
-                                      <td className="px-3 py-1.5 font-mono">
-                                        {creatureConfig.commits.toLocaleString("en-US")}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Top Stack ({visibleLanguages.length})
-                                      </td>
-                                      <td className="px-3 py-1.5">
-                                        {visibleLanguages
-                                          .map((l) => l.name)
-                                          .join(" · ")}
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          )}
-
-                        {!isMarkerOnly &&
-                          (isTelemetry || readmeConfig.includeShareCard) && (
-                            <div
-                              className={`overflow-hidden rounded-lg border ${
-                                isAlignedLeft ? "" : "mx-auto"
-                              } max-w-md ${
-                                githubTheme === "dark"
-                                  ? "border-[#30363d]"
-                                  : "border-[#d0d7de]"
-                              }`}
-                            >
-                              <ShareCardCanvasView
-                                config={creatureConfig}
-                                className="w-full"
-                              />
-                            </div>
-                          )}
+                                    <div
+                                      style={{ width: `${bannerWidthPercent}%` }}
+                                      className={`overflow-hidden rounded-lg border ${
+                                        githubTheme === "dark"
+                                          ? "border-[#30363d]"
+                                          : "border-[#d0d7de]"
+                                      }`}
+                                    >
+                                      <ShareCardCanvasView
+                                        config={creatureConfig}
+                                        className="w-full"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                            </>
+                          );
+                        })()}
 
                         {!isAdvancedText &&
                           !isMarkerOnly &&
