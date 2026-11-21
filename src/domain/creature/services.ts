@@ -110,10 +110,10 @@ export function applyLanguageColors(
 }
 
 export function derivePalette(config: CreatureConfig): DerivedPalette {
-  const primary = normalizeHex(config.colors.primary, "#F4F6F8");
-  const accent = normalizeHex(config.colors.accent, "#FF6B00");
-  const energy = normalizeHex(config.colors.energy, "#00E676");
-  const frame = normalizeHex(config.colors.frame, "#1F242D");
+  const primary = normalizeHex(config.colors.primary, "#36506B");
+  const accent = normalizeHex(config.colors.accent, "#E4AE5B");
+  const energy = normalizeHex(config.colors.energy, "#4E9AE6");
+  const frame = normalizeHex(config.colors.frame, "#1F2E3E");
   const isLightArmor = getLuminance(primary) > 0.45;
 
   const armorMid =

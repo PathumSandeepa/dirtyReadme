@@ -8,6 +8,17 @@ import {
   fetchGitHubProfileSnapshot,
   type GitHubProfileSnapshot,
 } from "@/infrastructure/github/githubClient";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { CreatureSvgView } from "./CreatureSvgView";
 
 interface ComparatorPanelProps {
@@ -69,83 +80,86 @@ export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
   };
 
   return (
-    <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-      <div>
-        <div className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
-          <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
-          <h2>Compare Two GitHub Profiles Side-by-Side</h2>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Users className="size-4 text-primary" />
+          <CardTitle className="font-mono">
+            Compare Two GitHub Profiles Side-by-Side
+          </CardTitle>
         </div>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-          Preview how your current creature styling scales across any two GitHub accounts.
-        </p>
-      </div>
+        <CardDescription>
+          Preview how your active pixel creature scales across any two GitHub accounts.
+        </CardDescription>
+      </CardHeader>
 
-      <form
-        onSubmit={handleCompare}
-        className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
-      >
-        <input
-          type="text"
-          value={leftUser}
-          onChange={(e) => setLeftUser(e.target.value)}
-          placeholder="First GitHub username"
-          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-600 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
-        />
-        <input
-          type="text"
-          value={rightUser}
-          onChange={(e) => setRightUser(e.target.value)}
-          placeholder="Second GitHub username"
-          className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-indigo-600 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+      <CardContent className="flex flex-col gap-5">
+        <form
+          onSubmit={handleCompare}
+          className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "Comparing..." : "Compare"}
-        </button>
-      </form>
+          <Input
+            type="text"
+            value={leftUser}
+            onChange={(e) => setLeftUser(e.target.value)}
+            placeholder="First GitHub username"
+            className="font-mono"
+          />
+          <Input
+            type="text"
+            value={rightUser}
+            onChange={(e) => setRightUser(e.target.value)}
+            placeholder="Second GitHub username"
+            className="font-mono"
+          />
+          <Button type="submit" disabled={loading}>
+            <RefreshCw
+              data-icon="inline-start"
+              className={loading ? "animate-spin" : ""}
+            />
+            {loading ? "Comparing..." : "Compare"}
+          </Button>
+        </form>
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-700/50 dark:bg-rose-950/30 dark:text-rose-200">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle />
+            <AlertDescription className="text-xs">{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {results && (
-        <div className="grid gap-4 md:grid-cols-2">
-          {[results.left, results.right].map((snap) => {
-            const cfg = buildComparedConfig(snap);
-            const stage = getEvolutionStage(cfg.commits);
-            return (
-              <div
-                key={snap.username}
-                className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36]"
-              >
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-[#363d4a]">
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      @{snap.username}
+        {results && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {[results.left, results.right].map((snap) => {
+              const cfg = buildComparedConfig(snap);
+              const stage = getEvolutionStage(cfg.commits);
+              return (
+                <div
+                  key={snap.username}
+                  className="overflow-hidden rounded-lg border bg-muted/40"
+                >
+                  <div className="flex items-center justify-between border-b px-4 py-3">
+                    <div>
+                      <div className="font-mono text-sm font-semibold text-foreground">
+                        @{snap.username}
+                      </div>
+                      <div className="font-mono text-xs text-muted-foreground">
+                        {snap.publicRepos} repos · {snap.totalStars} stars
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-300">
-                      {snap.publicRepos} public repos · {snap.totalStars} stars
-                    </div>
+                    <Badge className="font-mono">
+                      Stage {stage.stage} · {stage.rank}
+                    </Badge>
                   </div>
-                  <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white dark:bg-indigo-500">
-                    Stage {stage.stage} · {stage.rank}
-                  </span>
+                  <div className="bg-[#0d1117] p-3">
+                    <CreatureSvgView config={cfg} className="w-full" />
+                  </div>
                 </div>
-                <div className="bg-[#0d1117] p-3">
-                  <CreatureSvgView config={cfg} className="w-full" />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

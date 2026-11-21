@@ -1,19 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Clock, Layers, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, Cpu, Layers, ShieldCheck, Sparkles } from "lucide-react";
 import {
   CREATURE_CATALOG,
   STAGE_DEFINITIONS,
   THEME_PRESETS,
   type CreatureConfig,
 } from "@/domain/creature/entities";
-import { README_TEMPLATES, type ReadmeConfig } from "@/domain/profile/entities";
+import type { ReadmeConfig } from "@/domain/profile/entities";
 import {
   buildActionLinkBadgeUrl,
   buildShieldBadgeUrl,
   resolveDynamicTokens,
 } from "@/domain/profile/readmeService";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { CreatureSvgView } from "./CreatureSvgView";
 import { ShareCardSvgView } from "./ShareCardSvgView";
 
@@ -55,260 +65,300 @@ export function ShowcaseGalleryView({
   const sampleLinks = readmeConfig.actionLinks.filter((l) => l.enabled);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-12 py-4">
-      <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a] sm:p-10">
-        <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div className="max-w-2xl space-y-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
-              <Sparkles className="h-3.5 w-3.5" />
-              Pure CSS Animated SVG + Profile Template Studio
-            </span>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
-              Explore Cybernetic Creatures &amp; Profile README Designs
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 py-2">
+      <Card>
+        <CardContent className="flex flex-col items-start justify-between gap-6 p-6 md:flex-row md:items-center">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="font-mono">
+                <Sparkles data-icon="inline-start" />
+                PIXEL SVG + ANIMATED WEBP
+              </Badge>
+              <Badge variant="outline" className="font-mono">
+                GITHUB PROFILE STUDIO
+              </Badge>
+            </div>
+            <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Pixel-Art Cybernetic Creatures for GitHub READMEs
             </h1>
-            <p className="text-base leading-relaxed text-slate-600 dark:text-slate-300">
-              Browse the animated creatures, color palettes, evolution stages, and
-              customizable README template below. Click{" "}
-              <strong className="font-semibold text-slate-900 dark:text-slate-100">
-                Add Profile
-              </strong>{" "}
-              when you are ready to customize with your own GitHub username.
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Preview the left-swimming Tulkun and animated Bioluminescent Jellyfish below.
+              Click <strong className="text-foreground">Add Profile</strong> to customize
+              everything with your GitHub username.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onStartCustomize}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-          >
-            <span>Add / Customize Profile</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
+          <Button type="button" size="lg" onClick={onStartCustomize}>
+            Add Profile
+            <ArrowRight data-icon="inline-end" />
+          </Button>
+        </CardContent>
+      </Card>
 
-      <section className="grid items-start gap-8 lg:grid-cols-12">
-        <div className="space-y-4 lg:col-span-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              Available Cyber Creatures
-            </h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Preview each animated SVG model in real time.
-            </p>
-            <div className="mt-4 space-y-2.5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          className="flex flex-col justify-between gap-3 rounded-xl border p-4"
+          style={{
+            backgroundColor: "var(--tile-coral)",
+            color: "var(--tile-coral-ink)",
+          }}
+        >
+          <div className="flex items-center justify-between font-mono text-xs font-medium opacity-85">
+            <span>Pixel Creatures</span>
+            <Cpu className="size-4" />
+          </div>
+          <div className="font-mono text-3xl font-bold tracking-tight">02</div>
+          <div className="font-mono text-xs opacity-80">
+            Tulkun &amp; Biolume Jellyfish
+          </div>
+        </div>
+
+        <div
+          className="flex flex-col justify-between gap-3 rounded-xl border p-4"
+          style={{
+            backgroundColor: "var(--tile-violet)",
+            color: "var(--tile-violet-ink)",
+          }}
+        >
+          <div className="flex items-center justify-between font-mono text-xs font-medium opacity-85">
+            <span>Growth Stages</span>
+            <Layers className="size-4" />
+          </div>
+          <div className="font-mono text-3xl font-bold tracking-tight">05</div>
+          <div className="font-mono text-xs opacity-80">
+            Scales dynamically with commits
+          </div>
+        </div>
+
+        <div
+          className="flex flex-col justify-between gap-3 rounded-xl border p-4"
+          style={{
+            backgroundColor: "var(--tile-mint)",
+            color: "var(--tile-mint-ink)",
+          }}
+        >
+          <div className="flex items-center justify-between font-mono text-xs font-medium opacity-85">
+            <span>Auto-Evolve</span>
+            <Clock className="size-4" />
+          </div>
+          <div className="font-mono text-3xl font-bold tracking-tight">12 AM</div>
+          <div className="font-mono text-xs opacity-80">
+            Scheduled midnight GitHub Action
+          </div>
+        </div>
+
+        <div
+          className="flex flex-col justify-between gap-3 rounded-xl border p-4"
+          style={{
+            backgroundColor: "var(--tile-indigo)",
+            color: "var(--tile-indigo-ink)",
+          }}
+        >
+          <div className="flex items-center justify-between font-mono text-xs font-medium opacity-85">
+            <span>Token Storage</span>
+            <ShieldCheck className="size-4" />
+          </div>
+          <div className="font-mono text-3xl font-bold tracking-tight">RAM</div>
+          <div className="font-mono text-xs opacity-80">
+            Zero persistence, wiped after push
+          </div>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-12">
+        <div className="flex flex-col gap-4 lg:col-span-5">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-mono">Available Creatures</CardTitle>
+              <CardDescription>
+                Select either left-facing animated creature to inspect live swimming motion.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
               {CREATURE_CATALOG.map((item) => {
                 const active = previewCreature === item.id;
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    onClick={() => setPreviewCreature(item.id)}
-                    className={`w-full rounded-xl border p-4 text-left transition ${
+                    onClick={() => {
+                      setPreviewCreature(item.id);
+                      if (item.id === "jellyfish" && previewThemeId === "ocean-slate") {
+                        setPreviewThemeId("biolume-azure");
+                      } else if (item.id === "tulkun" && previewThemeId === "biolume-azure") {
+                        setPreviewThemeId("ocean-slate");
+                      }
+                    }}
+                    className={`flex flex-col gap-1.5 rounded-lg border p-3.5 text-left transition ${
                       active
-                        ? "border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600 dark:border-indigo-400 dark:bg-[#272c36] dark:ring-indigo-400"
-                        : "border-slate-200 bg-slate-50/60 hover:border-slate-300 dark:border-[#363d4a] dark:bg-[#272c36]/60 dark:hover:border-slate-500"
+                        ? "border-primary bg-accent/60 ring-1 ring-primary"
+                        : "bg-muted/40 hover:bg-muted"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      <span className="font-mono text-sm font-semibold text-foreground">
                         {item.name}
                       </span>
-                      <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-[#1e222a] dark:text-slate-300">
+                      <Badge variant="outline" className="font-mono text-[10px]">
                         {item.subtitle}
-                      </span>
+                      </Badge>
                     </div>
-                    <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                    <p className="text-xs leading-relaxed text-muted-foreground">
                       {item.description}
                     </p>
                   </button>
                 );
               })}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              Available Color Themes &amp; Evolution Stages
-            </h3>
-            <div className="mt-4 grid grid-cols-2 gap-2.5">
-              {THEME_PRESETS.map((theme) => {
-                const active = previewThemeId === theme.id;
-                return (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => setPreviewThemeId(theme.id)}
-                    className={`rounded-xl border p-3 text-left transition ${
-                      active
-                        ? "border-indigo-600 bg-indigo-50/60 dark:border-indigo-400 dark:bg-[#272c36]"
-                        : "border-slate-200 bg-slate-50/50 hover:border-slate-300 dark:border-[#363d4a] dark:bg-[#272c36]/50"
-                    }`}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-mono">Palettes &amp; Stages</CardTitle>
+              <CardDescription>
+                Colors and anatomical growth tiers included in export.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-2">
+                {THEME_PRESETS.map((theme) => {
+                  const active = previewThemeId === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => setPreviewThemeId(theme.id)}
+                      className={`flex flex-col gap-2 rounded-lg border p-2.5 text-left transition ${
+                        active
+                          ? "border-primary bg-accent/60"
+                          : "bg-muted/40 hover:bg-muted"
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="size-3.5 rounded-full border"
+                          style={{ backgroundColor: theme.colors.primary }}
+                        />
+                        <span
+                          className="size-3.5 rounded-full border"
+                          style={{ backgroundColor: theme.colors.accent }}
+                        />
+                        <span
+                          className="size-3.5 rounded-full border"
+                          style={{ backgroundColor: theme.colors.energy }}
+                        />
+                      </div>
+                      <span className="font-mono text-xs font-medium text-foreground">
+                        {theme.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <ToggleGroup
+                value={[String(previewStage)]}
+                onValueChange={(vals) => {
+                  const v = vals[0];
+                  if (v) setPreviewStage(Number(v));
+                }}
+                variant="outline"
+                className="grid w-full grid-cols-5"
+              >
+                {STAGE_DEFINITIONS.map((st) => (
+                  <ToggleGroupItem
+                    key={st.stage}
+                    value={String(st.stage)}
+                    className="font-mono text-xs"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className="h-3.5 w-3.5 rounded-full border border-slate-300 dark:border-slate-500"
-                        style={{ backgroundColor: theme.colors.primary }}
-                      />
-                      <span
-                        className="h-3.5 w-3.5 rounded-full border border-slate-300 dark:border-slate-500"
-                        style={{ backgroundColor: theme.colors.accent }}
-                      />
-                      <span
-                        className="h-3.5 w-3.5 rounded-full border border-slate-300 dark:border-slate-500"
-                        style={{ backgroundColor: theme.colors.energy }}
-                      />
-                    </div>
-                    <div className="mt-2 text-xs font-semibold text-slate-900 dark:text-slate-100">
-                      {theme.name}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 grid grid-cols-5 gap-2">
-              {STAGE_DEFINITIONS.map((st) => (
-                <button
-                  key={st.stage}
-                  type="button"
-                  onClick={() => setPreviewStage(st.stage)}
-                  className={`rounded-lg border py-2 text-xs font-semibold transition ${
-                    previewStage === st.stage
-                      ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-500 dark:bg-indigo-500"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
-                  }`}
-                >
-                  S{st.stage}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6 lg:col-span-7">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-[#363d4a]">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Live Animated SVG Showcase
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Stage {stageObj.stage}: {stageObj.rank} · Works inside any GitHub README without JavaScript
-                </p>
-              </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-[#272c36] dark:text-slate-200">
-                Read-Only Preview
-              </span>
-            </div>
-            <div className="bg-[#0d1117] p-5">
-              <CreatureSvgView config={showcaseConfig} className="w-full" />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                  Sample Profile README Template
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Every heading, bio, tech badge, link button, and footer becomes editable once you add your username
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-[#363d4a] dark:bg-[#272c36]">
-              <h4 className="border-b border-slate-200 pb-2 text-lg font-semibold text-slate-900 dark:border-[#363d4a] dark:text-slate-100">
-                Your Name | Software Engineer
-              </h4>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                {readmeConfig.subtitleTags.join(" | ")}
-              </p>
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                {resolveDynamicTokens(readmeConfig.bio, showcaseConfig)}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {sampleBadges.map((b) => (
-                  <img
-                    key={b.id}
-                    src={buildShieldBadgeUrl(b)}
-                    alt={b.label}
-                    className="h-6 rounded"
-                  />
+                    S{st.stage}
+                  </ToggleGroupItem>
                 ))}
+              </ToggleGroup>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-6 lg:col-span-7">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
+              <div className="flex flex-col gap-0.5">
+                <CardTitle className="font-mono">
+                  Live Pixel Animation Preview
+                </CardTitle>
+                <CardDescription className="font-mono text-xs">
+                  Stage {stageObj.stage}: {stageObj.rank} · Transparent Canvas
+                </CardDescription>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {sampleLinks.map((l) => (
-                  <img
-                    key={l.id}
-                    src={buildActionLinkBadgeUrl(l, showcaseConfig)}
-                    alt={l.label}
-                    className="h-6 rounded"
-                  />
-                ))}
+              <Badge variant="outline" className="font-mono">
+                Read-Only
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="bg-[#0d1117] p-4">
+                <CreatureSvgView config={showcaseConfig} className="w-full" />
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            </CardContent>
+          </Card>
 
-      <section className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
-            <Layers className="h-5 w-5" />
-          </div>
-          <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-            {README_TEMPLATES.length} Layout Templates &amp; Drag-Drop Stack
-          </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Arrange your language &amp; tool shields by dragging them into order, customize
-            every paragraph, or add an optional 1280×640 Social Card.
-          </p>
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-mono">Profile README Template</CardTitle>
+              <CardDescription>
+                Customize every heading, bio, drag-and-drop badge, and CTA after adding
+                your profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4 rounded-lg border bg-muted/40 p-5">
+                <div className="border-b pb-2 font-mono text-base font-semibold text-foreground">
+                  Your Name | Software Engineer
+                </div>
+                <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  {readmeConfig.subtitleTags.join(" | ")}
+                </p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {resolveDynamicTokens(readmeConfig.bio, showcaseConfig)}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {sampleBadges.map((b) => (
+                    <img
+                      key={b.id}
+                      src={buildShieldBadgeUrl(b)}
+                      alt={b.label}
+                      className="h-6 rounded"
+                    />
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {sampleLinks.map((l) => (
+                    <img
+                      key={l.id}
+                      src={buildActionLinkBadgeUrl(l, showcaseConfig)}
+                      alt={l.label}
+                      className="h-6 rounded"
+                    />
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
-            <Clock className="h-5 w-5" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-mono">Social Share Card (1280×640)</CardTitle>
+          <CardDescription>
+            Exportable SVG banner synchronized with your creature and commit stage.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-hidden rounded-lg border">
+            <ShareCardSvgView config={showcaseConfig} className="w-full" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-            12:00 AM Daily Auto-Evolve Option
-          </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Keep your creature growing across all 5 anatomical stages automatically every
-            midnight based on your public commit activity.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-            Private In-Browser GitHub Push
-          </h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            Your Personal Access Token stays only in browser memory for the push request
-            and is never stored or logged anywhere.
-          </p>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              1280×640 Shareable Social Banner Preview
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Optional exportable banner included alongside your animated README creature
-            </p>
-          </div>
-        </div>
-        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-[#363d4a]">
-          <ShareCardSvgView config={showcaseConfig} className="w-full" />
-        </div>
-      </section>
+        </CardContent>
+      </Card>
     </div>
   );
 }

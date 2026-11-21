@@ -16,6 +16,21 @@ import {
   getEvolutionStage,
   normalizeHex,
 } from "@/domain/creature/services";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface CreatureStepPanelProps {
   config: CreatureConfig;
@@ -45,363 +60,349 @@ export function CreatureStepPanel({
   const meta = getCreatureMeta(config.creature);
   const evolution = getEvolutionStage(config.commits);
 
-  return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-        <div className="mb-4 flex items-center gap-2.5">
-          <Sparkles className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              Choose Your Cyber Creature
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Pick the animated guardian that will appear on your GitHub profile.
-            </p>
-          </div>
-        </div>
+  const handleCreaturePick = (id: CreatureId) => {
+    onSelectCreature(id);
+    if (id === "jellyfish" && config.themeId === "ocean-slate") {
+      onApplyPreset("biolume-azure");
+    } else if (id === "tulkun" && config.themeId === "biolume-azure") {
+      onApplyPreset("ocean-slate");
+    }
+  };
 
-        <div className="space-y-3">
-          {CREATURE_CATALOG.map((item) => {
-            const selected = config.creature === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onSelectCreature(item.id)}
-                className={`flex w-full items-start justify-between gap-4 rounded-xl border p-4 text-left transition ${
-                  selected
-                    ? "border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600 dark:border-indigo-400 dark:bg-[#272c36] dark:ring-indigo-400"
-                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 dark:border-[#363d4a] dark:bg-[#272c36] dark:hover:border-slate-500"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+  return (
+    <div className="flex flex-col gap-5">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-primary" />
+            <CardTitle className="font-mono">Choose Pixel Creature</CardTitle>
+          </div>
+          <CardDescription>
+            Pick either left-facing animated marine guardian. Changes stream live on the
+            right canvas.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2.5">
+            {CREATURE_CATALOG.map((item) => {
+              const selected = config.creature === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleCreaturePick(item.id)}
+                  className={`flex flex-col gap-1.5 rounded-lg border p-3.5 text-left transition ${
+                    selected
+                      ? "border-primary bg-accent/60 ring-1 ring-primary"
+                      : "bg-muted/40 hover:bg-muted"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-sm font-semibold text-foreground">
                       {item.name}
                     </span>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-[#313744] dark:text-slate-300">
+                    <Badge variant="outline" className="font-mono text-[10px]">
                       {item.subtitle}
-                    </span>
+                    </Badge>
                   </div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
                     {item.description}
                   </p>
-                </div>
-                <span
-                  className={`mt-1 h-4 w-4 shrink-0 rounded-full border-2 ${
-                    selected
-                      ? "border-indigo-600 bg-indigo-600 dark:border-indigo-400 dark:bg-indigo-400"
-                      : "border-slate-300 dark:border-[#454e5e]"
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-6 border-t border-slate-100 pt-5 dark:border-[#363d4a]">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-            <Camera className="h-4 w-4 text-slate-500" />
-            Camera Perspective
+                </button>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-3 gap-2.5">
-            {CAMERA_VIEWS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => onSelectView(v.id)}
-                className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
-                  config.view === v.id
-                    ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-300"
-                }`}
-              >
-                {v.shortLabel}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-        <div className="mb-4 flex items-center gap-2.5">
-          <Palette className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              Colors &amp; Canvas Background
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Start with a preset or customize each armor and glow color.
-            </p>
-          </div>
-        </div>
+          <Separator />
 
-        <div className="grid grid-cols-2 gap-3">
-          {THEME_PRESETS.map((preset) => {
-            const active =
-              config.colorMode === "canonical" && config.themeId === preset.id;
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => onApplyPreset(preset.id)}
-                className={`flex flex-col rounded-xl border p-3.5 text-left transition ${
-                  active
-                    ? "border-indigo-600 bg-indigo-50/70 ring-1 ring-indigo-600 dark:border-indigo-400 dark:bg-[#272c36] dark:ring-indigo-400"
-                    : "border-slate-200 bg-white hover:border-slate-300 dark:border-[#363d4a] dark:bg-[#1e222a]"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-4 w-4 rounded-full border border-slate-300"
-                    style={{ backgroundColor: preset.colors.primary }}
-                  />
-                  <span
-                    className="h-4 w-4 rounded-full border border-slate-300"
-                    style={{ backgroundColor: preset.colors.accent }}
-                  />
-                  <span
-                    className="h-4 w-4 rounded-full border border-slate-300"
-                    style={{ backgroundColor: preset.colors.energy }}
-                  />
-                </div>
-                <span className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {preset.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {(
-            [
-              { key: "primary", label: "Primary Armor" },
-              { key: "accent", label: "Wing & Tip Accent" },
-              { key: "energy", label: "Energy Glow" },
-            ] as const
-          ).map((item) => (
-            <label
-              key={item.key}
-              className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 dark:border-[#363d4a] dark:bg-[#272c36]"
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-1.5 font-mono text-xs font-medium text-foreground">
+              <Camera className="size-3.5 text-muted-foreground" />
+              Camera Perspective
+            </div>
+            <ToggleGroup
+              value={[config.view]}
+              onValueChange={(vals) => {
+                const v = vals[0] as CameraView | undefined;
+                if (v) onSelectView(v);
+              }}
+              variant="outline"
+              className="grid w-full grid-cols-3"
             >
-              <div>
-                <div className="text-xs font-medium text-slate-700 dark:text-slate-200">
-                  {item.label}
-                </div>
-                <div className="font-mono text-xs text-slate-500 dark:text-slate-400">
-                  {config.colors[item.key]}
-                </div>
-              </div>
-              <input
-                type="color"
-                value={normalizeHex(config.colors[item.key])}
-                onChange={(e) => onUpdateColor(item.key, e.target.value)}
-                className="h-8 w-8 cursor-pointer rounded-md border border-slate-300 bg-transparent"
-              />
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-4">
-          <div className="mb-2 text-xs font-medium text-slate-600 dark:text-slate-400">
-            SVG Background
+              {CAMERA_VIEWS.map((v) => (
+                <ToggleGroupItem key={v.id} value={v.id} className="font-mono text-xs">
+                  {v.shortLabel}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Palette className="size-4 text-primary" />
+            <CardTitle className="font-mono">Colors &amp; Canvas Background</CardTitle>
+          </div>
+          <CardDescription>
+            Choose a curated pixel palette or customize individual channels.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-2.5">
+            {THEME_PRESETS.map((preset) => {
+              const active =
+                config.colorMode === "canonical" && config.themeId === preset.id;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => onApplyPreset(preset.id)}
+                  className={`flex flex-col gap-2 rounded-lg border p-3 text-left transition ${
+                    active
+                      ? "border-primary bg-accent/60 ring-1 ring-primary"
+                      : "bg-muted/40 hover:bg-muted"
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="size-3.5 rounded-full border"
+                      style={{ backgroundColor: preset.colors.primary }}
+                    />
+                    <span
+                      className="size-3.5 rounded-full border"
+                      style={{ backgroundColor: preset.colors.accent }}
+                    />
+                    <span
+                      className="size-3.5 rounded-full border"
+                      style={{ backgroundColor: preset.colors.energy }}
+                    />
+                  </div>
+                  <span className="font-mono text-xs font-semibold text-foreground">
+                    {preset.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
             {(
               [
-                { id: "transparent", label: "Transparent" },
-                { id: "black", label: "Black" },
-                { id: "github-dark", label: "GitHub Dark" },
-                { id: "custom", label: "Custom" },
+                { key: "primary", label: "Body Armor" },
+                { key: "accent", label: "Crest Accent" },
+                { key: "energy", label: "Glow Stripe" },
               ] as const
-            ).map((bg) => (
-              <button
-                key={bg.id}
-                type="button"
-                onClick={() => onSetBackgroundMode(bg.id)}
-                className={`rounded-lg border px-2 py-2 text-xs font-medium transition ${
-                  config.backgroundMode === bg.id
-                    ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-300"
-                }`}
+            ).map((item) => (
+              <label
+                key={item.key}
+                className="flex cursor-pointer items-center justify-between rounded-lg border bg-muted/40 px-3 py-2"
               >
-                {bg.label}
-              </button>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-foreground">
+                    {item.label}
+                  </span>
+                  <span className="font-mono text-[11px] text-muted-foreground">
+                    {config.colors[item.key]}
+                  </span>
+                </div>
+                <input
+                  type="color"
+                  value={normalizeHex(config.colors[item.key])}
+                  onChange={(e) => onUpdateColor(item.key, e.target.value)}
+                  className="size-7 cursor-pointer rounded border bg-transparent"
+                />
+              </label>
             ))}
           </div>
-          {config.backgroundMode === "custom" && (
-            <div className="mt-3 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 dark:border-[#363d4a] dark:bg-[#272c36]">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                Custom Background Hex
-              </span>
-              <input
-                type="color"
-                value={customBgHex}
-                onChange={(e) => onUpdateCustomBg(e.target.value)}
-                className="h-7 w-10 cursor-pointer rounded border border-slate-300 bg-transparent"
-              />
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-        <div className="mb-4 flex items-center gap-2.5">
-          <Sliders className="h-5 w-5 text-slate-700 dark:text-slate-300" />
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-              Evolution Stage, Motion &amp; HUD
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Preview growth stages, swim speed, and bottom telemetry text.
-            </p>
+          <div className="flex flex-col gap-2">
+            <span className="font-mono text-xs font-medium text-muted-foreground">
+              Canvas Background
+            </span>
+            <ToggleGroup
+              value={[config.backgroundMode]}
+              onValueChange={(vals) => {
+                const mode = vals[0] as BackgroundMode | undefined;
+                if (mode) onSetBackgroundMode(mode);
+              }}
+              variant="outline"
+              className="grid w-full grid-cols-4"
+            >
+              <ToggleGroupItem value="transparent" className="text-xs">
+                Transparent
+              </ToggleGroupItem>
+              <ToggleGroupItem value="black" className="text-xs">
+                Black
+              </ToggleGroupItem>
+              <ToggleGroupItem value="github-dark" className="text-xs">
+                GitHub
+              </ToggleGroupItem>
+              <ToggleGroupItem value="custom" className="text-xs">
+                Custom
+              </ToggleGroupItem>
+            </ToggleGroup>
+
+            {config.backgroundMode === "custom" && (
+              <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
+                <span className="font-mono text-xs text-muted-foreground">
+                  Custom Background Hex
+                </span>
+                <input
+                  type="color"
+                  value={customBgHex}
+                  onChange={(e) => onUpdateCustomBg(e.target.value)}
+                  className="h-7 w-10 cursor-pointer rounded border bg-transparent"
+                />
+              </div>
+            )}
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="space-y-4">
-          <div>
-            <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
-              <span>Evolution Stage Preview</span>
-              <span className="font-mono text-slate-500">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Sliders className="size-4 text-primary" />
+            <CardTitle className="font-mono">
+              Stage, Swimming Speed &amp; HUD
+            </CardTitle>
+          </div>
+          <CardDescription>
+            Preview anatomical growth and adjust swim tempo.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between font-mono text-xs">
+              <span className="font-medium text-foreground">Evolution Stage</span>
+              <span className="text-muted-foreground">
                 Stage {evolution.stage}: {evolution.rank} ({evolution.rangeLabel})
               </span>
             </div>
-            <div className="grid grid-cols-5 gap-2">
+            <ToggleGroup
+              value={[String(evolution.stage)]}
+              onValueChange={(vals) => {
+                const v = Number(vals[0]);
+                const target = STAGE_DEFINITIONS.find((s) => s.stage === v);
+                if (target) {
+                  onUpdateConfig((prev) => ({
+                    ...prev,
+                    commits: target.sampleCommits,
+                  }));
+                }
+              }}
+              variant="outline"
+              className="grid w-full grid-cols-5"
+            >
               {STAGE_DEFINITIONS.map((st) => (
-                <button
+                <ToggleGroupItem
                   key={st.stage}
-                  type="button"
-                  onClick={() =>
+                  value={String(st.stage)}
+                  className="font-mono text-xs"
+                >
+                  S{st.stage}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <FieldGroup>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field>
+                <div className="flex items-center justify-between font-mono text-xs">
+                  <FieldLabel>Swim Tempo</FieldLabel>
+                  <span>{config.animationSpeed.toFixed(1)}x</span>
+                </div>
+                <Slider
+                  min={0.5}
+                  max={2.5}
+                  step={0.1}
+                  value={[config.animationSpeed]}
+                  onValueChange={(vals) => {
+                    const nextVal = Array.isArray(vals) ? vals[0] : vals;
                     onUpdateConfig((prev) => ({
                       ...prev,
-                      commits: st.sampleCommits,
+                      animationSpeed: Number(nextVal ?? 1),
+                    }));
+                  }}
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel htmlFor="commits-preview-input" className="font-mono text-xs">
+                  Commits Preview
+                </FieldLabel>
+                <Input
+                  id="commits-preview-input"
+                  type="number"
+                  min={0}
+                  max={999999}
+                  value={config.commits}
+                  onChange={(e) =>
+                    onUpdateConfig((prev) => ({
+                      ...prev,
+                      commits: Math.max(0, parseInt(e.target.value || "0", 10)),
                     }))
                   }
-                  className={`rounded-lg border py-2 text-xs font-semibold transition ${
-                    evolution.stage === st.stage
-                      ? "border-indigo-600 bg-indigo-600 text-white dark:border-indigo-400 dark:bg-indigo-500 dark:text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-300"
-                  }`}
-                >
-                  Stage {st.stage}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <div className="mb-1.5 flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
-                <label htmlFor="speed-input">Animation Speed</label>
-                <span className="font-mono">{config.animationSpeed.toFixed(1)}x</span>
-              </div>
-              <input
-                id="speed-input"
-                type="range"
-                min={0.5}
-                max={2.5}
-                step={0.1}
-                value={config.animationSpeed}
-                onChange={(e) =>
-                  onUpdateConfig((prev) => ({
-                    ...prev,
-                    animationSpeed: parseFloat(e.target.value),
-                  }))
-                }
-                className="w-full cursor-pointer accent-slate-900 dark:accent-indigo-400"
-              />
+                  className="font-mono"
+                />
+              </Field>
             </div>
 
-            <div>
-              <label
-                htmlFor="commits-preview-input"
-                className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300"
-              >
-                Commits Counter Preview
-              </label>
-              <input
-                id="commits-preview-input"
-                type="number"
-                min={0}
-                max={999999}
-                value={config.commits}
-                onChange={(e) =>
-                  onUpdateConfig((prev) => ({
-                    ...prev,
-                    commits: Math.max(0, parseInt(e.target.value || "0", 10)),
-                  }))
-                }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-[#363d4a] dark:bg-[#272c36]">
-            <div>
-              <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                Show Bottom HUD Bar
-              </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">
-                Displays stage, custom title, and commit count inside the SVG
-              </div>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={config.showHud}
-              onClick={() =>
-                onUpdateConfig((prev) => ({ ...prev, showHud: !prev.showHud }))
-              }
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition ${
-                config.showHud
-                  ? "bg-indigo-600 dark:bg-indigo-500"
-                  : "bg-slate-300 dark:bg-[#454e5e]"
-              }`}
+            <Field
+              orientation="horizontal"
+              className="justify-between rounded-lg border bg-muted/40 p-3.5"
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                  config.showHud ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-
-          {config.showHud && (
-            <div>
-              <label
-                htmlFor="hud-title-input"
-                className="mb-1.5 block text-xs font-medium text-slate-700 dark:text-slate-300"
-              >
-                Custom SVG HUD Title
-              </label>
-              <input
-                id="hud-title-input"
-                type="text"
-                maxLength={42}
-                placeholder={`${evolution.rank} ${meta.name.toUpperCase()}`}
-                value={config.customTitle}
-                onChange={(e) =>
-                  onUpdateConfig((prev) => ({
-                    ...prev,
-                    customTitle: e.target.value,
-                  }))
+              <div className="flex flex-col gap-0.5">
+                <FieldLabel htmlFor="hud-toggle" className="font-mono text-xs">
+                  Pixel Telemetry HUD
+                </FieldLabel>
+                <FieldDescription className="text-xs">
+                  Renders pixel bitmap stage, commits &amp; languages at bottom left
+                </FieldDescription>
+              </div>
+              <Switch
+                id="hud-toggle"
+                checked={config.showHud}
+                onCheckedChange={(checked) =>
+                  onUpdateConfig((prev) => ({ ...prev, showHud: Boolean(checked) }))
                 }
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-slate-900 focus:bg-white focus:outline-none dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100"
               />
-            </div>
-          )}
-        </div>
-      </div>
+            </Field>
 
-      <button
-        type="button"
-        onClick={onNextStep}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400"
-      >
+            {config.showHud && (
+              <Field>
+                <FieldLabel htmlFor="hud-title-input" className="font-mono text-xs">
+                  Custom HUD Label
+                </FieldLabel>
+                <Input
+                  id="hud-title-input"
+                  maxLength={32}
+                  placeholder={`${evolution.rank} ${meta.id.toUpperCase()}`}
+                  value={config.customTitle}
+                  onChange={(e) =>
+                    onUpdateConfig((prev) => ({
+                      ...prev,
+                      customTitle: e.target.value,
+                    }))
+                  }
+                  className="font-mono"
+                />
+              </Field>
+            )}
+          </FieldGroup>
+        </CardContent>
+      </Card>
+
+      <Button type="button" size="lg" onClick={onNextStep} className="w-full">
         Next: Customize Profile README
-        <ArrowRight className="h-4 w-4" />
-      </button>
+        <ArrowRight data-icon="inline-end" />
+      </Button>
     </div>
   );
 }

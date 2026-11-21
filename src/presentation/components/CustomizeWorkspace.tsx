@@ -11,6 +11,9 @@ import type {
 } from "@/domain/creature/entities";
 import type { ReadmeConfig } from "@/domain/profile/entities";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreatureStepPanel } from "./CreatureStepPanel";
 import { PreviewWorkspace } from "./PreviewWorkspace";
 import { ProfileReadmeStepPanel } from "./ProfileReadmeStepPanel";
@@ -74,57 +77,44 @@ export function CustomizeWorkspace({
   const [activeTab, setActiveTab] = useState<CustomizeTab>("creature");
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a]">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("creature")}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-              activeTab === "creature"
-                ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-500"
-                : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
-            }`}
+    <div className="flex flex-col gap-6">
+      <Card>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => setActiveTab(val as CustomizeTab)}
           >
-            <Cpu className="h-4 w-4" />
-            <span>1. Creature &amp; Style</span>
-          </button>
+            <TabsList>
+              <TabsTrigger value="creature" className="gap-2 font-mono text-xs">
+                <Cpu className="size-3.5" />
+                1. Creature &amp; Style
+              </TabsTrigger>
+              <TabsTrigger value="readme" className="gap-2 font-mono text-xs">
+                <FileText className="size-3.5" />
+                2. README Text &amp; Stack
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab("readme")}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-              activeTab === "readme"
-                ? "bg-indigo-600 text-white shadow-sm dark:bg-indigo-500"
-                : "border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            <span>2. README Text &amp; Stack</span>
-          </button>
-        </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onBackToRepoGuide}
+            >
+              <ArrowLeft data-icon="inline-start" />
+              Repo Guide
+            </Button>
+            <Button type="button" size="sm" onClick={onNextToPublish}>
+              Next: Token &amp; Push
+              <ArrowRight data-icon="inline-end" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={onBackToRepoGuide}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Repo Instructions
-          </button>
-          <button
-            type="button"
-            onClick={onNextToPublish}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-          >
-            <span>Next: Connect Token &amp; Push</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid items-start gap-7 lg:grid-cols-12">
+      <div className="grid items-start gap-6 lg:grid-cols-12">
         <div className="lg:col-span-5">
           {activeTab === "creature" ? (
             <CreatureStepPanel
@@ -154,7 +144,7 @@ export function CustomizeWorkspace({
           )}
         </div>
 
-        <div className="lg:sticky lg:top-24 lg:col-span-7">
+        <div className="lg:sticky lg:top-20 lg:col-span-7">
           <PreviewWorkspace
             creatureConfig={creatureConfig}
             readmeConfig={readmeConfig}

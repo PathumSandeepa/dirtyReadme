@@ -1,8 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Cpu, Moon, RotateCcw, Sun } from "lucide-react";
+import {
+  ArrowRight,
+  Cpu,
+  FolderGit2,
+  Moon,
+  RotateCcw,
+  Sun,
+} from "lucide-react";
 import { useStudioController } from "@/application/useStudioController";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { AutoEvolveDialog } from "./components/AutoEvolveDialog";
 import { CustomizeWorkspace } from "./components/CustomizeWorkspace";
 import { RepoSetupScreen } from "./components/RepoSetupScreen";
@@ -16,7 +25,7 @@ export function StudioApp() {
   const controller = useStudioController();
   const [screen, setScreen] = useState<AppScreen>("showcase");
   const [autoEvolveOpen, setAutoEvolveOpen] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -38,72 +47,68 @@ export function StudioApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 transition-colors dark:bg-[#14171c] dark:text-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-[#363d4a] dark:bg-[#1b1f26]/95">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur">
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
           <button
             type="button"
             onClick={() => setScreen("showcase")}
-            className="flex items-center gap-3 text-left"
+            className="flex items-center gap-2.5 text-left"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white dark:bg-indigo-500">
-              <Cpu className="h-5 w-5" />
+            <div className="flex size-8 items-center justify-center rounded-md border bg-muted text-foreground">
+              <Cpu className="size-4" />
             </div>
-            <div>
-              <span className="block text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-                Dynamic Cybernetic Creature Studio
-              </span>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {screen === "showcase"
-                  ? "Animated SVG creatures & customizable GitHub profile README"
-                  : `Configuring profile for @${controller.creatureConfig.username}`}
-              </p>
-            </div>
+            <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
+              dynamic-creature
+            </span>
           </button>
 
-          <div className="flex items-center gap-2.5">
-            <button
+          <div className="flex items-center gap-2">
+            {screen !== "showcase" && (
+              <span className="hidden rounded-md border bg-muted px-2.5 py-1 font-mono text-xs text-muted-foreground sm:inline-block">
+                @{controller.creatureConfig.username}
+              </span>
+            )}
+
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setIsDark((prev) => !prev)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
             >
               {isDark ? (
-                <>
-                  <Sun className="h-4 w-4 text-amber-400" />
-                  <span>Light Mode</span>
-                </>
+                <Sun data-icon="inline-start" />
               ) : (
-                <>
-                  <Moon className="h-4 w-4 text-indigo-600" />
-                  <span>Dark Mode</span>
-                </>
+                <Moon data-icon="inline-start" />
               )}
-            </button>
+              {isDark ? "Light" : "Dark"}
+            </Button>
 
             {screen === "showcase" ? (
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => setScreen("username")}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
               >
-                <span>Add Profile</span>
-                <ArrowRight className="h-3.5 w-3.5" />
-              </button>
+                Add Profile
+                <ArrowRight data-icon="inline-end" />
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={handleReset}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw data-icon="inline-start" />
                 Start Over
-              </button>
+              </Button>
             )}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px] px-5 py-6 sm:px-8">
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-5 py-6 sm:px-8">
         {screen === "showcase" && (
           <ShowcaseGalleryView
             creatureConfig={controller.creatureConfig}
@@ -171,6 +176,52 @@ export function StudioApp() {
           />
         )}
       </main>
+
+      <Separator />
+
+      <footer className="bg-card/60">
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+          <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+            <Cpu className="size-3.5 text-foreground" />
+            <span>
+              <strong className="font-semibold text-foreground">
+                dynamic-creature
+              </strong>{" "}
+              by PathumSandeepa · Pure-CSS animated SVG &amp; WebP GitHub profile builder.
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <a
+                  href="https://github.com/PathumSandeepa/dynamic-readme-creature"
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+            >
+              <FolderGit2 data-icon="inline-start" />
+              repository
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              render={
+                <a
+                  href="https://github.com/PathumSandeepa"
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+            >
+              github.com/PathumSandeepa
+            </Button>
+          </div>
+        </div>
+      </footer>
 
       <AutoEvolveDialog
         open={autoEvolveOpen}

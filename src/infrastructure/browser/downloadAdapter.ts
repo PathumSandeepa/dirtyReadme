@@ -1,9 +1,4 @@
-export function downloadTextFile(
-  filename: string,
-  content: string,
-  mimeType = "image/svg+xml;charset=utf-8"
-): void {
-  const blob = new Blob([content], { type: mimeType });
+export function downloadBlobFile(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -12,6 +7,15 @@ export function downloadTextFile(
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+export function downloadTextFile(
+  filename: string,
+  content: string,
+  mimeType = "image/svg+xml;charset=utf-8"
+): void {
+  const blob = new Blob([content], { type: mimeType });
+  downloadBlobFile(filename, blob);
 }
 
 export async function copyToClipboard(text: string): Promise<void> {

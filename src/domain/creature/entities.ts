@@ -1,4 +1,4 @@
-export type CreatureId = "tulkun" | "serpent" | "manta" | "jellyfish";
+export type CreatureId = "tulkun" | "jellyfish";
 
 export type CameraView = "side" | "dive" | "top";
 
@@ -9,11 +9,11 @@ export type ColorMode = "canonical" | "languages" | "custom";
 export type BackgroundMode = "transparent" | "black" | "github-dark" | "custom";
 
 export type ThemePresetId =
+  | "ocean-slate"
+  | "biolume-azure"
   | "mecha-prototype"
-  | "stealth-carbon"
-  | "crimson-mecha"
-  | "solar-gold"
   | "cobalt-indigo"
+  | "sunset-coral"
   | "custom";
 
 export interface LanguageStat {
@@ -100,173 +100,150 @@ export interface DerivedPalette {
 export const CREATURE_CATALOG: CreatureMeta[] = [
   {
     id: "tulkun",
-    name: "Cyber-Tulkun",
+    name: "Pixel Tulkun",
     subtitle: "Armored Leviathan",
-    designation: "UNIT-01 // CETACEA-MK4",
+    designation: "UNIT-01 // TULKUN",
     description:
-      "Rounded whale-leviathan chassis with sensor optics, contoured dorsal armor, feathered wings, and trailing fiber-optic cables.",
-    defaultTitle: "APEX CYBER-TULKUN",
-  },
-  {
-    id: "serpent",
-    name: "Cyber-Serpent",
-    subtitle: "Mecha Sky-Dragon",
-    designation: "UNIT-02 // OROCHI-V7",
-    description:
-      "Undulating sky-dragon with optical visor crest, spine-mounted mechanical feathers, and sweeping tail ribbons.",
-    defaultTitle: "SKY-DRAGON SERPENT",
-  },
-  {
-    id: "manta",
-    name: "Cyber-Manta",
-    subtitle: "Aether Ray",
-    designation: "UNIT-03 // MOBULA-X9",
-    description:
-      "Aerodynamic gliding manta frame with wide articulated feathered wings, forward sensor prongs, and dual cyber-tendrils.",
-    defaultTitle: "AETHER CYBER-MANTA",
+      "Crisp left-swimming pixel leviathan with dithered throat pleats, golden brow armor, long sweeping pectoral wings, and forked tail fluke.",
+    defaultTitle: "MATURE TULKUN",
   },
   {
     id: "jellyfish",
-    name: "Cyber-Jellyfish",
-    subtitle: "Pelagic Biolume",
-    designation: "UNIT-04 // MEDUSA-BIO",
+    name: "Pixel Jellyfish",
+    subtitle: "Bioluminescent Medusa",
+    designation: "UNIT-02 // MEDUSA",
     description:
-      "Bioluminescent drifting jellyfish with gently rippling currents, glowing bell telemetry, and trailing tentacles.",
-    defaultTitle: "PELAGIC BIO-MEDUSA",
+      "Left-facing pixel-art jellyfish on a transparent background with a pulsing translucent bell, undulating frill ribbons, and waving tentacles.",
+    defaultTitle: "PELAGIC JELLYFISH",
   },
 ];
 
 export const CAMERA_VIEWS: CameraViewMeta[] = [
   {
     id: "side",
-    name: "Lateral Side Glide",
+    name: "Lateral Swim",
     shortLabel: "Side",
     description:
-      "Classic lateral profile showcasing modular head armor, articulated pectoral wings, dorsal feather crest, and trailing tail cables.",
+      "Classic left-facing swimming profile showcasing full silhouette, fins or tentacles, and fluid stroke cycle.",
   },
   {
     id: "dive",
-    name: "3/4 Dynamic Dive",
+    name: "Angled Dive",
     shortLabel: "Dive",
     description:
-      "Angled pitch-down diving perspective highlighting arched dorsal carapace, sweeping foreground wing, and kinetic flow.",
+      "Dynamic angled glide perspective highlighting downward sweep motion and depth contrast.",
   },
   {
     id: "top",
-    name: "Dorsal Top-Down",
+    name: "Panoramic Drift",
     shortLabel: "Top",
     description:
-      "Full symmetric wingspan view revealing twin feathered wings, spinal armor plates, pelvic stabilizer fins, and splayed tail arrays.",
+      "Wide balanced drift angle emphasizing wingspan, bell rim, or full trailing wave array.",
   },
 ];
 
 export const STAGE_DEFINITIONS: StageDefinition[] = [
   {
     stage: 1,
-    rank: "PROTOTYPE",
-    shortCode: "1.PRTO",
+    rank: "CALF",
+    shortCode: "1.CALF",
     minCommits: 0,
     rangeLabel: "0 - 149",
     sampleCommits: 64,
-    unlocks:
-      "Compact juvenile frame, short spine plating, blunt optic sensor dome, and 4 starter wing feathers.",
+    unlocks: "Compact starter body silhouette, gentle swim glide, and starter fin/tentacle cluster.",
   },
   {
     stage: 2,
-    rank: "RECON",
-    shortCode: "2.RCON",
+    rank: "YOUNG",
+    shortCode: "2.YUNG",
     minCommits: 150,
     rangeLabel: "150 - 499",
     sampleCommits: 320,
-    unlocks:
-      "Lengthened chassis, cranial neural whips sprout behind the brow, active energy conduits, and 5 wing feathers.",
+    unlocks: "Extended body length, secondary trailing fins/ribbons, and active telemetry nodes.",
   },
   {
     stage: 3,
-    rank: "ARMORED",
-    shortCode: "3.ARMR",
+    rank: "SUB-ADULT",
+    shortCode: "3.SUBA",
     minCommits: 500,
     rangeLabel: "500 - 1,199",
     sampleCommits: 840,
-    unlocks:
-      "Dorsal feather crest unfolds, secondary ventral stabilizer paddles emerge, and 6 elongated pectoral feathers.",
+    unlocks: "Full lateral glow striping, stronger pectoral sweep, and denser pixel highlight detail.",
   },
   {
     stage: 4,
-    rank: "APEX",
-    shortCode: "4.APEX",
+    rank: "MATURE",
+    shortCode: "4.MATR",
     minCommits: 1200,
     rangeLabel: "1,200 - 2,499",
-    sampleCommits: 1680,
-    unlocks:
-      "Heavy segmented carapace armor, full gyro-optic ear assembly, 8 articulated wing feathers, and full tail cable array.",
+    sampleCommits: 1990,
+    unlocks: "Signature armored crest or full frill halo with maximum articulated tail and tentacle sweep.",
   },
   {
     stage: 5,
-    rank: "ASCENDED",
-    shortCode: "5.ASCD",
+    rank: "ELDER",
+    shortCode: "5.ELDR",
     minCommits: 2500,
     rangeLabel: "2,500+",
     sampleCommits: 2940,
-    unlocks:
-      "Maximum leviathan wingspan, glowing apex energy battle-scars, crown halo crest, and overcharged emitter filaments.",
+    unlocks: "Elder colossus scale, radiant energy crests, and overcharged bioluminescent filaments.",
   },
 ];
 
 export const THEME_PRESETS: ThemePreset[] = [
   {
-    id: "mecha-prototype",
-    name: "Mecha Prototype",
-    tagline: "75% Matte White / Safety Orange / Cyber Green",
+    id: "ocean-slate",
+    name: "Ocean Tulkun",
+    tagline: "Slate Navy / Gold Crest / Sky Stripe",
     colors: {
-      primary: "#F4F6F8",
+      primary: "#36506B",
+      accent: "#E4AE5B",
+      energy: "#4E9AE6",
+      frame: "#1F2E3E",
+    },
+  },
+  {
+    id: "biolume-azure",
+    name: "Biolume Azure",
+    tagline: "Ice Cyan / Sky Blue / Deep Cobalt",
+    colors: {
+      primary: "#4399F2",
+      accent: "#9AE6FF",
+      energy: "#1E5DC8",
+      frame: "#122C66",
+    },
+  },
+  {
+    id: "mecha-prototype",
+    name: "Mecha White",
+    tagline: "Matte White / Safety Orange / Cyber Green",
+    colors: {
+      primary: "#ECEFF4",
       accent: "#FF6B00",
       energy: "#00E676",
       frame: "#1F242D",
     },
   },
   {
-    id: "stealth-carbon",
-    name: "Stealth Carbon / Cyan",
-    tagline: "Gunmetal Slate / Electric Cyan / Mint Core",
-    colors: {
-      primary: "#2C3545",
-      accent: "#00D2FF",
-      energy: "#00FFA3",
-      frame: "#11161F",
-    },
-  },
-  {
-    id: "crimson-mecha",
-    name: "Crimson Mecha",
-    tagline: "Pearl Titanium / Crimson Red / Amber Plasma",
-    colors: {
-      primary: "#ECE7EB",
-      accent: "#FF1E42",
-      energy: "#FFAB00",
-      frame: "#1E1720",
-    },
-  },
-  {
-    id: "solar-gold",
-    name: "Solar Gold",
-    tagline: "Warm Ceramic / Solar Gold / Ion Cyan",
-    colors: {
-      primary: "#F5EFE4",
-      accent: "#FFB300",
-      energy: "#00E5FF",
-      frame: "#231F1A",
-    },
-  },
-  {
     id: "cobalt-indigo",
-    name: "Nordic Indigo",
-    tagline: "Arctic White / Cobalt Indigo / Mint",
+    name: "Pastel Indigo",
+    tagline: "Periwinkle / Mint / Coral",
     colors: {
-      primary: "#EEF2FF",
-      accent: "#4F46E5",
-      energy: "#10B981",
-      frame: "#1E293B",
+      primary: "#5B65D8",
+      accent: "#F89B79",
+      energy: "#8BE0C8",
+      frame: "#262A40",
+    },
+  },
+  {
+    id: "sunset-coral",
+    name: "Orchid Coral",
+    tagline: "Violet Pearl / Coral Pink / Aqua",
+    colors: {
+      primary: "#7E57C2",
+      accent: "#FF8A65",
+      energy: "#80CBC4",
+      frame: "#241D35",
     },
   },
 ];
@@ -282,7 +259,7 @@ export const DEFAULT_CREATURE_CONFIG: CreatureConfig = {
   view: "side",
   windowMode: "annual",
   colorMode: "canonical",
-  themeId: "mecha-prototype",
+  themeId: "ocean-slate",
   colors: {
     ...THEME_PRESETS[0].colors,
     background: "transparent",
@@ -291,7 +268,7 @@ export const DEFAULT_CREATURE_CONFIG: CreatureConfig = {
   animationSpeed: 1.0,
   showHud: true,
   customTitle: "",
-  commits: 1680,
+  commits: 1990,
   username: "your-username",
   languages: DEFAULT_LANGUAGES,
 };

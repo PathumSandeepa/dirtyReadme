@@ -1,8 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Cpu, RefreshCw, ShieldCheck } from "lucide-react";
 import { parseGitHubUsername } from "@/infrastructure/github/githubClient";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 
 interface UsernameEntryScreenProps {
   initialInput: string;
@@ -28,7 +44,7 @@ export function UsernameEntryScreen({
     event.preventDefault();
     if (!parsedPreview) {
       setValidationError(
-        "Please enter your GitHub username or profile URL (for example: octocat or https://github.com/octocat)."
+        "Enter a GitHub username or URL such as octocat or https://github.com/octocat."
       );
       return;
     }
@@ -37,83 +53,84 @@ export function UsernameEntryScreen({
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-140px)] items-center justify-center px-4 py-10">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-[#363d4a] dark:bg-[#1e222a] sm:p-10"
-      >
-        <div className="space-y-2 text-center">
-          <span className="inline-block rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
-            Step 1 of 4
-          </span>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            Add GitHub Username or Profile URL
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            Enter your GitHub handle or profile link to load a clean template for your
-            account.
-          </p>
-        </div>
+    <div className="flex min-h-[calc(100vh-170px)] items-center justify-center px-4 py-10">
+      <form onSubmit={handleSubmit} className="w-full max-w-md">
+        <Card>
+          <CardHeader className="items-center text-center">
+            <div className="mb-1 flex size-10 items-center justify-center rounded-lg border bg-muted text-foreground">
+              <Cpu className="size-5" />
+            </div>
+            <CardTitle className="font-mono text-lg">
+              Add GitHub Username or URL
+            </CardTitle>
+            <CardDescription>
+              Loads public language stats and commit activity into a fresh template.
+            </CardDescription>
+          </CardHeader>
 
-        <div className="mt-7 space-y-3">
-          <input
-            type="text"
-            autoFocus
-            value={inputValue}
-            onChange={(e) => {
-              setInputValue(e.target.value);
-              if (validationError) setValidationError(null);
-            }}
-            placeholder="octocat or https://github.com/octocat"
-            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3.5 text-center text-base text-slate-900 outline-none transition focus:border-indigo-600 focus:bg-white focus:ring-2 focus:ring-indigo-600/15 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-indigo-400"
-          />
+          <CardContent>
+            <FieldGroup>
+              <Field data-invalid={validationError ? true : undefined}>
+                <FieldLabel htmlFor="github-username-input" className="font-mono text-xs">
+                  GitHub Username or Profile URL
+                </FieldLabel>
+                <Input
+                  id="github-username-input"
+                  autoFocus
+                  value={inputValue}
+                  aria-invalid={Boolean(validationError)}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (validationError) setValidationError(null);
+                  }}
+                  placeholder="octocat or https://github.com/octocat"
+                  className="text-center font-mono"
+                />
+                {parsedPreview && !validationError && (
+                  <FieldDescription className="text-center font-mono text-xs">
+                    Target repo: {parsedPreview}/{parsedPreview}
+                  </FieldDescription>
+                )}
+                {validationError && (
+                  <FieldDescription className="text-center text-xs text-destructive">
+                    {validationError}
+                  </FieldDescription>
+                )}
+              </Field>
+            </FieldGroup>
+          </CardContent>
 
-          {parsedPreview && (
-            <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-              Profile target:{" "}
-              <span className="font-mono font-semibold text-indigo-600 dark:text-indigo-300">
-                @{parsedPreview}
-              </span>{" "}
-              ({parsedPreview}/{parsedPreview})
-            </p>
-          )}
+          <CardFooter className="flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              disabled={loading}
+            >
+              <ArrowLeft data-icon="inline-start" />
+              Back
+            </Button>
 
-          {validationError && (
-            <p className="text-center text-xs font-medium text-rose-600 dark:text-rose-400">
-              {validationError}
-            </p>
-          )}
-        </div>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <RefreshCw data-icon="inline-start" className="animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  Next
+                  <ArrowRight data-icon="inline-end" />
+                </>
+              )}
+            </Button>
+          </CardFooter>
 
-        <div className="mt-8 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-[#363d4a] dark:bg-[#272c36] dark:text-slate-200 dark:hover:bg-[#2f3642]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60 dark:bg-indigo-500 dark:hover:bg-indigo-400"
-          >
-            {loading ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Loading Profile...
-              </>
-            ) : (
-              <>
-                <span>Next</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </div>
+          <div className="flex items-center justify-center gap-1.5 border-t px-4 py-3 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-emerald-500" />
+            <span>100% browser-side. Read-only lookup via public GitHub API.</span>
+          </div>
+        </Card>
       </form>
     </div>
   );

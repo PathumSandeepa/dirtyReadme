@@ -125,31 +125,7 @@ writeSvg(
   generateSvgString({
     ...DEFAULT_CONFIG,
     creature: "tulkun",
-    commits: 1680,
-    username: "PathumSandeepa",
-  })
-);
-
-writeSvg(
-  "creature-serpent.svg",
-  generateSvgString({
-    ...DEFAULT_CONFIG,
-    creature: "serpent",
-    colors: { ...THEME_PRESETS[2].colors, background: "transparent" },
-    themeId: THEME_PRESETS[2].id,
-    commits: 1680,
-    username: "PathumSandeepa",
-  })
-);
-
-writeSvg(
-  "creature-manta.svg",
-  generateSvgString({
-    ...DEFAULT_CONFIG,
-    creature: "manta",
-    colors: { ...THEME_PRESETS[1].colors, background: "transparent" },
-    themeId: THEME_PRESETS[1].id,
-    commits: 1680,
+    commits: 1990,
     username: "PathumSandeepa",
   })
 );
@@ -159,9 +135,9 @@ writeSvg(
   generateSvgString({
     ...DEFAULT_CONFIG,
     creature: "jellyfish",
-    colors: { ...THEME_PRESETS[4].colors, background: "transparent" },
-    themeId: THEME_PRESETS[4].id,
-    commits: 1680,
+    colors: { ...THEME_PRESETS[1].colors, background: "transparent" },
+    themeId: THEME_PRESETS[1].id,
+    commits: 1990,
     username: "PathumSandeepa",
   })
 );
