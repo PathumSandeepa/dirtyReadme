@@ -246,21 +246,10 @@ export function buildMarkerSection(
   lines.push(`<p align="${readme.align}">`);
   lines.push(`  <a href="https://github.com/${safeUser}/${safeUser}">`);
   lines.push(
-    `    <img src="${imgSrc}" width="${readme.imageWidth}" alt="${meta.name} - Stage ${stage.stage} ${stage.rank}" />`
+    `    <img src="${imgSrc}" width="${readme.imageWidth}" alt="${meta.name} Stage ${stage.stage} ${stage.rank}" />`
   );
   lines.push(`  </a>`);
   lines.push(`</p>`);
-
-  if (readme.includeTelemetryCaption) {
-    const resolvedCaption = resolveDynamicTokens(
-      readme.telemetryCaptionTemplate,
-      creature
-    ).trim();
-    if (resolvedCaption) {
-      lines.push("");
-      lines.push(`<p align="${readme.align}"><sub>${resolvedCaption}</sub></p>`);
-    }
-  }
 
   if (readme.includeMarkers) {
     lines.push("<!-- CYBER-CREATURE:END -->");
@@ -286,6 +275,8 @@ export function buildStatsTableSection(
   const tableHeading =
     resolveDynamicTokens(readme.statsTableTitle, creature).trim() ||
     "Cybernetic Telemetry";
+  const periodLabel =
+    creature.windowMode === "all-time" ? "All Time" : "Current Year";
 
   const rows = [
     `### ${tableHeading}`,
@@ -293,8 +284,8 @@ export function buildStatsTableSection(
     `| Metric | Active Value |`,
     `| --- | --- |`,
     `| **Guardian Chassis** | ${meta.name} (\`${meta.designation}\`) |`,
-    `| **Evolution Stage** | Stage ${stage.stage} / 5 — **${stage.rank}** |`,
-    `| **Contributions (${creature.windowMode})** | \`${commitsText}\` commits |`,
+    `| **Evolution Stage** | Stage ${stage.stage} / 5 (**${stage.rank}**) |`,
+    `| **Contributions (${periodLabel})** | \`${commitsText}\` commits |`,
     `| **Camera Angle** | \`${viewLabel}\` |`,
     `| **Top Languages** | ${langList} |`,
   ];

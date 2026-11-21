@@ -11,6 +11,8 @@ import {
   type CreatureConfig,
   type CreatureId,
   type LanguageCount,
+  type LanguageStat,
+  type WaterMode,
 } from "@/domain/creature/entities";
 import {
   applyLanguageColors,
@@ -37,6 +39,7 @@ import {
   restoreOrganizedStackCards,
 } from "@/domain/profile/readmeService";
 import {
+  GITHUB_LANGUAGE_COLORS,
   type GitHubProfileSnapshot,
   fetchGitHubProfileSnapshot,
   getLanguageColor,
@@ -97,8 +100,8 @@ export function useStudioController() {
       ...prev,
       windowMode,
       commits: snapshot
-        ? windowMode === "rolling"
-          ? snapshot.rollingCommits
+        ? windowMode === "all-time"
+          ? snapshot.allTimeCommits
           : snapshot.annualCommits
         : prev.commits,
     }));
@@ -108,8 +111,42 @@ export function useStudioController() {
     setCreatureConfig((prev) => restoreOriginalCreatureColors(prev));
   }
 
+  function deriveStackLanguages(): LanguageStat[] | null {
+    const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
+    const derived: LanguageStat[] = [];
+    const seen = new Set<string>();
+    for (const card of readmeConfig.stackCards) {
+      for (const id of card.badgeIds) {
+        const b = badgeById.get(id);
+        if (!b || !b.label.trim()) continue;
+        const key = b.label.trim().toLowerCase();
+        if (seen.has(key)) continue;
+        const officialColor = GITHUB_LANGUAGE_COLORS[b.label.trim()];
+        if (b.category === "languages" || officialColor) {
+          seen.add(key);
+          derived.push({
+            name: b.label.trim(),
+            color: officialColor ?? `#${b.color.replace("#", "").slice(0, 6)}`,
+          });
+        }
+      }
+    }
+    return derived.length > 0 ? derived : null;
+  }
+
   function applyAutoLanguageColors() {
-    setCreatureConfig((prev) => applyLanguageColors(prev));
+    setCreatureConfig((prev) => {
+      if (!snapshot) {
+        const stackLangs = deriveStackLanguages();
+        if (stackLangs) {
+          return applyLanguageColors(
+            prev,
+            ensureLanguageSlots(stackLangs, prev.languageCount)
+          );
+        }
+      }
+      return applyLanguageColors(prev);
+    });
   }
 
   function setLanguageCount(count: LanguageCount) {
@@ -169,8 +206,8 @@ export function useStudioController() {
     });
   }
 
-  function setInWater(inWater: boolean) {
-    setCreatureConfig((prev) => ({ ...prev, inWater }));
+  function setWaterMode(waterMode: WaterMode) {
+    setCreatureConfig((prev) => ({ ...prev, waterMode }));
   }
 
   function setBackgroundMode(mode: BackgroundMode) {
@@ -365,8 +402,8 @@ export function useStudioController() {
       setSnapshot(snap);
       setCreatureConfig((prev) => {
         const nextCommits =
-          prev.windowMode === "rolling"
-            ? snap.rollingCommits
+          prev.windowMode === "all-time"
+            ? snap.allTimeCommits
             : snap.annualCommits;
         const nextLanguages = ensureLanguageSlots(
           snap.languages,
@@ -450,7 +487,7 @@ export function useStudioController() {
           profileLocation: snap.location || prev.profileLocation,
           profileCompany: snap.company || prev.profileCompany,
           profileWebsite: snap.website || `https://github.com/${snap.username}`,
-          headline: `${snap.displayName} | Software Engineer`,
+          headline: `${snap.displayName} | Occupation`,
           bio: snap.bio || DEFAULT_DUMMY_INTRO,
           actionLinks: nextLinks,
           stackCards: nextCards,
@@ -495,7 +532,7 @@ export function useStudioController() {
     updateLanguageColor,
     updateLanguageName,
     resetLanguageColors,
-    setInWater,
+    setWaterMode,
     setBackgroundMode,
     updateCustomBackground,
     updateReadmeField,

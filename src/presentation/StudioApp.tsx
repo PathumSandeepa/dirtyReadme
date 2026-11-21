@@ -144,13 +144,14 @@ export function StudioApp() {
             readmeMarkdown={controller.fullReadmeMarkdown}
             onSelectCreature={controller.selectCreature}
             onSelectView={controller.selectView}
+            onSelectWindow={controller.selectWindow}
             onApplyOriginalColors={controller.applyOriginalColors}
             onApplyAutoLanguageColors={controller.applyAutoLanguageColors}
             onSetLanguageCount={controller.setLanguageCount}
             onUpdateLanguageColor={controller.updateLanguageColor}
             onUpdateLanguageName={controller.updateLanguageName}
             onResetLanguageColors={controller.resetLanguageColors}
-            onSetInWater={controller.setInWater}
+            onSetWaterMode={controller.setWaterMode}
             onSetBackgroundMode={controller.setBackgroundMode}
             onUpdateCustomBg={controller.updateCustomBackground}
             onUpdateCreatureConfig={controller.setCreatureConfig}

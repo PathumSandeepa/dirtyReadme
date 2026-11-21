@@ -17,7 +17,7 @@ const SITE_URL = "https://pathumsandeepa.github.io/dynamic-readme-creature/";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title:
-    "Dynamic Cybernetic Creature Studio — Animated WebP/GIF & GitHub Profile README Generator",
+    "Dynamic Cybernetic Creature Studio | Animated WebP/GIF & GitHub Profile README Generator",
   description:
     "Create S-curve animated pixel creatures (Pixel Tulkun in Top/Side views and Bioluminescent Jellyfish) as Animated WebP or GIF, customize your GitHub profile README with multi-card drag-and-drop tech badges, and publish directly from your browser.",
   applicationName: "Dynamic Cybernetic Creature Studio",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "Dynamic Cybernetic Creature Studio",
     title:
-      "Dynamic Cybernetic Creature Studio — Animated WebP/GIF & GitHub Profile README Generator",
+      "Dynamic Cybernetic Creature Studio | Animated WebP/GIF & GitHub Profile README Generator",
     description:
       "Design an S-curve animated pixel creature and customizable GitHub profile README with drag-and-drop tech stack cards and 12:00 AM daily evolution.",
     images: [
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title:
-      "Dynamic Cybernetic Creature Studio — Animated GitHub README Generator",
+      "Dynamic Cybernetic Creature Studio | Animated GitHub README Generator",
     description:
       "Design S-curve animated WebP/GIF pixel creatures and publish a custom GitHub profile README directly from your browser.",
     images: ["showcase/share-card.png"],

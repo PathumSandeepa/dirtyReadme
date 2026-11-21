@@ -23,9 +23,10 @@ A sprite-based, **S-curve animated marine creature** and full **GitHub Profile R
 ## Features
 
 - **Real S-Curve Pixel Animation (WebP & GIF):** Smooth per-pixel spine undulation, pectoral fin sweeps, and anatomical jellyfish bell contractions rendered directly to `creature.webp` and `creature.gif` (no CSS animation dependencies).
-- **In Water or Clean Canvas:** Switch between an animated underwater ocean backdrop (light rays, drifting currents, rising pixel bubbles) or a clean transparent / custom-colored canvas.
-- **3, 5, or 7 Customizable Language Colors:** Choose `3`, `5`, or `7` top languages in the pixel HUD, customize any language color with the integrated color palette, and watch the colors reflect live onto your creature — or switch back to **Original Colors** anytime.
-- **Multi-Card Drag & Drop Tech Stack Builder:** Starts with 3 organized tech cards and **202+ verified skills & badges** across 11 categories, with one-click **Combine All** and single-click **Undo Combine**.
+- **In Water, Without Water, or Clear Canvas:** Switch between an animated underwater ocean backdrop (light rays, drifting currents, rising pixel bubbles), ambient wake motes without water, or a completely clear canvas with zero moving dots.
+- **Original Colors or Discrete 3, 5, or 7 Language Zones:** Keep original creature pixel artwork with automatically matched HUD swatches, or map `3`, `5`, or `7` customizable language colors directly onto distinct anatomical zones of the creature (no gradient wash).
+- **Commit-Driven Growth & Customizable Pixel HUD:** Automatically evolves across 5 clearly scaled stages (`0.46x` to `1.05x`) using **Current Year** or **All Time** GitHub contributions, with full HUD customization (`Pixel`, `Mono`, `Sans`, `Serif`, weight, size, color palette, and `Left`/`Center`/`Right` alignment).
+- **Multi-Card Drag & Drop Tech Stack Builder:** Starts with 3 organized tech cards and **202+ verified skills & badges** across 11 categories, with one-click **Combine All**, single-click **Undo Combine**, and real-time live README preview.
 - **Full Profile README Builder & Direct Push:** Customize your intro paragraph, role tags, CTA links, layout alignment, banner width, social share card, and optional **12:00 AM daily GitHub Action**.
 
 ---
@@ -52,11 +53,11 @@ A sprite-based, **S-curve animated marine creature** and full **GitHub Profile R
 
 | Stage | Contributions | Live Preview | Upgrades |
 | --- | :---: | :---: | --- |
-| **Stage 1 — Calf** | `0 – 149` | <img src="./public/showcase/stage-1.webp" width="260" alt="Stage 1 Calf" /> | Compact `0.74x` scale with smooth baseline S-curve glide. |
-| **Stage 2 — Young** | `150 – 499` | <img src="./public/showcase/stage-2.webp" width="260" alt="Stage 2 Young" /> | `0.82x` scale with starter bioluminescent wake motes. |
-| **Stage 3 — Sub-Adult** | `500 – 1,199` | <img src="./public/showcase/stage-3.webp" width="260" alt="Stage 3 Sub-Adult" /> | `0.90x` span with richer ambient wake stream. |
-| **Stage 4 — Mature** | `1,200 – 2,499` | <img src="./public/showcase/stage-4.webp" width="260" alt="Stage 4 Mature" /> | `0.98x` mature span with dense glowing particle trail. |
-| **Stage 5 — Elder** | `2,500+` | <img src="./public/showcase/stage-5.webp" width="260" alt="Stage 5 Elder" /> | Maximum `1.05x` span and overcharged wake stream. |
+| **Stage 1: Calf** | `0 to 149` | <img src="./public/showcase/stage-1.webp" width="260" alt="Stage 1 Calf" /> | Compact `0.46x` starter scale with smooth baseline S-curve glide. |
+| **Stage 2: Young** | `150 to 499` | <img src="./public/showcase/stage-2.webp" width="260" alt="Stage 2 Young" /> | `0.60x` scale with starter bioluminescent wake motes. |
+| **Stage 3: Sub-Adult** | `500 to 1,199` | <img src="./public/showcase/stage-3.webp" width="260" alt="Stage 3 Sub-Adult" /> | `0.74x` span with richer ambient wake stream. |
+| **Stage 4: Mature** | `1,200 to 2,499` | <img src="./public/showcase/stage-4.webp" width="260" alt="Stage 4 Mature" /> | `0.89x` mature span with dense glowing particle trail. |
+| **Stage 5: Elder** | `2,500+` | <img src="./public/showcase/stage-5.webp" width="260" alt="Stage 5 Elder" /> | Maximum `1.05x` colossus span and overcharged wake stream. |
 
 ---
 

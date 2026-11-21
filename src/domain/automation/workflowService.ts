@@ -1,5 +1,6 @@
 import {
   DEFAULT_LANGUAGES,
+  ORIGINAL_CREATURE_SWATCHES,
   type CreatureConfig,
 } from "@/domain/creature/entities";
 import { GLYPHS_5X7 } from "@/domain/creature/pixelArt";
@@ -26,8 +27,6 @@ export function generateCreatureConfigJson(
         imageWidth: readmeConfig.imageWidth,
         useOutputBranchUrl: readmeConfig.useOutputBranchUrl,
         includeMarkers: readmeConfig.includeMarkers,
-        includeTelemetryCaption: readmeConfig.includeTelemetryCaption,
-        telemetryCaptionTemplate: readmeConfig.telemetryCaptionTemplate,
         statsTableTitle: readmeConfig.statsTableTitle,
       },
     },
@@ -103,6 +102,7 @@ export function generateEvolveScriptMjs(
   const meta = getCreatureMeta(creatureConfig.creature);
   const glyphsJson = JSON.stringify(GLYPHS_5X7);
   const defaultLangsJson = JSON.stringify(DEFAULT_LANGUAGES);
+  const swatchesJson = JSON.stringify(ORIGINAL_CREATURE_SWATCHES);
 
   return `import fs from "node:fs";
 import path from "node:path";
@@ -114,7 +114,7 @@ const CANVAS_WIDTH = 920;
 const CANVAS_HEIGHT = 460;
 const BASE_LOOP_DURATION_MS = 2800;
 const FRAME_COUNT = 24;
-const STAGE_SCALES = [0.74, 0.82, 0.9, 0.98, 1.05];
+const STAGE_SCALES = [0.46, 0.6, 0.74, 0.89, 1.05];
 
 const STAGES = [
   { stage: 1, rank: "CALF", min: 0 },
@@ -130,6 +130,7 @@ const CREATURE_DESIGNATION = ${JSON.stringify(meta.designation)};
 const CREATURE_DISPLAY_NAME = ${JSON.stringify(meta.name)};
 const GLYPHS_5X7 = ${glyphsJson};
 const DEFAULT_LANGUAGES = ${defaultLangsJson};
+const ORIGINAL_CREATURE_SWATCHES = ${swatchesJson};
 
 function loadConfig() {
   const cfgPath = path.resolve("creature-config.json");
@@ -275,9 +276,28 @@ function ensureLanguageSlots(languages, count) {
   return merged;
 }
 
+function resolveWaterMode(config) {
+  if (config.waterMode === "water" || config.waterMode === "no-water" || config.waterMode === "clear") {
+    return config.waterMode;
+  }
+  return config.inWater === false ? "no-water" : "water";
+}
+
 function getVisibleLanguages(config) {
   const count = config.languageCount === 7 || config.languageCount === 5 ? config.languageCount : 3;
-  return ensureLanguageSlots(config.languages, count).slice(0, count);
+  const sliced = ensureLanguageSlots(config.languages, count).slice(0, count);
+  if (config.colorMode === "canonical") {
+    const swatches = ORIGINAL_CREATURE_SWATCHES[config.creature] || ORIGINAL_CREATURE_SWATCHES.tulkun;
+    return sliced.map((lang, idx) => ({ ...lang, color: swatches[idx % swatches.length] }));
+  }
+  return sliced;
+}
+
+function resolveHudFontColor(config) {
+  const custom = String(config.hudFontColor || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(custom)) return custom.toUpperCase();
+  const isLightBg = resolveWaterMode(config) !== "water" && config.backgroundMode !== "transparent" && getLuminance(config.colors.background) > 0.55;
+  return isLightBg ? "#0F172A" : "#D8F3FF";
 }
 
 function blendRgbaPixel(buf, px, py, r, g, b, a) {
@@ -300,27 +320,29 @@ function recolorSprite(sprite, config) {
 
   const visibleLangs = getVisibleLanguages(config);
   const langHsls = visibleLangs.map((lang) => rgbToHsl(...hexToRgb(lang.color)));
-  const [pH, pS, pL] = config.colorMode === "languages" && langHsls[0] ? langHsls[0] : rgbToHsl(...hexToRgb(config.colors.primary));
-  const [aH, aS, aL] = config.colorMode === "languages" && langHsls[1] ? langHsls[1] : rgbToHsl(...hexToRgb(config.colors.accent));
-  const [eH, eS, eL] = config.colorMode === "languages" && langHsls[2] ? langHsls[2] : rgbToHsl(...hexToRgb(config.colors.energy));
-  const extraHsls = config.colorMode === "languages" ? langHsls.slice(3) : [];
-  const lerpHsl = (a, b, wt) => {
-    const dh = ((b[0] - a[0] + 540) % 360) - 180;
-    return [(a[0] + dh * wt + 360) % 360, a[1] * (1 - wt) + b[1] * wt, a[2] * (1 - wt) + b[2] * wt];
-  };
-  const sampleSmoothStops = (base, u) => {
-    if (extraHsls.length === 0 || u <= 0.35) return base;
-    const stops = [base, ...extraHsls];
-    const t = clamp((u - 0.35) / 0.65, 0, 1);
-    const pos = t * (stops.length - 1);
-    const i0 = Math.floor(pos);
-    const i1 = Math.min(stops.length - 1, i0 + 1);
-    return lerpHsl(stops[i0], stops[i1], pos - i0);
-  };
+  const zonePalette = config.colorMode === "languages" && langHsls.length > 0
+    ? langHsls
+    : [rgbToHsl(...hexToRgb(config.colors.primary)), rgbToHsl(...hexToRgb(config.colors.accent)), rgbToHsl(...hexToRgb(config.colors.energy))];
+  const zoneCount = zonePalette.length;
+  const view = config.creature === "jellyfish" ? "side" : (config.view === "top" ? "top" : "side");
 
   const out = new Uint8ClampedArray(sprite.data.length);
   const src = sprite.data;
   const w = sprite.width;
+  const hPx = sprite.height;
+
+  const measureVerticalSpan = (x, y) => {
+    let span = 1;
+    for (let dy = 1; dy <= 5 && y - dy >= 0; dy++) {
+      if (src[((y - dy) * w + x) * 4 + 3] <= 20) break;
+      span++;
+    }
+    for (let dy = 1; dy <= 5 && y + dy < hPx; dy++) {
+      if (src[((y + dy) * w + x) * 4 + 3] <= 20) break;
+      span++;
+    }
+    return span;
+  };
 
   for (let i = 0; i < src.length; i += 4) {
     const a = src[i + 3];
@@ -331,34 +353,57 @@ function recolorSprite(sprite, config) {
       out[i] = r; out[i + 1] = g; out[i + 2] = b; out[i + 3] = a;
       continue;
     }
-    const px = (i / 4) % w;
+    const pixIdx = i / 4;
+    const px = pixIdx % w;
+    const py = Math.floor(pixIdx / w);
     const u = px / Math.max(1, w - 1);
+    const v = (py / Math.max(1, hPx - 1)) * 2 - 1;
 
-    let rgb;
+    let zoneIdx = 0;
     if (config.creature === "tulkun") {
       if (h >= 6 && h <= 54 && s > 0.24) {
-        rgb = hslToRgb(aH, Math.max(s * 0.45, aS * 0.9), clamp(l * 0.65 + aL * 0.35, 0.18, 0.85));
+        zoneIdx = 1 % zoneCount;
       } else if (l > 0.56 && h >= 172 && h <= 228 && s > 0.14) {
-        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
-        rgb = hslToRgb(th, clamp(ts * 0.88, 0.25, 0.96), clamp(l * 0.68 + tl * 0.32, 0.36, 0.92));
+        zoneIdx = 2 % zoneCount;
+      } else if (zoneCount >= 5 && u >= (view === "top" ? 0.79 : 0.77)) {
+        zoneIdx = 4 % zoneCount;
+      } else if (zoneCount >= 5 && (view === "top" ? (u >= 0.22 && u <= 0.46 && Math.abs(v) > 0.31) : (u >= 0.28 && u <= 0.54 && v > 0.11 - 0.35 * Math.max(0, u - 0.28)))) {
+        zoneIdx = 3 % zoneCount;
+      } else if (zoneCount >= 7 && (view === "side" ? (v > 0.04 && u >= 0.05 && u < 0.77 && (s <= 0.2 || l > 0.42)) : (u >= 0.58 && u < 0.79 && Math.abs(v) > 0.145))) {
+        zoneIdx = 5 % zoneCount;
+      } else if (zoneCount >= 7 && u >= 0.24 && u < (view === "top" ? 0.79 : 0.77) && l >= 0.33 && (view === "top" || v <= 0.04)) {
+        zoneIdx = 6 % zoneCount;
       } else if (s <= 0.15 && l > 0.65) {
-        rgb = hslToRgb(pH, Math.min(0.14, pS * 0.3), l);
+        const [pH, pS] = zonePalette[0];
+        const rgb = hslToRgb(pH, Math.min(0.16, pS * 0.32), l);
+        out[i] = rgb[0]; out[i + 1] = rgb[1]; out[i + 2] = rgb[2]; out[i + 3] = a;
+        continue;
       } else {
-        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
-        rgb = hslToRgb(th, clamp(ts * 0.92 + s * 0.12, 0.04, 0.88), clamp(tl + (l - 0.31) * 0.85, 0.14, 0.88));
+        zoneIdx = 0;
       }
     } else {
-      if (l > 0.68) {
-        const [th, ts, tl] = sampleSmoothStops([aH, aS, aL], u);
-        rgb = hslToRgb(th, clamp(ts * 0.92, 0.25, 0.96), clamp(l * 0.72 + tl * 0.28, 0.55, 0.94));
-      } else if (l < 0.34) {
-        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
-        rgb = hslToRgb(th, clamp(ts * 0.95, 0.35, 0.98), clamp(l * 0.65 + tl * 0.35, 0.16, 0.58));
+      const isBell = u < 0.265 - 0.08 * v * v;
+      if (isBell || zoneCount <= 3) {
+        if (l > 0.66) zoneIdx = 1 % zoneCount;
+        else if (l < 0.34) zoneIdx = 2 % zoneCount;
+        else zoneIdx = 0;
       } else {
-        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
-        rgb = hslToRgb(th, clamp(ts * 0.95, 0.25, 0.98), clamp(tl + (l - 0.48) * 0.85, 0.2, 0.82));
+        const spanY = measureVerticalSpan(px, py);
+        const isThickOralArm = spanY >= 4 && Math.abs(v) < 0.56;
+        if (isThickOralArm) {
+          zoneIdx = zoneCount >= 7 && l > 0.58 ? 4 : 3 % zoneCount;
+        } else if (zoneCount >= 7) {
+          zoneIdx = v < 0 ? 5 : 6;
+        } else {
+          zoneIdx = 4 % zoneCount;
+        }
       }
     }
+
+    const [zH, zS, zL] = zonePalette[zoneIdx];
+    const targetL = clamp(zL * 0.32 + l * 0.68 + (l - 0.42) * 0.22, 0.16, 0.9);
+    const targetS = clamp(zS * 0.92 + s * 0.1, 0.12, 0.98);
+    const rgb = hslToRgb(zH, targetS, targetL);
     out[i] = rgb[0]; out[i + 1] = rgb[1]; out[i + 2] = rgb[2]; out[i + 3] = a;
   }
   return { width: sprite.width, height: sprite.height, data: out };
@@ -377,29 +422,154 @@ function fillRectRgba(buf, x, y, w, h, rgba) {
   }
 }
 
-function drawPixelTextRgba(buf, text, ox, oy, rgba) {
+function measureTextWidth(text, fontSize, family, weight) {
+  if (family === "pixel") {
+    const unit = fontSize / 7;
+    return Math.max(0, text.length * 6 * unit - unit);
+  }
+  const ratio = family === "mono" ? 0.66 : family === "serif" ? 0.6 : weight === "bold" ? 0.62 : 0.58;
+  return text.length * fontSize * ratio;
+}
+
+function computeHudLayout(config) {
+  const stageInfo = getEvolutionStage(config.commits);
+  const titleText = (config.customTitle || "").trim()
+    ? config.customTitle.trim().toUpperCase()
+    : \`\${stageInfo.rank} \${String(config.creature || "tulkun").toUpperCase()}\`;
+  const commitsStr = Math.max(0, Math.floor(config.commits || 0)).toLocaleString("en-US");
+  const fontSize = clamp(Math.round(config.hudFontSize || 14), 12, 22);
+  const chipFontSize = Math.max(10, Math.round(fontSize * 0.86));
+  const fontFamily = config.hudFontFamily === "mono" || config.hudFontFamily === "sans" || config.hudFontFamily === "serif" ? config.hudFontFamily : "pixel";
+  const fontWeight = config.hudFontWeight === "normal" || config.hudFontWeight === "semibold" ? config.hudFontWeight : "bold";
+  const align = config.hudAlign === "center" || config.hudAlign === "right" ? config.hudAlign : "left";
+  const fontColor = resolveHudFontColor(config);
+  const accentColor = config.colors?.accent || "#C86D3B";
+
+  const line1Text = \`STAGE \${stageInfo.stage}: \${titleText}\`;
+  const line2Text = \`CONTRIBUTIONS: \${commitsStr}\`;
+
+  const swatchSize = Math.max(8, Math.round(fontSize * 0.68));
+  const swatchGap = Math.max(6, Math.round(fontSize * 0.45));
+  const line1Width = swatchSize + swatchGap + measureTextWidth(line1Text, fontSize, fontFamily, fontWeight);
+  const line2Width = measureTextWidth(line2Text, fontSize, fontFamily, fontWeight);
+
+  const chipSwatch = Math.max(7, Math.round(chipFontSize * 0.62));
+  const chipSwatchGap = Math.max(5, Math.round(chipFontSize * 0.4));
+  const chipSpacer = 22;
+  const maxHudWidth = CANVAS_WIDTH - 80;
+  const visibleLangs = getVisibleLanguages(config);
+  const wrappedRows = [];
+  let curItems = [], curWidth = 0;
+
+  for (const lang of visibleLangs) {
+    const nameShort = lang.name.toUpperCase().slice(0, 10);
+    const itemW = chipSwatch + chipSwatchGap + measureTextWidth(nameShort, chipFontSize, fontFamily, fontWeight);
+    const added = curItems.length === 0 ? itemW : chipSpacer + itemW;
+    if (curItems.length > 0 && curWidth + added > maxHudWidth) {
+      wrappedRows.push({ items: curItems, totalWidth: curWidth });
+      curItems = [{ name: nameShort, color: lang.color, swatchSize: chipSwatch, width: itemW }];
+      curWidth = itemW;
+    } else {
+      curItems.push({ name: nameShort, color: lang.color, swatchSize: chipSwatch, width: itemW });
+      curWidth += added;
+    }
+  }
+  if (curItems.length > 0) wrappedRows.push({ items: curItems, totalWidth: curWidth });
+
+  const lineStep = Math.round(fontSize * 1.38);
+  const chipStep = Math.round(chipFontSize * 1.45);
+  const totalHeight = lineStep * 2 + 4 + wrappedRows.length * chipStep;
+  const topY = Math.max(12, CANVAS_HEIGHT - 14 - totalHeight);
+  const line1Y = topY, line2Y = topY + lineStep, chipsStartY = line2Y + lineStep + 4;
+  return {
+    topY, fontSize, chipFontSize, fontFamily, fontWeight, fontColor, align, accentColor, swatchSize,
+    line1Text, line1Y, line1Width, line2Text, line2Y, line2Width,
+    chipRows: wrappedRows.map((row, idx) => ({ y: chipsStartY + idx * chipStep, totalWidth: row.totalWidth, items: row.items })),
+  };
+}
+
+function escapeXml(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+function getRowStartX(align, rowWidth) {
+  if (align === "center") return (CANVAS_WIDTH - rowWidth) * 0.5;
+  if (align === "right") return CANVAS_WIDTH - 40 - rowWidth;
+  return 40;
+}
+
+function pixelTextSvgRects(text, ox, oy, fontSize, weight, color) {
   const upper = String(text || "").toUpperCase();
-  let cx = Math.round(ox);
-  const sy = Math.round(oy);
+  const unit = fontSize / 7;
+  const dotExpand = weight === "bold" ? Math.max(0.45, unit * 0.22) : weight === "semibold" ? Math.max(0.2, unit * 0.1) : 0;
+  let cx = ox;
+  let rects = "";
   for (let i = 0; i < upper.length; i++) {
     const glyph = GLYPHS_5X7[upper[i]] || GLYPHS_5X7[" "];
     for (let row = 0; row < glyph.length; row++) {
       const bits = glyph[row];
       for (let col = 0; col < bits.length; col++) {
         if (bits[col] === "1") {
-          fillRectRgba(buf, cx + col, sy + row, 1, 1, rgba);
+          const rx = Math.round(cx + col * unit);
+          const ry = Math.round(oy + row * unit);
+          const rw = Math.max(1, Math.ceil(unit + dotExpand));
+          const rh = Math.max(1, Math.ceil(unit));
+          rects += \`<rect x="\${rx}" y="\${ry}" width="\${rw}" height="\${rh}" fill="\${color}" />\`;
         }
       }
     }
-    cx += 6;
+    cx += 6 * unit;
   }
+  return rects;
 }
 
-function drawUnderwaterBackdrop(buf, phase, config) {
+function buildHudSvgOverlay(config) {
+  if (!config.showHud) return null;
+  const layout = computeHudLayout(config);
+  const swatchGap1 = Math.max(6, Math.round(layout.fontSize * 0.45));
+  const row1X = getRowStartX(layout.align, layout.line1Width);
+  const row1SwatchY = layout.line1Y + Math.round((layout.fontSize - layout.swatchSize) * 0.5);
+  const text1X = row1X + layout.swatchSize + swatchGap1;
+  const row2X = getRowStartX(layout.align, layout.line2Width);
+  const svgWeight = layout.fontWeight === "normal" ? "400" : layout.fontWeight === "semibold" ? "600" : "700";
+  const svgFamily = layout.fontFamily === "mono" ? "monospace" : layout.fontFamily === "serif" ? "serif" : "sans-serif";
+
+  const parts = [];
+  parts.push(\`<rect x="\${Math.round(row1X)}" y="\${Math.round(row1SwatchY)}" width="\${layout.swatchSize}" height="\${layout.swatchSize}" rx="2" fill="\${layout.accentColor}" />\`);
+
+  if (layout.fontFamily === "pixel") {
+    parts.push(pixelTextSvgRects(layout.line1Text, text1X, layout.line1Y, layout.fontSize, layout.fontWeight, layout.fontColor));
+    parts.push(pixelTextSvgRects(layout.line2Text, row2X, layout.line2Y, layout.fontSize, layout.fontWeight, layout.fontColor));
+  } else {
+    parts.push(\`<text x="\${Math.round(text1X)}" y="\${Math.round(layout.line1Y + layout.fontSize * 0.88)}" font-family="\${svgFamily}" font-size="\${layout.fontSize}" font-weight="\${svgWeight}" fill="\${layout.fontColor}">\${escapeXml(layout.line1Text)}</text>\`);
+    parts.push(\`<text x="\${Math.round(row2X)}" y="\${Math.round(layout.line2Y + layout.fontSize * 0.88)}" font-family="\${svgFamily}" font-size="\${layout.fontSize}" font-weight="\${svgWeight}" fill="\${layout.fontColor}">\${escapeXml(layout.line2Text)}</text>\`);
+  }
+
+  const chipSwatchGap = Math.max(5, Math.round(layout.chipFontSize * 0.4));
+  for (const row of layout.chipRows) {
+    let cx = getRowStartX(layout.align, row.totalWidth);
+    for (const item of row.items) {
+      const sy = row.y + Math.round((layout.chipFontSize - item.swatchSize) * 0.5);
+      parts.push(\`<rect x="\${Math.round(cx)}" y="\${Math.round(sy)}" width="\${item.swatchSize}" height="\${item.swatchSize}" rx="2" fill="\${item.color}" />\`);
+      const labelX = cx + item.swatchSize + chipSwatchGap;
+      if (layout.fontFamily === "pixel") {
+        parts.push(pixelTextSvgRects(item.name, labelX, row.y, layout.chipFontSize, layout.fontWeight, layout.fontColor));
+      } else {
+        parts.push(\`<text x="\${Math.round(labelX)}" y="\${Math.round(row.y + layout.chipFontSize * 0.88)}" font-family="\${svgFamily}" font-size="\${layout.chipFontSize}" font-weight="\${svgWeight}" fill="\${layout.fontColor}">\${escapeXml(item.name)}</text>\`);
+      }
+      cx += item.width + 22;
+    }
+  }
+
+  return Buffer.from(\`<svg xmlns="http://www.w3.org/2000/svg" width="\${CANVAS_WIDTH}" height="\${CANVAS_HEIGHT}"><rect width="\${CANVAS_WIDTH}" height="\${CANVAS_HEIGHT}" fill="none" />\${parts.join("")}</svg>\`);
+}
+
+function drawUnderwaterBackdrop(buf, phase, config, hudTopLogicalY) {
   const t = phase * Math.PI * 2;
   const isTransparent = config.backgroundMode === "transparent";
+  const maxWaterY = config.showHud ? Math.max(120, Math.min(204, Math.floor(hudTopLogicalY - 2))) : 214;
   if (isTransparent) {
-    const cx = LOGICAL_WIDTH * 0.5, cy = config.showHud ? 94 : 112, rx = 212, ry = config.showHud ? 88 : 104;
+    const cx = LOGICAL_WIDTH * 0.5, cy = config.showHud ? Math.round(maxWaterY * 0.52) : 112, rx = 212, ry = config.showHud ? Math.max(66, Math.round(maxWaterY * 0.48)) : 104;
     for (let y = 0; y < LOGICAL_HEIGHT; y++) {
       const ny = (y - cy) / ry;
       if (ny * ny >= 1) continue;
@@ -423,7 +593,7 @@ function drawUnderwaterBackdrop(buf, phase, config) {
   }
 
   const rayBases = [65, 138, 224, 308, 382], rayWidths = [18, 24, 28, 20, 16];
-  const rayMaxY = config.showHud ? 172 : 210;
+  const rayMaxY = maxWaterY;
   for (let i = 0; i < rayBases.length; i++) {
     const baseX = rayBases[i] + Math.sin(t + i * 1.35) * 9, width = rayWidths[i];
     for (let y = 4; y < rayMaxY; y++) {
@@ -440,7 +610,9 @@ function drawUnderwaterBackdrop(buf, phase, config) {
   }
 
   for (let s = 0; s < 6; s++) {
-    const baseY = 26 + s * 26, segLen = 36 + (s % 3) * 18;
+    const baseY = 26 + s * 24;
+    if (baseY > rayMaxY - 8) continue;
+    const segLen = 36 + (s % 3) * 18;
     const scrollX = ((s * 83 + phase * LOGICAL_WIDTH) % (LOGICAL_WIDTH + 60)) - 30;
     for (let k = 0; k < segLen; k++) {
       const px = Math.round(scrollX + k);
@@ -450,7 +622,7 @@ function drawUnderwaterBackdrop(buf, phase, config) {
     }
   }
 
-  const maxBubbleY = config.showHud ? 174 : 216;
+  const maxBubbleY = maxWaterY;
   for (let i = 0; i < 10; i++) {
     const seedX = ((i * 67 + 29) % 100) / 100, seedY = ((i * 43 + 11) % 100) / 100;
     const bx = Math.round(36 + seedX * (LOGICAL_WIDTH - 72) + Math.sin(t + i * 1.1) * 3.5);
@@ -460,9 +632,9 @@ function drawUnderwaterBackdrop(buf, phase, config) {
   }
 }
 
-function drawUnderwaterForegroundBubbles(buf, phase, config) {
-  if (!config.inWater) return;
-  const t = phase * Math.PI * 2, maxBubbleY = config.showHud ? 172 : 214;
+function drawUnderwaterForegroundBubbles(buf, phase, config, hudTopLogicalY) {
+  if (resolveWaterMode(config) !== "water") return;
+  const t = phase * Math.PI * 2, maxBubbleY = config.showHud ? Math.max(120, Math.min(204, Math.floor(hudTopLogicalY - 2))) : 214;
   for (let i = 0; i < 6; i++) {
     const seedX = ((i * 89 + 17) % 100) / 100, seedY = ((i * 53 + 23) % 100) / 100;
     const mul = i % 2 === 0 ? 1 : 2, rise = (seedY + phase * mul) % 1;
@@ -482,6 +654,7 @@ function drawUnderwaterForegroundBubbles(buf, phase, config) {
 }
 
 function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t) {
+  const ampScale = 0.55 + 0.45 * stageScale;
   if (creature === "jellyfish") {
     const pulse = (0.62 * Math.sin(t) + 0.26 * Math.sin(2 * t - 0.5) + 0.08 * Math.sin(3 * t - 1.0)) / 0.92;
     const u = clamp(lx / drawW + 0.5, 0, 1);
@@ -500,9 +673,9 @@ function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t)
     const trailT = clamp((u - 0.21) / 0.79, 0, 1);
     const vPhase = v * 0.65;
     const waveY =
-      14.5 * Math.pow(trailT, 1.12) * Math.sin(1.65 * Math.PI * 2 * trailT - t + vPhase) +
-      3.0 * Math.pow(trailT, 1.35) * Math.sin(2.7 * Math.PI * 2 * trailT - 2 * t - vPhase);
-    const dragX = 4.6 * Math.pow(trailT, 0.85) * Math.sin(t - 0.65 - trailT * 1.4);
+      14.5 * ampScale * Math.pow(trailT, 1.12) * Math.sin(1.65 * Math.PI * 2 * trailT - t + vPhase) +
+      3.0 * ampScale * Math.pow(trailT, 1.35) * Math.sin(2.7 * Math.PI * 2 * trailT - 2 * t - vPhase);
+    const dragX = 4.6 * ampScale * Math.pow(trailT, 0.85) * Math.sin(t - 0.65 - trailT * 1.4);
     const baseRimAttach = 1.0 - 0.11 * pulse * (1.0 - trailT * 0.85);
     const trailSrcX = lx - dragX;
     const trailSrcY = (ly - waveY) / baseRimAttach;
@@ -514,7 +687,7 @@ function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t)
   }
 
   const isTop = view === "top";
-  const maxAmp = (isTop ? 16.5 : 15.5) * (0.85 + 0.15 * stageScale);
+  const maxAmp = (isTop ? 16.5 : 15.5) * ampScale;
   const k = isTop ? 1.45 : 1.35;
   const envPower = isTop ? 1.55 : 1.65;
   const envBase = isTop ? 0.09 : 0.11;
@@ -532,12 +705,12 @@ function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t)
 
     if (isTop) {
       const wingMask = Math.exp(-Math.pow((u - 0.34) / 0.11, 2)) * smoothstep(0.24, 0.52, Math.abs(v));
-      srcY = ly - spineY - 2.8 * wingMask * Math.sign(v) * Math.cos(t - 0.6);
-      srcX = lx - 6.5 * wingMask * Math.sin(t - 0.6) + slopeY * srcY * 0.28;
+      srcY = ly - spineY - 2.8 * ampScale * wingMask * Math.sign(v) * Math.cos(t - 0.6);
+      srcX = lx - 6.5 * ampScale * wingMask * Math.sin(t - 0.6) + slopeY * srcY * 0.28;
     } else {
       const finMask = Math.exp(-Math.pow((u - 0.42) / 0.13, 2)) * smoothstep(0.18, 0.58, v);
-      srcY = ly - spineY - 3.2 * finMask * Math.cos(t - 0.9);
-      srcX = lx - 6.0 * finMask * Math.sin(t - 0.9) + slopeY * srcY * 0.24;
+      srcY = ly - spineY - 3.2 * ampScale * finMask * Math.cos(t - 0.9);
+      srcX = lx - 6.0 * ampScale * finMask * Math.sin(t - 0.9) + slopeY * srcY * 0.24;
     }
   }
   return [srcX, srcY];
@@ -552,8 +725,10 @@ function renderFrameRgba(recoloredSprite, config, phase) {
     }
   }
 
-  if (config.inWater) {
-    drawUnderwaterBackdrop(out, phase, config);
+  const waterMode = resolveWaterMode(config);
+  const hudTopLogicalY = config.showHud ? computeHudLayout(config).topY * 0.5 : LOGICAL_HEIGHT;
+  if (waterMode === "water") {
+    drawUnderwaterBackdrop(out, phase, config, hudTopLogicalY);
   }
 
   const stageInfo = getEvolutionStage(config.commits);
@@ -562,12 +737,12 @@ function renderFrameRgba(recoloredSprite, config, phase) {
   const t = phase * Math.PI * 2;
   const visibleLangs = getVisibleLanguages(config);
 
-  if (stageInfo.stage >= 2) {
+  if (waterMode !== "clear" && stageInfo.stage >= 2) {
     const count = stageInfo.stage === 2 ? 4 : stageInfo.stage === 3 ? 7 : stageInfo.stage === 4 ? 11 : 15;
     const useLangColors = config.colorMode !== "canonical" && visibleLangs.length > 0;
     const [er, eg, eb] = hexToRgb(mixHex(config.colors.energy, "#FFFFFF", 0.45));
     const [ar, ag, ab] = hexToRgb(config.colors.accent);
-    const maxY = config.showHud ? 174 : 216;
+    const maxY = config.showHud ? Math.max(120, Math.min(204, Math.floor(hudTopLogicalY - 2))) : 216;
     for (let i = 0; i < count; i++) {
       const s1 = ((i * 73 + 19) % 100) / 100, s2 = ((i * 41 + 7) % 100) / 100, mul = (i % 3) + 1;
       const px = Math.round(28 + ((s1 + phase * mul) % 1) * (LOGICAL_WIDTH - 56));
@@ -581,25 +756,30 @@ function renderFrameRgba(recoloredSprite, config, phase) {
     }
   }
 
-  const hasMultiRowHud = config.showHud && visibleLangs.length > 3;
-  const maxFitW = 342 * stageScale;
-  const maxFitH = (hasMultiRowHud ? 126 : config.showHud ? 136 : 170) * stageScale;
+  const availH = Math.max(96, hudTopLogicalY - 12);
+  const baseFitW = view === "top" ? 340 : 356;
+  const baseFitH = view === "top"
+    ? (config.showHud ? Math.min(148, availH * 0.85) : 192)
+    : (config.showHud ? Math.min(142, availH * 0.84) : 172);
+  const maxFitW = baseFitW * stageScale;
+  const maxFitH = baseFitH * stageScale;
   const fitScale = Math.min(maxFitW / recoloredSprite.width, maxFitH / recoloredSprite.height);
   const drawW = recoloredSprite.width * fitScale;
   const drawH = recoloredSprite.height * fitScale;
   const centerX = LOGICAL_WIDTH * 0.5;
-  const centerY = hasMultiRowHud ? 86 : config.showHud ? 92 : 115;
+  const centerY = config.showHud ? Math.max(54, Math.min(96, (hudTopLogicalY - 6) * 0.49)) : 115;
 
+  const ampScale = 0.55 + 0.45 * stageScale;
   let gx = 0, gy = 0;
   if (config.creature === "jellyfish") {
-    gx = -6.5 * Math.sin(t - 0.45) - 1.6 * Math.sin(2 * t - 0.9);
-    gy = 2.4 * Math.sin(t + 0.5);
+    gx = (-6.5 * Math.sin(t - 0.45) - 1.6 * Math.sin(2 * t - 0.9)) * ampScale;
+    gy = 2.4 * Math.sin(t + 0.5) * ampScale;
   } else if (view === "top") {
-    gx = -2.2 * Math.cos(t);
-    gy = 1.4 * Math.sin(t + 0.3);
+    gx = -2.2 * Math.cos(t) * ampScale;
+    gy = 1.4 * Math.sin(t + 0.3) * ampScale;
   } else {
-    gx = -2.6 * Math.cos(t);
-    gy = 2.0 * Math.sin(t + 0.5);
+    gx = -2.6 * Math.cos(t) * ampScale;
+    gy = 2.0 * Math.sin(t + 0.5) * ampScale;
   }
 
   const minDx = Math.max(0, Math.floor(centerX + gx - drawW * 0.5 - 24));
@@ -623,40 +803,7 @@ function renderFrameRgba(recoloredSprite, config, phase) {
     }
   }
 
-  drawUnderwaterForegroundBubbles(out, phase, config);
-
-  if (config.showHud) {
-    const title = (config.customTitle || "").trim()
-      ? config.customTitle.trim().toUpperCase()
-      : \`\${stageInfo.rank} \${config.creature.toUpperCase()}\`;
-    const commitsStr = Math.max(0, Math.floor(config.commits || 0)).toLocaleString("en-US");
-    const isLightBg = !config.inWater && config.backgroundMode !== "transparent" && getLuminance(config.colors.background) > 0.55;
-    const [ar, ag, ab] = hexToRgb(config.colors.accent);
-    const [lr, lg, lb] = hexToRgb(isLightBg ? "#1E293B" : mixHex(config.colors.energy, "#CBEBFF", 0.65));
-    const [cr, cg, cb] = hexToRgb(isLightBg ? "#0F172A" : mixHex(mixHex(config.colors.energy, "#FFFFFF", 0.45), "#FFFFFF", 0.45));
-
-    const isCompact = visibleLangs.length > 3;
-    const r1Y = isCompact ? 179 : 190, r2Y = isCompact ? 189 : 201;
-    let chipY = isCompact ? 200 : 212;
-
-    fillRectRgba(out, 24, r1Y, 4, 7, [ar, ag, ab, 255]);
-    drawPixelTextRgba(out, \`STAGE \${stageInfo.stage}: \${title}\`, 31, r1Y, [lr, lg, lb, 255]);
-    drawPixelTextRgba(out, \`CONTRIBUTIONS: \${commitsStr}\`, 24, r2Y, [cr, cg, cb, 255]);
-
-    let chipX = 24;
-    for (const lang of visibleLangs) {
-      const nameShort = lang.name.toUpperCase().slice(0, 10);
-      const chipWidth = 7 + nameShort.length * 6 + 9;
-      if (chipX > 24 && chipX + chipWidth > LOGICAL_WIDTH - 16) {
-        chipX = 24;
-        chipY += 11;
-      }
-      const [sr, sg, sb] = hexToRgb(lang.color, "#8B949E");
-      fillRectRgba(out, chipX, chipY, 4, 7, [sr, sg, sb, 255]);
-      drawPixelTextRgba(out, nameShort, chipX + 7, chipY, [lr, lg, lb, 255]);
-      chipX += chipWidth;
-    }
-  }
+  drawUnderwaterForegroundBubbles(out, phase, config, hudTopLogicalY);
   return out;
 }
 
@@ -751,26 +898,62 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
   if (process.env.PROFILE_PAT) {
     try {
       const now = new Date();
-      const fromDate =
-        windowMode === "annual"
-          ? new Date(Date.UTC(now.getUTCFullYear(), 0, 1)).toISOString()
-          : new Date(now.getTime() - 365 * 86400 * 1000).toISOString();
-      const query = \`query($login: String!, $from: DateTime!, $to: DateTime!) {
-        user(login: $login) { contributionsCollection(from: $from, to: $to) { contributionCalendar { totalContributions } } }
-      }\`;
-      const res = await fetch("https://api.github.com/graphql", {
-        method: "POST",
-        headers: {
-          Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
-          "Content-Type": "application/json",
-          "User-Agent": "dynamic-readme-creature",
-        },
-        body: JSON.stringify({ query, variables: { login: username, from: fromDate, to: now.toISOString() } }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const total = json?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions;
-        if (typeof total === "number") commits = total;
+      if (windowMode === "all-time") {
+        const yearsQuery = \`query($login: String!) { user(login: $login) { contributionsCollection { contributionYears } } }\`;
+        const yearsRes = await fetch("https://api.github.com/graphql", {
+          method: "POST",
+          headers: {
+            Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
+            "Content-Type": "application/json",
+            "User-Agent": "dynamic-readme-creature",
+          },
+          body: JSON.stringify({ query: yearsQuery, variables: { login: username } }),
+        });
+        if (yearsRes.ok) {
+          const yJson = await yearsRes.json();
+          const years = yJson?.data?.user?.contributionsCollection?.contributionYears || [];
+          if (Array.isArray(years) && years.length > 0) {
+            let totalAll = 0;
+            for (const yr of years) {
+              const from = new Date(Date.UTC(yr, 0, 1)).toISOString();
+              const to = new Date(Date.UTC(yr, 11, 31, 23, 59, 59)).toISOString();
+              const q = \`query($login: String!, $from: DateTime!, $to: DateTime!) { user(login: $login) { contributionsCollection(from: $from, to: $to) { contributionCalendar { totalContributions } } } }\`;
+              const r = await fetch("https://api.github.com/graphql", {
+                method: "POST",
+                headers: {
+                  Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
+                  "Content-Type": "application/json",
+                  "User-Agent": "dynamic-readme-creature",
+                },
+                body: JSON.stringify({ query: q, variables: { login: username, from, to } }),
+              });
+              if (r.ok) {
+                const j = await r.json();
+                totalAll += j?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions || 0;
+              }
+            }
+            commits = totalAll;
+          }
+        }
+      } else {
+        const fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1)).toISOString();
+        const query = \`query($login: String!, $from: DateTime!, $to: DateTime!) {
+          user(login: $login) { contributionsCollection(from: $from, to: $to) { contributionCalendar { totalContributions } } }
+        }\`;
+        const res = await fetch("https://api.github.com/graphql", {
+          method: "POST",
+          headers: {
+            Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
+            "Content-Type": "application/json",
+            "User-Agent": "dynamic-readme-creature",
+          },
+          body: JSON.stringify({ query, variables: { login: username, from: fromDate, to: now.toISOString() } }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const total = json?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions;
+          if (typeof total === "number") commits = total;
+        }
       }
     } catch { /* fall through */ }
   }
@@ -778,22 +961,27 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
   if (commits === null) {
     try {
       const currentYear = String(new Date().getUTCFullYear());
-      const url = windowMode === "rolling"
-        ? \`https://github-contributions-api.jogruber.de/v4/\${encodeURIComponent(username)}?y=last\`
-        : \`https://github-contributions-api.jogruber.de/v4/\${encodeURIComponent(username)}\`;
-      const res = await fetch(url, { headers: { "User-Agent": "dynamic-readme-creature" } });
+      const res = await fetch(\`https://github-contributions-api.jogruber.de/v4/\${encodeURIComponent(username)}\`, {
+        headers: { "User-Agent": "dynamic-readme-creature" },
+      });
       if (res.ok) {
         const data = await res.json();
-        if (windowMode === "rolling" && typeof data?.total?.lastYear === "number") {
-          commits = data.total.lastYear;
-        } else if (typeof data?.total?.[currentYear] === "number") {
-          commits = data.total[currentYear];
+        if (data?.total && typeof data.total === "object") {
+          if (windowMode === "all-time") {
+            let sumAll = 0, found = false;
+            for (const [k, v] of Object.entries(data.total)) {
+              if (/^\\d{4}$/.test(k) && typeof v === "number") { sumAll += v; found = true; }
+            }
+            if (found) commits = sumAll;
+          } else if (typeof data.total[currentYear] === "number") {
+            commits = data.total[currentYear];
+          }
         }
       }
     } catch { /* fall through */ }
   }
 
-  if (commits === null) {
+  if (commits === null && windowMode === "annual") {
     try {
       const res = await fetch(\`https://github.com/users/\${encodeURIComponent(username)}/contributions\`, {
         headers: { "User-Agent": "dynamic-readme-creature" },
@@ -876,16 +1064,13 @@ function updateReadmeFiles(config, username, stage, rank, commits, visibleLangs)
   const eIdx = raw.indexOf(endMarker);
 
   if (sIdx !== -1 && eIdx !== -1 && eIdx > sIdx) {
-    const captionLine = rm.includeTelemetryCaption !== false
-      ? \`\\n<p align="\${align}"><sub>\${resolveTokens(rm.telemetryCaptionTemplate || "Live {{CREATURE}} for @{{USERNAME}} — Stage {{STAGE}}: {{RANK}} · {{COMMITS}} commits · View: {{VIEW}}", config, username, stage, rank, commits, visibleLangs)}</sub></p>\`
-      : "";
     const block = [
       startMarker,
       \`<p align="\${align}">\`,
       \`  <a href="https://github.com/\${username}/\${username}">\`,
-      \`    <img src="\${imgSrc}" width="\${width}" alt="\${CREATURE_DISPLAY_NAME} - Stage \${stage} \${rank}" />\`,
+      \`    <img src="\${imgSrc}" width="\${width}" alt="\${CREATURE_DISPLAY_NAME} Stage \${stage} \${rank}" />\`,
       \`  </a>\`,
-      \`</p>\${captionLine}\`,
+      \`</p>\`,
       endMarker,
     ].join("\\n");
     raw = raw.slice(0, sIdx) + block + raw.slice(eIdx + endMarker.length);
@@ -900,6 +1085,7 @@ function updateReadmeFiles(config, username, stage, rank, commits, visibleLangs)
     const viewLabel = config.creature === "jellyfish" ? "PELAGIC" : (config.view === "top" ? "TOP" : "SIDE");
     const langList = (visibleLangs || []).map((l) => \`\\\`\${l.name}\\\`\`).join(" · ");
     const tableTitle = resolveTokens(rm.statsTableTitle || "Cybernetic Telemetry", config, username, stage, rank, commits, visibleLangs);
+    const periodLabel = config.windowMode === "all-time" ? "All Time" : "Current Year";
     const statsBlock = [
       statsStart,
       \`### \${tableTitle}\`,
@@ -907,8 +1093,8 @@ function updateReadmeFiles(config, username, stage, rank, commits, visibleLangs)
       "| Metric | Active Value |",
       "| --- | --- |",
       \`| **Guardian Chassis** | \${CREATURE_DISPLAY_NAME} (\\\`\${CREATURE_DESIGNATION}\\\`) |\`,
-      \`| **Evolution Stage** | Stage \${stage} / 5 — **\${rank}** |\`,
-      \`| **Contributions (\${config.windowMode})** | \\\`\${commits.toLocaleString("en-US")}\\\` commits |\`,
+      \`| **Evolution Stage** | Stage \${stage} / 5 (**\${rank}**) |\`,
+      \`| **Contributions (\${periodLabel})** | \\\`\${commits.toLocaleString("en-US")}\\\` commits |\`,
       \`| **Camera Angle** | \\\`\${viewLabel}\\\` |\`,
       \`| **Top Languages** | \${langList} |\`,
       statsEnd,
@@ -970,16 +1156,20 @@ async function main() {
   const speed = clamp(Number(nextConfig.animationSpeed) || 1.0, 0.4, 2.5);
   const loopMs = Math.round(BASE_LOOP_DURATION_MS / speed);
   const frameDelayMs = Math.max(20, Math.round(loopMs / FRAME_COUNT));
+  const hudOverlaySvg = buildHudSvgOverlay(nextConfig);
+  const hudOverlayPng = hudOverlaySvg ? await sharp(hudOverlaySvg).png().toBuffer() : null;
 
   const parsedFrames = [];
   for (let i = 0; i < FRAME_COUNT; i++) {
     const logical = renderFrameRgba(recolored, nextConfig, i / FRAME_COUNT);
     const upscaled = upscaleRgba2x(logical);
-    const singleWebP = await sharp(upscaled, {
+    let img = sharp(upscaled, {
       raw: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, channels: 4 },
-    })
-      .webp({ quality: 92 })
-      .toBuffer();
+    });
+    if (hudOverlayPng) {
+      img = img.composite([{ input: hudOverlayPng, top: 0, left: 0 }]);
+    }
+    const singleWebP = await img.webp({ quality: 92 }).toBuffer();
     parsedFrames.push(extractSingleWebPFrame(singleWebP));
   }
 

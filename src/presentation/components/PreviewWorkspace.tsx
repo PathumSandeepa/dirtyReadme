@@ -21,6 +21,7 @@ import {
   getSpriteKey,
   getViewDisplayLabel,
   getVisibleLanguages,
+  resolveWaterMode,
 } from "@/domain/creature/services";
 import type { ReadmeBadge, ReadmeConfig } from "@/domain/profile/entities";
 import {
@@ -52,10 +53,13 @@ import { CreatureAnimatedView } from "./CreatureAnimatedView";
 import { EvolutionPanel } from "./EvolutionPanel";
 import { ShareCardCanvasView } from "./ShareCardCanvasView";
 
-type PreviewTab = "profile" | "share-card" | "stages";
+export type PreviewTab = "profile" | "share-card" | "stages";
 type CodeSubTab = "visual" | "markdown";
 
 interface PreviewWorkspaceProps {
+  editorTab: "creature" | "readme";
+  previewTab: PreviewTab;
+  onPreviewTabChange: (tab: PreviewTab) => void;
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
   readmeMarkdown: string;
@@ -63,10 +67,12 @@ interface PreviewWorkspaceProps {
   onEditReadme: () => void;
   onOpenAutoEvolve: () => void;
   onSelectView: (view: CameraView) => void;
-  onApplyCommits: (commits: number) => void;
 }
 
 export function PreviewWorkspace({
+  editorTab,
+  previewTab,
+  onPreviewTabChange,
   creatureConfig,
   readmeConfig,
   readmeMarkdown,
@@ -74,9 +80,7 @@ export function PreviewWorkspace({
   onEditReadme,
   onOpenAutoEvolve,
   onSelectView,
-  onApplyCommits,
 }: PreviewWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState<PreviewTab>("profile");
   const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>("visual");
   const [githubTheme, setGithubTheme] = useState<"dark" | "light">("dark");
   const [showSidebar, setShowSidebar] = useState(true);
@@ -91,6 +95,13 @@ export function PreviewWorkspace({
     creatureConfig.creature,
     creatureConfig.view
   );
+  const waterMode = resolveWaterMode(creatureConfig);
+  const waterStatusLabel =
+    waterMode === "water"
+      ? "In Water"
+      : waterMode === "no-water"
+        ? "Without Water"
+        : "Clear BG";
   const visibleLanguages = getVisibleLanguages(creatureConfig);
   const username = creatureConfig.username.trim() || "your-username";
   const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
@@ -162,20 +173,26 @@ export function PreviewWorkspace({
   const isAlignedLeft = readmeConfig.align === "left";
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <Card>
-        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b pb-4">
+        <CardHeader
+          className={`flex flex-row flex-wrap items-center justify-between gap-3 ${
+            editorTab === "creature" ? "border-b pb-4" : "py-3.5"
+          }`}
+        >
           <div className="flex items-center gap-2.5">
             <div className="flex size-8 items-center justify-center rounded-lg border bg-muted text-foreground">
               <Layers className="size-4" />
             </div>
             <div className="flex flex-col">
               <CardTitle className="font-mono text-sm">
-                Live Creature Canvas — {meta.name}
+                {editorTab === "readme"
+                  ? `Live README Preview: ${meta.name}`
+                  : `Live Creature Canvas: ${meta.name}`}
               </CardTitle>
               <CardDescription className="font-mono text-xs">
                 Stage {stage.stage} ({stage.rank}) · View: {viewLabel} ·{" "}
-                {creatureConfig.inWater ? "In Water" : "No Water"}
+                {waterStatusLabel}
               </CardDescription>
             </div>
           </div>
@@ -221,24 +238,26 @@ export function PreviewWorkspace({
           </div>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <div
-            className={
-              creatureConfig.backgroundMode === "transparent"
-                ? "transparency-grid p-4"
-                : "p-4"
-            }
-          >
-            <div className="mx-auto max-w-2xl">
-              <CreatureAnimatedView config={creatureConfig} className="w-full" />
+        {editorTab === "creature" && (
+          <CardContent className="p-0">
+            <div
+              className={
+                creatureConfig.backgroundMode === "transparent"
+                  ? "transparency-grid p-4"
+                  : "p-4"
+              }
+            >
+              <div className="mx-auto max-w-2xl">
+                <CreatureAnimatedView config={creatureConfig} className="w-full" />
+              </div>
             </div>
-          </div>
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       <Tabs
-        value={activeTab}
-        onValueChange={(val) => setActiveTab(val as PreviewTab)}
+        value={previewTab}
+        onValueChange={(val) => onPreviewTabChange(val as PreviewTab)}
       >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile" className="gap-1.5 font-mono text-xs">
@@ -256,7 +275,7 @@ export function PreviewWorkspace({
         </TabsList>
       </Tabs>
 
-      {activeTab === "profile" && (
+      {previewTab === "profile" && (
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
             <Tabs
@@ -576,22 +595,6 @@ export function PreviewWorkspace({
                           </div>
                         </div>
 
-                        {readmeConfig.includeTelemetryCaption &&
-                          readmeConfig.telemetryCaptionTemplate.trim() && (
-                            <p
-                              className={`text-xs italic ${
-                                githubTheme === "dark"
-                                  ? "text-[#8b949e]"
-                                  : "text-[#656d76]"
-                              }`}
-                            >
-                              {resolveDynamicTokens(
-                                readmeConfig.telemetryCaptionTemplate,
-                                creatureConfig
-                              )}
-                            </p>
-                          )}
-
                         {!isMarkerOnly &&
                           (isTelemetry || readmeConfig.includeStatsTable) && (
                             <div className="pt-2 text-left">
@@ -646,7 +649,7 @@ export function PreviewWorkspace({
                                         Evolution Stage
                                       </td>
                                       <td className="px-3 py-1.5 font-medium">
-                                        Stage {stage.stage} — {stage.rank}
+                                        Stage {stage.stage}: {stage.rank}
                                       </td>
                                     </tr>
                                     <tr>
@@ -752,7 +755,7 @@ export function PreviewWorkspace({
         </Card>
       )}
 
-      {activeTab === "share-card" && (
+      {previewTab === "share-card" && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex flex-col gap-0.5">
@@ -760,7 +763,7 @@ export function PreviewWorkspace({
                 Social Share Banner (1280×640)
               </CardTitle>
               <CardDescription>
-                Optional PNG banner synced with your active creature palette.
+                Optional PNG banner synced with your creature palette.
               </CardDescription>
             </div>
             <Button
@@ -781,11 +784,10 @@ export function PreviewWorkspace({
         </Card>
       )}
 
-      {activeTab === "stages" && (
+      {previewTab === "stages" && (
         <EvolutionPanel
           baseConfig={creatureConfig}
           onSelectView={onSelectView}
-          onApplyCommits={onApplyCommits}
         />
       )}
     </div>

@@ -2,11 +2,19 @@ export type CreatureId = "tulkun" | "jellyfish";
 
 export type CameraView = "side" | "top";
 
-export type ContributionWindow = "annual" | "rolling";
+export type ContributionWindow = "annual" | "all-time";
 
 export type ColorMode = "canonical" | "languages" | "custom";
 
 export type BackgroundMode = "transparent" | "custom";
+
+export type WaterMode = "water" | "no-water" | "clear";
+
+export type HudFontFamily = "pixel" | "mono" | "sans" | "serif";
+
+export type HudFontWeight = "normal" | "semibold" | "bold";
+
+export type HudAlign = "left" | "center" | "right";
 
 export type LanguageCount = 3 | 5 | 7;
 
@@ -31,11 +39,16 @@ export interface CreatureConfig {
   colorMode: ColorMode;
   colors: CreatureColors;
   backgroundMode: BackgroundMode;
-  inWater: boolean;
+  waterMode: WaterMode;
   languageCount: LanguageCount;
   animationSpeed: number;
   showHud: boolean;
   customTitle: string;
+  hudFontSize: number;
+  hudFontFamily: HudFontFamily;
+  hudFontWeight: HudFontWeight;
+  hudFontColor: string;
+  hudAlign: HudAlign;
   commits: number;
   username: string;
   languages: LanguageStat[];
@@ -104,6 +117,27 @@ export const ORIGINAL_CREATURE_PALETTES: Record<
   },
 };
 
+export const ORIGINAL_CREATURE_SWATCHES: Record<CreatureId, string[]> = {
+  tulkun: [
+    "#2C4156",
+    "#C86D3B",
+    "#9CE2F8",
+    "#52728E",
+    "#C9D8E6",
+    "#3B5875",
+    "#78A7C7",
+  ],
+  jellyfish: [
+    "#1F75E8",
+    "#7AE0FF",
+    "#0D3E9E",
+    "#48A4FF",
+    "#B5F0FF",
+    "#1553C2",
+    "#2D8DF5",
+  ],
+};
+
 export const CREATURE_CATALOG: CreatureMeta[] = [
   {
     id: "tulkun",
@@ -150,7 +184,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     rank: "CALF",
     shortCode: "1.CALF",
     minCommits: 0,
-    rangeLabel: "0 - 149",
+    rangeLabel: "0 to 149",
     sampleCommits: 64,
     unlocks: "Compact starter silhouette with smooth baseline S-curve swim glide.",
   },
@@ -159,7 +193,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     rank: "YOUNG",
     shortCode: "2.YUNG",
     minCommits: 150,
-    rangeLabel: "150 - 499",
+    rangeLabel: "150 to 499",
     sampleCommits: 320,
     unlocks: "Larger body span with starter bioluminescent wake motes.",
   },
@@ -168,7 +202,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     rank: "SUB-ADULT",
     shortCode: "3.SUBA",
     minCommits: 500,
-    rangeLabel: "500 - 1,199",
+    rangeLabel: "500 to 1,199",
     sampleCommits: 840,
     unlocks: "Expanded swim amplitude and richer ambient wake particle stream.",
   },
@@ -177,9 +211,9 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     rank: "MATURE",
     shortCode: "4.MATR",
     minCommits: 1200,
-    rangeLabel: "1,200 - 2,499",
+    rangeLabel: "1,200 to 2,499",
     sampleCommits: 1990,
-    unlocks: "Full mature scale with dense glowing wake trail and full telemetry.",
+    unlocks: "Full mature scale with dense glowing wake trail and telemetry.",
   },
   {
     stage: 5,
@@ -214,11 +248,16 @@ export const DEFAULT_CREATURE_CONFIG: CreatureConfig = {
     background: "transparent",
   },
   backgroundMode: "transparent",
-  inWater: true,
+  waterMode: "water",
   languageCount: 3,
   animationSpeed: 1.0,
   showHud: true,
   customTitle: "",
+  hudFontSize: 14,
+  hudFontFamily: "pixel",
+  hudFontWeight: "bold",
+  hudFontColor: "#D8F3FF",
+  hudAlign: "left",
   commits: 1990,
   username: "your-username",
   languages: DEFAULT_LANGUAGES,

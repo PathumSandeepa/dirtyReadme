@@ -101,7 +101,7 @@ export interface ReadmeConfig {
 }
 
 export const DEFAULT_DUMMY_INTRO =
-  "Hi, I'm @{{USERNAME}} — a passionate software engineer building modern web applications, developer tools, and open-source projects. I love clean architecture, creative UI engineering, and shipping reliable software.";
+  "Hi, I'm @{{USERNAME}}, a passionate developer building modern web applications, developer tools, and open-source projects. I love clean architecture, creative UI engineering, and shipping reliable software.";
 
 export const README_TEMPLATES: {
   id: ReadmeTemplateId;
@@ -452,7 +452,7 @@ const INITIAL_ENABLED_IDS = new Set(
 
 export const DEFAULT_README_CONFIG: ReadmeConfig = {
   templateId: "cyber-guardian",
-  headline: "Your Name | Software Engineer",
+  headline: "Your Name | Occupation",
   subtitleTags: [
     "FULL-STACK DEVELOPMENT",
     "SYSTEMS ARCHITECTURE",
@@ -462,14 +462,13 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
   bio: DEFAULT_DUMMY_INTRO,
   ctaLine:
     "Explore my tech stack and live cybernetic profile creature below.",
-  telemetryCaptionTemplate:
-    "Live {{CREATURE}} for @{{USERNAME}} — Stage {{STAGE}}: {{RANK}} · {{COMMITS}} commits · View: {{VIEW}}",
+  telemetryCaptionTemplate: "",
   statsTableTitle: "Cybernetic Telemetry",
   align: "center",
   imageWidth: 760,
   useOutputBranchUrl: false,
   includeMarkers: true,
-  includeTelemetryCaption: true,
+  includeTelemetryCaption: false,
   includeShareCard: false,
   includeStatsTable: false,
   customSectionTitle: "",

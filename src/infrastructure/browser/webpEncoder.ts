@@ -6,6 +6,7 @@ import {
   LOGICAL_WIDTH,
   SHARE_CARD_HEIGHT,
   SHARE_CARD_WIDTH,
+  drawHudOnCanvas2D,
   getLoopDurationMs,
   recolorSpriteRgba,
   renderCreatureFrameRgba,
@@ -193,12 +194,16 @@ export async function encodeAnimatedWebPFromCreature(
 
   for (let i = 0; i < frameCount; i++) {
     const phase = i / frameCount;
-    const frameRgba = renderCreatureFrameRgba(recolored, config, phase);
+    const frameRgba = renderCreatureFrameRgba(recolored, config, phase, {
+      skipHud: true,
+    });
     imgData.data.set(frameRgba);
     logicalCtx.putImageData(imgData, 0, 0);
 
     outCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    outCtx.imageSmoothingEnabled = false;
     outCtx.drawImage(logicalCanvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawHudOnCanvas2D(outCtx, config);
 
     const frameBlob = await new Promise<Blob>((resolve, reject) => {
       outCanvas.toBlob(
@@ -230,11 +235,36 @@ export async function encodeAnimatedGifFromCreature(
   const frameDelayMs = Math.max(20, Math.round(durationMs / frameCount));
   const isTransparent = config.backgroundMode === "transparent";
 
+  const logicalCanvas = document.createElement("canvas");
+  logicalCanvas.width = LOGICAL_WIDTH;
+  logicalCanvas.height = LOGICAL_HEIGHT;
+  const logicalCtx = logicalCanvas.getContext("2d");
+  if (!logicalCtx) {
+    throw new Error("2D canvas context unavailable.");
+  }
+  const imgData = logicalCtx.createImageData(LOGICAL_WIDTH, LOGICAL_HEIGHT);
+
   const gif = GIFEncoder();
 
   for (let i = 0; i < frameCount; i++) {
     const phase = i / frameCount;
-    const frameRgba = renderCreatureFrameRgba(recolored, config, phase);
+    const baseRgba = renderCreatureFrameRgba(recolored, config, phase, {
+      skipHud: true,
+    });
+    imgData.data.set(baseRgba);
+    logicalCtx.putImageData(imgData, 0, 0);
+    if (config.showHud) {
+      logicalCtx.save();
+      logicalCtx.scale(0.5, 0.5);
+      drawHudOnCanvas2D(logicalCtx, config);
+      logicalCtx.restore();
+    }
+    const frameRgba = logicalCtx.getImageData(
+      0,
+      0,
+      LOGICAL_WIDTH,
+      LOGICAL_HEIGHT
+    ).data;
 
     if (isTransparent) {
       const palette = quantize(frameRgba, 255, {

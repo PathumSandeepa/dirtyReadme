@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
+  drawHudOnCanvas2D,
   getLoopDurationMs,
   recolorSpriteRgba,
   renderCreatureFrameRgba,
@@ -71,7 +74,13 @@ export function CreatureAnimatedView({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const imgData = ctx.createImageData(LOGICAL_WIDTH, LOGICAL_HEIGHT);
+    const scratchCanvas = document.createElement("canvas");
+    scratchCanvas.width = LOGICAL_WIDTH;
+    scratchCanvas.height = LOGICAL_HEIGHT;
+    const scratchCtx = scratchCanvas.getContext("2d");
+    if (!scratchCtx) return;
+
+    const imgData = scratchCtx.createImageData(LOGICAL_WIDTH, LOGICAL_HEIGHT);
     let rafId = 0;
     let phase = 0;
     let lastTime = performance.now();
@@ -85,9 +94,16 @@ export function CreatureAnimatedView({
       phase = (phase + dt / loopMs) % 1;
 
       if (curSprite) {
-        const frame = renderCreatureFrameRgba(curSprite, curConfig, phase);
+        const frame = renderCreatureFrameRgba(curSprite, curConfig, phase, {
+          skipHud: true,
+        });
         imgData.data.set(frame);
-        ctx.putImageData(imgData, 0, 0);
+        scratchCtx.putImageData(imgData, 0, 0);
+
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(scratchCanvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        drawHudOnCanvas2D(ctx, curConfig);
       }
 
       rafId = window.requestAnimationFrame(tick);
@@ -112,11 +128,13 @@ export function CreatureAnimatedView({
   return (
     <canvas
       ref={canvasRef}
-      width={LOGICAL_WIDTH}
-      height={LOGICAL_HEIGHT}
+      width={CANVAS_WIDTH}
+      height={CANVAS_HEIGHT}
       role="img"
       aria-label={`${meta.name} (${meta.subtitle})`}
-      style={{ imageRendering: "pixelated" }}
+      style={{
+        imageRendering: config.hudFontFamily === "pixel" ? "pixelated" : "auto",
+      }}
       className={`block aspect-2/1 h-auto w-full ${className}`}
     />
   );

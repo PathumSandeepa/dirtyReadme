@@ -105,7 +105,7 @@ export function AutoEvolveDialog({
           </div>
           <DialogDescription>
             Regenerates animated <code>creature.webp</code> and updates{" "}
-            <code>README.md</code> markers every midnight — works out of the box with
+            <code>README.md</code> markers every midnight. Works out of the box with
             zero custom secrets (optional <code>PROFILE_PAT</code> secret counts private
             commits).
           </DialogDescription>
@@ -211,7 +211,7 @@ export function AutoEvolveDialog({
 
         <DialogFooter className="items-center sm:justify-between">
           <span className="font-mono text-[11px] text-muted-foreground">
-            Stages: 1 (0–149) · 2 (150–499) · 3 (500–1,199) · 4 (1,200–2,499) · 5 (2,500+)
+            Stages: S1 (0+) · S2 (150+) · S3 (500+) · S4 (1,200+) · S5 (2,500+)
           </span>
           <Button type="button" onClick={onClose}>
             Done

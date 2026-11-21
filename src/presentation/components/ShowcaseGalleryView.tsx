@@ -19,6 +19,7 @@ import {
   type CameraView,
   type ColorMode,
   type CreatureConfig,
+  type WaterMode,
 } from "@/domain/creature/entities";
 import {
   applyLanguageColors,
@@ -56,7 +57,7 @@ export function ShowcaseGalleryView({
   const [previewCreature, setPreviewCreature] = useState(creatureConfig.creature);
   const [previewView, setPreviewView] = useState<CameraView>(creatureConfig.view);
   const [previewColorMode, setPreviewColorMode] = useState<ColorMode>("canonical");
-  const [previewInWater, setPreviewInWater] = useState(true);
+  const [previewWaterMode, setPreviewWaterMode] = useState<WaterMode>("water");
   const [previewStage, setPreviewStage] = useState<number>(4);
 
   const stageObj =
@@ -69,7 +70,7 @@ export function ShowcaseGalleryView({
     creature: previewCreature,
     view: meta.supportsViewSelection ? previewView : "side",
     colorMode: previewColorMode,
-    inWater: previewInWater,
+    waterMode: previewWaterMode,
     commits: stageObj.sampleCommits,
     username: "your-username",
     colors: {
@@ -78,6 +79,13 @@ export function ShowcaseGalleryView({
     },
     backgroundMode: "transparent",
   };
+
+  const waterLabel =
+    previewWaterMode === "water"
+      ? "In Water"
+      : previewWaterMode === "no-water"
+        ? "Without Water"
+        : "Clear BG";
 
   const showcaseConfig =
     previewColorMode === "languages"
@@ -301,12 +309,12 @@ export function ShowcaseGalleryView({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setPreviewInWater(true)}
-                  className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition ${
-                    previewInWater
+                  onClick={() => setPreviewWaterMode("water")}
+                  className={`flex items-center justify-center gap-1 rounded-lg border px-2 py-2 font-mono text-xs font-semibold transition ${
+                    previewWaterMode === "water"
                       ? "border-primary bg-primary text-primary-foreground"
                       : "bg-muted/40 text-foreground hover:bg-muted"
                   }`}
@@ -316,14 +324,25 @@ export function ShowcaseGalleryView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPreviewInWater(false)}
-                  className={`rounded-lg border px-3 py-2 font-mono text-xs font-semibold transition ${
-                    !previewInWater
+                  onClick={() => setPreviewWaterMode("no-water")}
+                  className={`rounded-lg border px-2 py-2 font-mono text-xs font-semibold transition ${
+                    previewWaterMode === "no-water"
                       ? "border-primary bg-primary text-primary-foreground"
                       : "bg-muted/40 text-foreground hover:bg-muted"
                   }`}
                 >
                   Without Water
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewWaterMode("clear")}
+                  className={`rounded-lg border px-2 py-2 font-mono text-xs font-semibold transition ${
+                    previewWaterMode === "clear"
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "bg-muted/40 text-foreground hover:bg-muted"
+                  }`}
+                >
+                  Clear
                 </button>
               </div>
 
@@ -358,8 +377,7 @@ export function ShowcaseGalleryView({
                   Live Pixel Animation Preview
                 </CardTitle>
                 <CardDescription className="font-mono text-xs">
-                  Stage {stageObj.stage}: {stageObj.rank} ·{" "}
-                  {previewInWater ? "In Water" : "Clean Canvas"}
+                  Stage {stageObj.stage}: {stageObj.rank} · {waterLabel}
                 </CardDescription>
               </div>
               <Badge variant="outline" className="font-mono">
@@ -384,7 +402,7 @@ export function ShowcaseGalleryView({
             <CardContent>
               <div className="flex flex-col gap-4 rounded-lg border bg-muted/40 p-5">
                 <div className="border-b pb-2 font-mono text-base font-semibold text-foreground">
-                  Your Name | Software Engineer
+                  Your Name | Occupation
                 </div>
                 <p className="font-mono text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {readmeConfig.subtitleTags.join(" | ")}

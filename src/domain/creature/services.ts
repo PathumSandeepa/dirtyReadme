@@ -3,6 +3,7 @@ import {
   CREATURE_CATALOG,
   DEFAULT_LANGUAGES,
   ORIGINAL_CREATURE_PALETTES,
+  ORIGINAL_CREATURE_SWATCHES,
   STAGE_DEFINITIONS,
   type BackgroundMode,
   type CameraView,
@@ -14,6 +15,7 @@ import {
   type LanguageCount,
   type LanguageStat,
   type StageDefinition,
+  type WaterMode,
 } from "@/domain/creature/entities";
 
 export type SpriteKey = "tulkun-top" | "tulkun-side" | "jellyfish";
@@ -135,12 +137,48 @@ export function ensureLanguageSlots(
   return merged;
 }
 
+export function resolveWaterMode(
+  config: Partial<CreatureConfig> & { inWater?: boolean }
+): WaterMode {
+  if (
+    config.waterMode === "water" ||
+    config.waterMode === "no-water" ||
+    config.waterMode === "clear"
+  ) {
+    return config.waterMode;
+  }
+  if (config.inWater === false) return "no-water";
+  return "water";
+}
+
+export function resolveHudFontColor(config: CreatureConfig): string {
+  const custom = config.hudFontColor?.trim();
+  if (custom) {
+    return normalizeHex(custom, "#D8F3FF");
+  }
+  const p = derivePalette(config);
+  const waterMode = resolveWaterMode(config);
+  const isLightBg =
+    waterMode !== "water" &&
+    config.backgroundMode === "custom" &&
+    getLuminance(p.background) > 0.55;
+  return isLightBg ? "#0F172A" : "#D8F3FF";
+}
+
 export function getVisibleLanguages(config: CreatureConfig): LanguageStat[] {
   const count: LanguageCount =
     config.languageCount === 7 || config.languageCount === 5
       ? config.languageCount
       : 3;
-  return ensureLanguageSlots(config.languages, count).slice(0, count);
+  const sliced = ensureLanguageSlots(config.languages, count).slice(0, count);
+  if (config.colorMode === "canonical") {
+    const swatches = ORIGINAL_CREATURE_SWATCHES[config.creature];
+    return sliced.map((lang, idx) => ({
+      ...lang,
+      color: swatches[idx % swatches.length],
+    }));
+  }
+  return sliced;
 }
 
 export function applyLanguageColors(

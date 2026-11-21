@@ -503,27 +503,12 @@ export function ProfileReadmeStepPanel({
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              Call-To-Action Line
+              Call To Action Line
             </label>
             <input
               type="text"
               value={readmeConfig.ctaLine}
               onChange={(e) => onUpdateField("ctaLine", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-              Creature Caption Text (supports {"{{CREATURE}}"}, {"{{STAGE}}"},{" "}
-              {"{{COMMITS}}"})
-            </label>
-            <input
-              type="text"
-              value={readmeConfig.telemetryCaptionTemplate}
-              onChange={(e) =>
-                onUpdateField("telemetryCaptionTemplate", e.target.value)
-              }
               className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
@@ -586,8 +571,8 @@ export function ProfileReadmeStepPanel({
                 Drag &amp; Drop Tech Stack Builder
               </h2>
               <p className="text-sm text-muted-foreground">
-                3 default cards ready — drag skills across cards, reorder chips, or click
-                from {readmeConfig.badges.length}+ techs &amp; skills below.
+                3 default cards ready. Drag skills across cards, reorder chips, or
+                click from {readmeConfig.badges.length}+ techs &amp; skills below.
               </p>
             </div>
           </div>
@@ -1272,11 +1257,10 @@ export function ProfileReadmeStepPanel({
             ))}
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 text-xs">
+          <div className="grid grid-cols-1 gap-2.5 text-xs sm:grid-cols-3">
             {(
               [
-                { key: "includeMarkers", label: "Auto-Update Markers" },
-                { key: "includeTelemetryCaption", label: "Creature Caption" },
+                { key: "includeMarkers", label: "Auto Update Markers" },
                 { key: "includeStatsTable", label: "Telemetry Table" },
                 { key: "includeShareCard", label: "1280x640 Share Card" },
               ] as const

@@ -1,18 +1,22 @@
 import {
   STAGE_DEFINITIONS,
   type CreatureConfig,
+  type HudAlign,
+  type HudFontFamily,
+  type HudFontWeight,
 } from "@/domain/creature/entities";
-import { drawPixelTextRgba, fillRectRgba } from "@/domain/creature/pixelArt";
+import { GLYPHS_5X7, fillRectRgba } from "@/domain/creature/pixelArt";
 import {
   derivePalette,
   getCreatureMeta,
   getEffectiveCameraView,
   getEvolutionStage,
-  getLuminance,
   getViewDisplayLabel,
   getVisibleLanguages,
   hexToRgb,
   mixHex,
+  resolveHudFontColor,
+  resolveWaterMode,
 } from "@/domain/creature/services";
 
 export const CANVAS_WIDTH = 920;
@@ -29,7 +33,7 @@ export interface SpriteRgba {
   data: Uint8ClampedArray;
 }
 
-const STAGE_SCALES = [0.74, 0.82, 0.9, 0.98, 1.05] as const;
+const STAGE_SCALES = [0.46, 0.6, 0.74, 0.89, 1.05] as const;
 
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
@@ -141,51 +145,34 @@ export function recolorSpriteRgba(
     return rgbToHsl(r, g, b);
   });
 
-  const [pH, pS, pL] =
-    config.colorMode === "languages" && langHsls[0]
-      ? langHsls[0]
-      : rgbToHsl(...hexToRgb(config.colors.primary));
-  const [aH, aS, aL] =
-    config.colorMode === "languages" && langHsls[1]
-      ? langHsls[1]
-      : rgbToHsl(...hexToRgb(config.colors.accent));
-  const [eH, eS, eL] =
-    config.colorMode === "languages" && langHsls[2]
-      ? langHsls[2]
-      : rgbToHsl(...hexToRgb(config.colors.energy));
+  const zonePalette: [number, number, number][] =
+    config.colorMode === "languages" && langHsls.length > 0
+      ? langHsls
+      : [
+          rgbToHsl(...hexToRgb(config.colors.primary)),
+          rgbToHsl(...hexToRgb(config.colors.accent)),
+          rgbToHsl(...hexToRgb(config.colors.energy)),
+        ];
 
-  const extraHsls =
-    config.colorMode === "languages" ? langHsls.slice(3) : [];
-
-  const lerpHsl = (
-    a: [number, number, number],
-    b: [number, number, number],
-    w: number
-  ): [number, number, number] => {
-    const dh = ((b[0] - a[0] + 540) % 360) - 180;
-    return [
-      (a[0] + dh * w + 360) % 360,
-      a[1] * (1 - w) + b[1] * w,
-      a[2] * (1 - w) + b[2] * w,
-    ];
-  };
-
-  const sampleSmoothStops = (
-    base: [number, number, number],
-    u: number
-  ): [number, number, number] => {
-    if (extraHsls.length === 0 || u <= 0.35) return base;
-    const stops = [base, ...extraHsls];
-    const t = clamp((u - 0.35) / 0.65, 0, 1);
-    const pos = t * (stops.length - 1);
-    const i0 = Math.floor(pos);
-    const i1 = Math.min(stops.length - 1, i0 + 1);
-    return lerpHsl(stops[i0], stops[i1], pos - i0);
-  };
-
+  const zoneCount = zonePalette.length;
+  const view = getEffectiveCameraView(config.creature, config.view);
   const out = new Uint8ClampedArray(sprite.data.length);
   const src = sprite.data;
   const w = sprite.width;
+  const hPx = sprite.height;
+
+  const measureVerticalSpan = (x: number, y: number): number => {
+    let span = 1;
+    for (let dy = 1; dy <= 5 && y - dy >= 0; dy++) {
+      if (src[((y - dy) * w + x) * 4 + 3] <= 20) break;
+      span++;
+    }
+    for (let dy = 1; dy <= 5 && y + dy < hPx; dy++) {
+      if (src[((y + dy) * w + x) * 4 + 3] <= 20) break;
+      span++;
+    }
+    return span;
+  };
 
   for (let i = 0; i < src.length; i += 4) {
     const a = src[i + 3];
@@ -205,48 +192,84 @@ export function recolorSpriteRgba(
       continue;
     }
 
-    const px = (i / 4) % w;
+    const pixIdx = i / 4;
+    const px = pixIdx % w;
+    const py = Math.floor(pixIdx / w);
     const u = px / Math.max(1, w - 1);
+    const v = (py / Math.max(1, hPx - 1)) * 2 - 1;
 
-    let nr: number;
-    let ng: number;
-    let nb: number;
+    let zoneIdx = 0;
 
     if (config.creature === "tulkun") {
       if (h >= 6 && h <= 54 && s > 0.24) {
-        const targetL = clamp(l * 0.65 + aL * 0.35, 0.18, 0.85);
-        [nr, ng, nb] = hslToRgb(aH, Math.max(s * 0.45, aS * 0.9), targetL);
+        zoneIdx = 1 % zoneCount;
       } else if (l > 0.56 && h >= 172 && h <= 228 && s > 0.14) {
-        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
-        const targetL = clamp(l * 0.68 + tl * 0.32, 0.36, 0.92);
-        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.88, 0.25, 0.96), targetL);
+        zoneIdx = 2 % zoneCount;
+      } else if (zoneCount >= 5 && u >= (view === "top" ? 0.79 : 0.77)) {
+        zoneIdx = 4 % zoneCount;
+      } else if (
+        zoneCount >= 5 &&
+        (view === "top"
+          ? u >= 0.22 && u <= 0.46 && Math.abs(v) > 0.31
+          : u >= 0.28 &&
+            u <= 0.54 &&
+            v > 0.11 - 0.35 * Math.max(0, u - 0.28))
+      ) {
+        zoneIdx = 3 % zoneCount;
+      } else if (
+        zoneCount >= 7 &&
+        (view === "side"
+          ? v > 0.04 && u >= 0.05 && u < 0.77 && (s <= 0.2 || l > 0.42)
+          : u >= 0.58 && u < 0.79 && Math.abs(v) > 0.145)
+      ) {
+        zoneIdx = 5 % zoneCount;
+      } else if (
+        zoneCount >= 7 &&
+        u >= 0.24 &&
+        u < (view === "top" ? 0.79 : 0.77) &&
+        l >= 0.33 &&
+        (view === "top" || v <= 0.04)
+      ) {
+        zoneIdx = 6 % zoneCount;
       } else if (s <= 0.15 && l > 0.65) {
-        [nr, ng, nb] = hslToRgb(pH, Math.min(0.14, pS * 0.3), l);
+        const [pH, pS] = zonePalette[0];
+        const [nr, ng, nb] = hslToRgb(pH, Math.min(0.16, pS * 0.32), l);
+        out[i] = nr;
+        out[i + 1] = ng;
+        out[i + 2] = nb;
+        out[i + 3] = a;
+        continue;
       } else {
-        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
-        const deltaL = l - 0.31;
-        const targetL = clamp(tl + deltaL * 0.85, 0.14, 0.88);
-        [nr, ng, nb] = hslToRgb(
-          th,
-          clamp(ts * 0.92 + s * 0.12, 0.04, 0.88),
-          targetL
-        );
+        zoneIdx = 0;
       }
     } else {
-      if (l > 0.68) {
-        const [th, ts, tl] = sampleSmoothStops([aH, aS, aL], u);
-        const targetL = clamp(l * 0.72 + tl * 0.28, 0.55, 0.94);
-        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.92, 0.25, 0.96), targetL);
-      } else if (l < 0.34) {
-        const [th, ts, tl] = sampleSmoothStops([eH, eS, eL], u);
-        const targetL = clamp(l * 0.65 + tl * 0.35, 0.16, 0.58);
-        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.95, 0.35, 0.98), targetL);
+      // Jellyfish: curved bell rim + organic thickness classification (zero straight cuts)
+      const isBell = u < 0.265 - 0.08 * v * v;
+      if (isBell || zoneCount <= 3) {
+        if (l > 0.66) zoneIdx = 1 % zoneCount;
+        else if (l < 0.34) zoneIdx = 2 % zoneCount;
+        else zoneIdx = 0;
       } else {
-        const [th, ts, tl] = sampleSmoothStops([pH, pS, pL], u);
-        const targetL = clamp(tl + (l - 0.48) * 0.85, 0.2, 0.82);
-        [nr, ng, nb] = hslToRgb(th, clamp(ts * 0.95, 0.25, 0.98), targetL);
+        const spanY = measureVerticalSpan(px, py);
+        const isThickOralArm = spanY >= 4 && Math.abs(v) < 0.56;
+        if (isThickOralArm) {
+          zoneIdx = zoneCount >= 7 && l > 0.58 ? 4 : 3 % zoneCount;
+        } else if (zoneCount >= 7) {
+          zoneIdx = v < 0 ? 5 : 6;
+        } else {
+          zoneIdx = 4 % zoneCount;
+        }
       }
     }
+
+    const [zH, zS, zL] = zonePalette[zoneIdx];
+    const targetL = clamp(
+      zL * 0.32 + l * 0.68 + (l - 0.42) * 0.22,
+      0.16,
+      0.9
+    );
+    const targetS = clamp(zS * 0.92 + s * 0.1, 0.12, 0.98);
+    const [nr, ng, nb] = hslToRgb(zH, targetS, targetL);
 
     out[i] = nr;
     out[i + 1] = ng;
@@ -260,17 +283,21 @@ export function recolorSpriteRgba(
 function drawUnderwaterBackdrop(
   buffer: Uint8ClampedArray,
   phase: number,
-  config: CreatureConfig
+  config: CreatureConfig,
+  hudTopLogicalY: number
 ): void {
   const t = phase * Math.PI * 2;
   const isTransparent = config.backgroundMode === "transparent";
+  const maxWaterY = config.showHud
+    ? Math.max(120, Math.min(204, Math.floor(hudTopLogicalY - 2)))
+    : 214;
 
   if (isTransparent) {
     // Soft feathered deep-ocean aura centered behind creature (alpha fades to 0 inside canvas edges)
     const cx = LOGICAL_WIDTH * 0.5;
-    const cy = config.showHud ? 94 : 112;
+    const cy = config.showHud ? Math.round(maxWaterY * 0.52) : 112;
     const rx = 212;
-    const ry = config.showHud ? 88 : 104;
+    const ry = config.showHud ? Math.max(66, Math.round(maxWaterY * 0.48)) : 104;
 
     for (let y = 0; y < LOGICAL_HEIGHT; y++) {
       const ny = (y - cy) / ry;
@@ -307,7 +334,7 @@ function drawUnderwaterBackdrop(
   // Soft swaying underwater caustic sunbeams from surface
   const rayBases = [65, 138, 224, 308, 382];
   const rayWidths = [18, 24, 28, 20, 16];
-  const rayMaxY = config.showHud ? 172 : 210;
+  const rayMaxY = maxWaterY;
 
   for (let i = 0; i < rayBases.length; i++) {
     const sway = Math.sin(t + i * 1.35) * 9;
@@ -323,7 +350,8 @@ function drawUnderwaterBackdrop(
 
       // Keep rays feathered well inside transparent aura
       const edgeFade = isTransparent
-        ? smoothstep(20, 75, center) * smoothstep(LOGICAL_WIDTH - 20, LOGICAL_WIDTH - 75, center)
+        ? smoothstep(20, 75, center) *
+          smoothstep(LOGICAL_WIDTH - 20, LOGICAL_WIDTH - 75, center)
         : 1;
 
       for (let x = x0; x < x1; x++) {
@@ -348,28 +376,38 @@ function drawUnderwaterBackdrop(
 
   // Subtle drifting underwater current streaks
   for (let s = 0; s < 6; s++) {
-    const baseY = 26 + s * 26;
+    const baseY = 26 + s * 24;
+    if (baseY > rayMaxY - 8) continue;
     const segLen = 36 + (s % 3) * 18;
-    const scrollX = ((s * 83 + phase * LOGICAL_WIDTH) % (LOGICAL_WIDTH + 60)) - 30;
+    const scrollX =
+      ((s * 83 + phase * LOGICAL_WIDTH) % (LOGICAL_WIDTH + 60)) - 30;
     for (let k = 0; k < segLen; k++) {
       const px = Math.round(scrollX + k);
       if (px < 18 || px > LOGICAL_WIDTH - 18) continue;
       const py = Math.round(baseY + Math.sin(k * 0.16 + t + s) * 2.2);
       const edge = Math.sin((k / segLen) * Math.PI);
       const alpha = Math.round(32 * edge);
-      blendRgbaPixel(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, px, py, 165, 232, 255, alpha);
+      blendRgbaPixel(
+        buffer,
+        LOGICAL_WIDTH,
+        LOGICAL_HEIGHT,
+        px,
+        py,
+        165,
+        232,
+        255,
+        alpha
+      );
     }
   }
 
   // Rising background pixel bubbles
-  const maxBubbleY = config.showHud ? 174 : 216;
+  const maxBubbleY = maxWaterY;
   for (let i = 0; i < 10; i++) {
     const seedX = ((i * 67 + 29) % 100) / 100;
     const seedY = ((i * 43 + 11) % 100) / 100;
     const bx = Math.round(
-      36 +
-        seedX * (LOGICAL_WIDTH - 72) +
-        Math.sin(t + i * 1.1) * 3.5
+      36 + seedX * (LOGICAL_WIDTH - 72) + Math.sin(t + i * 1.1) * 3.5
     );
     const riseProgress = (seedY + phase) % 1;
     const by = Math.round(maxBubbleY - riseProgress * (maxBubbleY - 14));
@@ -390,11 +428,14 @@ function drawUnderwaterBackdrop(
 function drawUnderwaterForegroundBubbles(
   buffer: Uint8ClampedArray,
   phase: number,
-  config: CreatureConfig
+  config: CreatureConfig,
+  hudTopLogicalY: number
 ): void {
-  if (!config.inWater) return;
+  if (resolveWaterMode(config) !== "water") return;
   const t = phase * Math.PI * 2;
-  const maxBubbleY = config.showHud ? 172 : 214;
+  const maxBubbleY = config.showHud
+    ? Math.max(120, Math.min(204, Math.floor(hudTopLogicalY - 2)))
+    : 214;
 
   for (let i = 0; i < 6; i++) {
     const seedX = ((i * 89 + 17) % 100) / 100;
@@ -410,13 +451,50 @@ function drawUnderwaterForegroundBubbles(
 
     if (i < 2) {
       // Crisp 4x4 hollow pixel bubble ring with top-left specular gleam
-      const rim: readonly [number, number, number, number] = [148, 224, 255, alpha];
-      const gleam: readonly [number, number, number, number] = [235, 250, 255, Math.min(255, alpha + 40)];
+      const rim: readonly [number, number, number, number] = [
+        148,
+        224,
+        255,
+        alpha,
+      ];
+      const gleam: readonly [number, number, number, number] = [
+        235,
+        250,
+        255,
+        Math.min(255, alpha + 40),
+      ];
       fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 1, by, 2, 1, rim);
-      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 1, by + 3, 2, 1, rim);
+      fillRectRgba(
+        buffer,
+        LOGICAL_WIDTH,
+        LOGICAL_HEIGHT,
+        bx + 1,
+        by + 3,
+        2,
+        1,
+        rim
+      );
       fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx, by + 1, 1, 2, rim);
-      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 3, by + 1, 1, 2, rim);
-      fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx + 1, by + 1, 1, 1, gleam);
+      fillRectRgba(
+        buffer,
+        LOGICAL_WIDTH,
+        LOGICAL_HEIGHT,
+        bx + 3,
+        by + 1,
+        1,
+        2,
+        rim
+      );
+      fillRectRgba(
+        buffer,
+        LOGICAL_WIDTH,
+        LOGICAL_HEIGHT,
+        bx + 1,
+        by + 1,
+        1,
+        1,
+        gleam
+      );
     } else {
       fillRectRgba(buffer, LOGICAL_WIDTH, LOGICAL_HEIGHT, bx, by, 2, 2, [
         200,
@@ -432,16 +510,21 @@ function drawWakeParticles(
   buffer: Uint8ClampedArray,
   stage: number,
   phase: number,
-  config: CreatureConfig
+  config: CreatureConfig,
+  hudTopLogicalY: number
 ): void {
-  if (stage < 2) return;
+  const waterMode = resolveWaterMode(config);
+  if (waterMode === "clear" || stage < 2) return;
   const count = stage === 2 ? 4 : stage === 3 ? 7 : stage === 4 ? 11 : 15;
   const p = derivePalette(config);
   const visibleLangs = getVisibleLanguages(config);
-  const useLangColors = config.colorMode !== "canonical" && visibleLangs.length > 0;
+  const useLangColors =
+    config.colorMode !== "canonical" && visibleLangs.length > 0;
   const [er, eg, eb] = hexToRgb(p.energyBright);
   const [ar, ag, ab] = hexToRgb(p.accentMain);
-  const maxY = config.showHud ? 174 : 216;
+  const maxY = config.showHud
+    ? Math.max(120, Math.min(204, Math.floor(hudTopLogicalY - 2)))
+    : 216;
 
   for (let i = 0; i < count; i++) {
     const seed1 = ((i * 73 + 19) % 100) / 100;
@@ -451,8 +534,8 @@ function drawWakeParticles(
     const px = Math.round(28 + xWrap * (LOGICAL_WIDTH - 56));
     const py = Math.round(
       24 +
-        seed2 * (maxY - 36) +
-        Math.sin((phase * speedMul + seed1) * Math.PI * 2) * 4
+      seed2 * (maxY - 36) +
+      Math.sin((phase * speedMul + seed1) * Math.PI * 2) * 4
     );
     const size = i % 4 === 0 && stage >= 4 ? 2 : 1;
     const alpha = clamp(
@@ -479,12 +562,71 @@ function drawWakeParticles(
   }
 }
 
-function drawPixelHud(
-  buffer: Uint8ClampedArray,
-  config: CreatureConfig
-): void {
-  if (!config.showHud) return;
+export interface HudChipItem {
+  name: string;
+  color: string;
+  swatchSize: number;
+  width: number;
+}
 
+export interface HudLayout {
+  topY: number;
+  fontSize: number;
+  chipFontSize: number;
+  fontFamily: HudFontFamily;
+  fontWeight: HudFontWeight;
+  fontColor: string;
+  align: HudAlign;
+  accentColor: string;
+  swatchSize: number;
+  line1Text: string;
+  line1Y: number;
+  line1Width: number;
+  line2Text: string;
+  line2Y: number;
+  line2Width: number;
+  chipRows: { y: number; totalWidth: number; items: HudChipItem[] }[];
+}
+
+function getCssFontString(
+  family: Exclude<HudFontFamily, "pixel">,
+  size: number,
+  weight: HudFontWeight
+): string {
+  const cssWeight = weight === "normal" ? "400" : weight === "semibold" ? "600" : "700";
+  const cssFamily =
+    family === "mono"
+      ? 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
+      : family === "serif"
+        ? 'Georgia, "Times New Roman", Times, serif'
+        : 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  return `${cssWeight} ${size}px ${cssFamily}`;
+}
+
+function measureTextWidthApprox(
+  text: string,
+  fontSize: number,
+  family: HudFontFamily,
+  weight: HudFontWeight,
+  ctx?: CanvasRenderingContext2D
+): number {
+  if (family === "pixel") {
+    const unit = fontSize / 7;
+    return Math.max(0, text.length * 6 * unit - unit);
+  }
+  if (ctx) {
+    ctx.font = getCssFontString(family, fontSize, weight);
+    return ctx.measureText(text).width;
+  }
+  const ratio =
+    family === "mono" ? 0.66 : family === "serif" ? 0.6 : weight === "bold" ? 0.62 : 0.58;
+  return text.length * fontSize * ratio;
+}
+
+export function computeHudLayout(
+  config: CreatureConfig,
+  ctx?: CanvasRenderingContext2D
+): HudLayout {
   const stageInfo = getEvolutionStage(config.commits);
   const meta = getCreatureMeta(config.creature);
   const titleText = config.customTitle.trim()
@@ -495,94 +637,258 @@ function drawPixelHud(
     Math.floor(config.commits || 0)
   ).toLocaleString("en-US");
 
-  const line1 = `STAGE ${stageInfo.stage}: ${titleText}`;
-  const line2 = `CONTRIBUTIONS: ${formattedCommits}`;
+  const fontSize = clamp(Math.round(config.hudFontSize || 14), 12, 22);
+  const chipFontSize = Math.max(10, Math.round(fontSize * 0.86));
+  const fontFamily: HudFontFamily =
+    config.hudFontFamily === "mono" ||
+    config.hudFontFamily === "sans" ||
+    config.hudFontFamily === "serif"
+      ? config.hudFontFamily
+      : "pixel";
+  const fontWeight: HudFontWeight =
+    config.hudFontWeight === "normal" || config.hudFontWeight === "semibold"
+      ? config.hudFontWeight
+      : "bold";
+  const align: HudAlign =
+    config.hudAlign === "center" || config.hudAlign === "right"
+      ? config.hudAlign
+      : "left";
 
   const p = derivePalette(config);
-  const isLightBg =
-    !config.inWater &&
-    config.backgroundMode === "custom" &&
-    getLuminance(p.background) > 0.55;
+  const fontColor = resolveHudFontColor(config);
 
-  const [ar, ag, ab] = hexToRgb(p.accentMain);
-  const labelHex = isLightBg
-    ? "#1E293B"
-    : mixHex(p.energyMain, "#CBEBFF", 0.65);
-  const commitHex = isLightBg
-    ? "#0F172A"
-    : mixHex(p.energyBright, "#FFFFFF", 0.45);
-  const [lr, lg, lb] = hexToRgb(labelHex);
-  const [cr, cg, cb] = hexToRgb(commitHex);
+  const line1Text = `STAGE ${stageInfo.stage}: ${titleText}`;
+  const line2Text = `CONTRIBUTIONS: ${formattedCommits}`;
+
+  const swatchSize = Math.max(8, Math.round(fontSize * 0.68));
+  const swatchGap = Math.max(6, Math.round(fontSize * 0.45));
+  const line1TextWidth = measureTextWidthApprox(
+    line1Text,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    ctx
+  );
+  const line1Width = swatchSize + swatchGap + line1TextWidth;
+  const line2Width = measureTextWidthApprox(
+    line2Text,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    ctx
+  );
+
+  const chipSwatch = Math.max(7, Math.round(chipFontSize * 0.62));
+  const chipSwatchGap = Math.max(5, Math.round(chipFontSize * 0.4));
+  const chipSpacer = 22;
+  const maxHudWidth = CANVAS_WIDTH - 80;
 
   const visibleLangs = getVisibleLanguages(config);
-  const isCompact = visibleLangs.length > 3;
-  const row1Y = isCompact ? 179 : 190;
-  const row2Y = isCompact ? 189 : 201;
-  let chipY = isCompact ? 200 : 212;
+  const wrappedRows: { items: HudChipItem[]; totalWidth: number }[] = [];
+  let currentItems: HudChipItem[] = [];
+  let currentWidth = 0;
 
-  fillRectRgba(
-    buffer,
-    LOGICAL_WIDTH,
-    LOGICAL_HEIGHT,
-    24,
-    row1Y,
-    4,
-    7,
-    [ar, ag, ab, 255]
-  );
-  drawPixelTextRgba(
-    buffer,
-    LOGICAL_WIDTH,
-    LOGICAL_HEIGHT,
-    line1,
-    31,
-    row1Y,
-    1,
-    [lr, lg, lb, 255]
-  );
-
-  drawPixelTextRgba(
-    buffer,
-    LOGICAL_WIDTH,
-    LOGICAL_HEIGHT,
-    line2,
-    24,
-    row2Y,
-    1,
-    [cr, cg, cb, 255]
-  );
-
-  let chipX = 24;
   for (const lang of visibleLangs) {
     const nameShort = lang.name.toUpperCase().slice(0, 10);
-    const chipWidth = 7 + nameShort.length * 6 + 9;
-    if (chipX > 24 && chipX + chipWidth > LOGICAL_WIDTH - 16) {
-      chipX = 24;
-      chipY += 11;
-    }
-    const [sr, sg, sb] = hexToRgb(lang.color);
-    fillRectRgba(
-      buffer,
-      LOGICAL_WIDTH,
-      LOGICAL_HEIGHT,
-      chipX,
-      chipY,
-      4,
-      7,
-      [sr, sg, sb, 255]
-    );
-    drawPixelTextRgba(
-      buffer,
-      LOGICAL_WIDTH,
-      LOGICAL_HEIGHT,
+    const labelW = measureTextWidthApprox(
       nameShort,
-      chipX + 7,
-      chipY,
-      1,
-      [lr, lg, lb, 255]
+      chipFontSize,
+      fontFamily,
+      fontWeight,
+      ctx
     );
-    chipX += chipWidth;
+    const itemW = chipSwatch + chipSwatchGap + labelW;
+    const added = currentItems.length === 0 ? itemW : chipSpacer + itemW;
+    if (currentItems.length > 0 && currentWidth + added > maxHudWidth) {
+      wrappedRows.push({ items: currentItems, totalWidth: currentWidth });
+      currentItems = [{ name: nameShort, color: lang.color, swatchSize: chipSwatch, width: itemW }];
+      currentWidth = itemW;
+    } else {
+      currentItems.push({ name: nameShort, color: lang.color, swatchSize: chipSwatch, width: itemW });
+      currentWidth += added;
+    }
   }
+  if (currentItems.length > 0) {
+    wrappedRows.push({ items: currentItems, totalWidth: currentWidth });
+  }
+
+  const lineStep = Math.round(fontSize * 1.38);
+  const chipStep = Math.round(chipFontSize * 1.45);
+  const totalHeight =
+    lineStep * 2 + 4 + wrappedRows.length * chipStep;
+  const topY = Math.max(12, CANVAS_HEIGHT - 14 - totalHeight);
+
+  const line1Y = topY;
+  const line2Y = topY + lineStep;
+  const chipsStartY = line2Y + lineStep + 4;
+
+  const chipRows = wrappedRows.map((row, idx) => ({
+    y: chipsStartY + idx * chipStep,
+    totalWidth: row.totalWidth,
+    items: row.items,
+  }));
+
+  return {
+    topY,
+    fontSize,
+    chipFontSize,
+    fontFamily,
+    fontWeight,
+    fontColor,
+    align,
+    accentColor: p.accentMain,
+    swatchSize,
+    line1Text,
+    line1Y,
+    line1Width,
+    line2Text,
+    line2Y,
+    line2Width,
+    chipRows,
+  };
+}
+
+function getRowStartX(align: HudAlign, rowWidth: number): number {
+  const marginX = 40;
+  if (align === "center") {
+    return (CANVAS_WIDTH - rowWidth) * 0.5;
+  }
+  if (align === "right") {
+    return CANVAS_WIDTH - marginX - rowWidth;
+  }
+  return marginX;
+}
+
+function drawPixelTextCanvas(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  originX: number,
+  originY: number,
+  fontSize: number,
+  weight: HudFontWeight,
+  color: string
+): void {
+  const upper = text.toUpperCase();
+  const unit = fontSize / 7;
+  const dotExpand = weight === "bold" ? Math.max(0.45, unit * 0.22) : weight === "semibold" ? Math.max(0.2, unit * 0.1) : 0;
+  let cursorX = originX;
+  const startY = originY;
+
+  ctx.fillStyle = color;
+  for (let i = 0; i < upper.length; i++) {
+    const glyph = GLYPHS_5X7[upper[i]] ?? GLYPHS_5X7[" "];
+    for (let row = 0; row < glyph.length; row++) {
+      const bits = glyph[row];
+      for (let col = 0; col < bits.length; col++) {
+        if (bits[col] === "1") {
+          ctx.fillRect(
+            Math.round(cursorX + col * unit),
+            Math.round(startY + row * unit),
+            Math.max(1, Math.ceil(unit + dotExpand)),
+            Math.max(1, Math.ceil(unit))
+          );
+        }
+      }
+    }
+    cursorX += 6 * unit;
+  }
+}
+
+export function drawHudOnCanvas2D(
+  ctx: CanvasRenderingContext2D,
+  config: CreatureConfig
+): void {
+  if (!config.showHud) return;
+
+  const layout = computeHudLayout(config, ctx);
+  const swatchGap1 = Math.max(6, Math.round(layout.fontSize * 0.45));
+  const row1X = getRowStartX(layout.align, layout.line1Width);
+  const row1SwatchY = layout.line1Y + Math.round((layout.fontSize - layout.swatchSize) * 0.5);
+
+  ctx.save();
+  ctx.fillStyle = layout.accentColor;
+  ctx.beginPath();
+  ctx.roundRect(row1X, row1SwatchY, layout.swatchSize, layout.swatchSize, 2);
+  ctx.fill();
+
+  const text1X = row1X + layout.swatchSize + swatchGap1;
+  const row2X = getRowStartX(layout.align, layout.line2Width);
+
+  if (layout.fontFamily === "pixel") {
+    drawPixelTextCanvas(
+      ctx,
+      layout.line1Text,
+      text1X,
+      layout.line1Y,
+      layout.fontSize,
+      layout.fontWeight,
+      layout.fontColor
+    );
+    drawPixelTextCanvas(
+      ctx,
+      layout.line2Text,
+      row2X,
+      layout.line2Y,
+      layout.fontSize,
+      layout.fontWeight,
+      layout.fontColor
+    );
+  } else {
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillStyle = layout.fontColor;
+    ctx.font = getCssFontString(
+      layout.fontFamily,
+      layout.fontSize,
+      layout.fontWeight
+    );
+    ctx.fillText(layout.line1Text, text1X, layout.line1Y);
+    ctx.fillText(layout.line2Text, row2X, layout.line2Y);
+  }
+
+  const chipSwatchGap = Math.max(5, Math.round(layout.chipFontSize * 0.4));
+  for (const row of layout.chipRows) {
+    let cx = getRowStartX(layout.align, row.totalWidth);
+    for (const item of row.items) {
+      const sy =
+        row.y + Math.round((layout.chipFontSize - item.swatchSize) * 0.5);
+      ctx.fillStyle = item.color;
+      ctx.beginPath();
+      ctx.roundRect(cx, sy, item.swatchSize, item.swatchSize, 2);
+      ctx.fill();
+
+      const labelX = cx + item.swatchSize + chipSwatchGap;
+      if (layout.fontFamily === "pixel") {
+        drawPixelTextCanvas(
+          ctx,
+          item.name,
+          labelX,
+          row.y,
+          layout.chipFontSize,
+          layout.fontWeight,
+          layout.fontColor
+        );
+      } else {
+        ctx.textBaseline = "top";
+        ctx.textAlign = "left";
+        ctx.fillStyle = layout.fontColor;
+        ctx.font = getCssFontString(
+          layout.fontFamily,
+          layout.chipFontSize,
+          layout.fontWeight
+        );
+        ctx.fillText(item.name, labelX, row.y);
+      }
+
+      cx += item.width + 22;
+    }
+  }
+  ctx.restore();
+}
+
+export function estimateHudTopLogicalY(config: CreatureConfig): number {
+  if (!config.showHud) return LOGICAL_HEIGHT;
+  return computeHudLayout(config).topY * 0.5;
 }
 
 function invertCreatureDisplacement(
@@ -595,6 +901,8 @@ function invertCreatureDisplacement(
   stageScale: number,
   t: number
 ): [number, number] {
+  const ampScale = 0.55 + 0.45 * stageScale;
+
   if (creature === "jellyfish") {
     const pulse =
       (0.62 * Math.sin(t) +
@@ -619,12 +927,13 @@ function invertCreatureDisplacement(
 
     const trailT = clamp((u - 0.21) / 0.79, 0, 1);
     const vPhase = v * 0.65;
-    const primaryAmp = 14.5 * Math.pow(trailT, 1.12);
-    const secondaryAmp = 3.0 * Math.pow(trailT, 1.35);
+    const primaryAmp = 14.5 * ampScale * Math.pow(trailT, 1.12);
+    const secondaryAmp = 3.0 * ampScale * Math.pow(trailT, 1.35);
     const waveY =
       primaryAmp * Math.sin(1.65 * Math.PI * 2 * trailT - t + vPhase) +
       secondaryAmp * Math.sin(2.7 * Math.PI * 2 * trailT - 2 * t - vPhase);
-    const dragX = 4.6 * Math.pow(trailT, 0.85) * Math.sin(t - 0.65 - trailT * 1.4);
+    const dragX =
+      4.6 * ampScale * Math.pow(trailT, 0.85) * Math.sin(t - 0.65 - trailT * 1.4);
     const baseRimAttach = 1.0 - 0.11 * pulse * (1.0 - trailT * 0.85);
 
     const trailSrcX = lx - dragX;
@@ -637,7 +946,7 @@ function invertCreatureDisplacement(
   }
 
   if (view === "top") {
-    const maxAmp = 16.5 * (0.85 + 0.15 * stageScale);
+    const maxAmp = 16.5 * ampScale;
     const k = 1.45;
     let srcX = lx;
     let srcY = ly;
@@ -649,7 +958,7 @@ function invertCreatureDisplacement(
       const waveAngle = k * Math.PI * 2 * u - t;
       const spineY = maxAmp * env * Math.sin(waveAngle);
 
-      const dEnv = 0.91 * 1.55 * Math.pow(Math.max(u, 0.001), 0.55) / drawW;
+      const dEnv = (0.91 * 1.55 * Math.pow(Math.max(u, 0.001), 0.55)) / drawW;
       const dWave = (k * Math.PI * 2) / drawW;
       const slopeY =
         maxAmp * (dEnv * Math.sin(waveAngle) + env * Math.cos(waveAngle) * dWave);
@@ -657,8 +966,9 @@ function invertCreatureDisplacement(
       const uWing = Math.exp(-Math.pow((u - 0.34) / 0.11, 2));
       const vWing = smoothstep(0.24, 0.52, Math.abs(v));
       const wingMask = uWing * vWing;
-      const wingSweepX = 6.5 * wingMask * Math.sin(t - 0.6);
-      const wingSweepY = 2.8 * wingMask * Math.sign(v) * Math.cos(t - 0.6);
+      const wingSweepX = 6.5 * ampScale * wingMask * Math.sin(t - 0.6);
+      const wingSweepY =
+        2.8 * ampScale * wingMask * Math.sign(v) * Math.cos(t - 0.6);
 
       srcY = ly - spineY - wingSweepY;
       srcX = lx - wingSweepX + slopeY * srcY * 0.28;
@@ -667,7 +977,7 @@ function invertCreatureDisplacement(
     return [srcX, srcY];
   }
 
-  const maxAmp = 15.5 * (0.85 + 0.15 * stageScale);
+  const maxAmp = 15.5 * ampScale;
   const k = 1.35;
   let srcX = lx;
   let srcY = ly;
@@ -679,7 +989,7 @@ function invertCreatureDisplacement(
     const waveAngle = k * Math.PI * 2 * u - t;
     const spineY = maxAmp * env * Math.sin(waveAngle);
 
-    const dEnv = 0.89 * 1.65 * Math.pow(Math.max(u, 0.001), 0.65) / drawW;
+    const dEnv = (0.89 * 1.65 * Math.pow(Math.max(u, 0.001), 0.65)) / drawW;
     const dWave = (k * Math.PI * 2) / drawW;
     const slopeY =
       maxAmp * (dEnv * Math.sin(waveAngle) + env * Math.cos(waveAngle) * dWave);
@@ -687,8 +997,8 @@ function invertCreatureDisplacement(
     const uFin = Math.exp(-Math.pow((u - 0.42) / 0.13, 2));
     const vFin = smoothstep(0.18, 0.58, v);
     const finMask = uFin * vFin;
-    const finDx = 6.0 * finMask * Math.sin(t - 0.9);
-    const finDy = 3.2 * finMask * Math.cos(t - 0.9);
+    const finDx = 6.0 * ampScale * finMask * Math.sin(t - 0.9);
+    const finDy = 3.2 * ampScale * finMask * Math.cos(t - 0.9);
 
     srcY = ly - spineY - finDy;
     srcX = lx - finDx + slopeY * srcY * 0.24;
@@ -701,11 +1011,13 @@ export function renderCreatureFrameRgba(
   recoloredSprite: SpriteRgba,
   config: CreatureConfig,
   phase: number,
-  options?: { forceTransparent?: boolean }
+  options?: { forceTransparent?: boolean; skipHud?: boolean }
 ): Uint8ClampedArray {
   const out = new Uint8ClampedArray(LOGICAL_WIDTH * LOGICAL_HEIGHT * 4);
   const forceTransparent = options?.forceTransparent ?? false;
   const p = derivePalette(config);
+  const waterMode = resolveWaterMode(config);
+  const hudTopLogicalY = estimateHudTopLogicalY(config);
 
   if (!forceTransparent && config.backgroundMode !== "transparent") {
     const [br, bg, bb] = hexToRgb(p.background);
@@ -717,8 +1029,8 @@ export function renderCreatureFrameRgba(
     }
   }
 
-  if (config.inWater) {
-    drawUnderwaterBackdrop(out, phase, config);
+  if (waterMode === "water") {
+    drawUnderwaterBackdrop(out, phase, config, hudTopLogicalY);
   }
 
   const stageInfo = getEvolutionStage(config.commits);
@@ -726,12 +1038,21 @@ export function renderCreatureFrameRgba(
   const view = getEffectiveCameraView(config.creature, config.view);
   const t = phase * Math.PI * 2;
 
-  drawWakeParticles(out, stageInfo.stage, phase, config);
+  drawWakeParticles(out, stageInfo.stage, phase, config, hudTopLogicalY);
 
-  const hasMultiRowHud = config.showHud && config.languageCount > 3;
-  const maxFitW = 342 * stageScale;
-  const maxFitH =
-    (hasMultiRowHud ? 126 : config.showHud ? 136 : 170) * stageScale;
+  const availH = Math.max(96, hudTopLogicalY - 12);
+  const baseFitW = view === "top" ? 340 : 356;
+  const baseFitH =
+    view === "top"
+      ? config.showHud
+        ? Math.min(148, availH * 0.85)
+        : 192
+      : config.showHud
+        ? Math.min(142, availH * 0.84)
+        : 172;
+  const maxFitW = baseFitW * stageScale;
+  const maxFitH = baseFitH * stageScale;
+
   const fitScale = Math.min(
     maxFitW / Math.max(1, recoloredSprite.width),
     maxFitH / Math.max(1, recoloredSprite.height)
@@ -740,19 +1061,23 @@ export function renderCreatureFrameRgba(
   const drawH = recoloredSprite.height * fitScale;
 
   const centerX = LOGICAL_WIDTH * 0.5;
-  const centerY = hasMultiRowHud ? 86 : config.showHud ? 92 : 115;
+  const centerY = config.showHud
+    ? Math.max(54, Math.min(96, (hudTopLogicalY - 6) * 0.49))
+    : 115;
 
   let globalX = 0;
   let globalY = 0;
+  const ampScale = 0.55 + 0.45 * stageScale;
   if (config.creature === "jellyfish") {
-    globalX = -6.5 * Math.sin(t - 0.45) - 1.6 * Math.sin(2 * t - 0.9);
-    globalY = 2.4 * Math.sin(t + 0.5);
+    globalX =
+      (-6.5 * Math.sin(t - 0.45) - 1.6 * Math.sin(2 * t - 0.9)) * ampScale;
+    globalY = 2.4 * Math.sin(t + 0.5) * ampScale;
   } else if (view === "top") {
-    globalX = -2.2 * Math.cos(t);
-    globalY = 1.4 * Math.sin(t + 0.3);
+    globalX = -2.2 * Math.cos(t) * ampScale;
+    globalY = 1.4 * Math.sin(t + 0.3) * ampScale;
   } else {
-    globalX = -2.6 * Math.cos(t);
-    globalY = 2.0 * Math.sin(t + 0.5);
+    globalX = -2.6 * Math.cos(t) * ampScale;
+    globalY = 2.0 * Math.sin(t + 0.5) * ampScale;
   }
 
   const padX = 24;
@@ -813,8 +1138,7 @@ export function renderCreatureFrameRgba(
     }
   }
 
-  drawUnderwaterForegroundBubbles(out, phase, config);
-  drawPixelHud(out, config);
+  drawUnderwaterForegroundBubbles(out, phase, config, hudTopLogicalY);
   return out;
 }
 
@@ -875,7 +1199,8 @@ export function renderShareCardToCanvas(
     0,
     Math.floor(config.commits || 0)
   ).toLocaleString("en-US");
-  const windowLabel = config.windowMode === "annual" ? "ANNUAL" : "365D";
+  const windowLabel =
+    config.windowMode === "all-time" ? "ALL-TIME" : "THIS YEAR";
   const viewLabel = getViewDisplayLabel(config.creature, config.view);
 
   ctx.clearRect(0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT);

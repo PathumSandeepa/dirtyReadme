@@ -5,9 +5,11 @@ import { ArrowLeft, ArrowRight, Cpu, FileText } from "lucide-react";
 import type {
   BackgroundMode,
   CameraView,
+  ContributionWindow,
   CreatureConfig,
   CreatureId,
   LanguageCount,
+  WaterMode,
 } from "@/domain/creature/entities";
 import type {
   ReadmeBadge,
@@ -19,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreatureStepPanel } from "./CreatureStepPanel";
-import { PreviewWorkspace } from "./PreviewWorkspace";
+import { PreviewWorkspace, type PreviewTab } from "./PreviewWorkspace";
 import { ProfileReadmeStepPanel } from "./ProfileReadmeStepPanel";
 
 type CustomizeTab = "creature" | "readme";
@@ -32,13 +34,14 @@ interface CustomizeWorkspaceProps {
   readmeMarkdown: string;
   onSelectCreature: (creature: CreatureId) => void;
   onSelectView: (view: CameraView) => void;
+  onSelectWindow: (windowMode: ContributionWindow) => void;
   onApplyOriginalColors: () => void;
   onApplyAutoLanguageColors: () => void;
   onSetLanguageCount: (count: LanguageCount) => void;
   onUpdateLanguageColor: (index: number, hex: string) => void;
   onUpdateLanguageName: (index: number, name: string) => void;
   onResetLanguageColors: () => void;
-  onSetInWater: (inWater: boolean) => void;
+  onSetWaterMode: (mode: WaterMode) => void;
   onSetBackgroundMode: (mode: BackgroundMode) => void;
   onUpdateCustomBg: (hex: string) => void;
   onUpdateCreatureConfig: (
@@ -86,13 +89,14 @@ export function CustomizeWorkspace({
   readmeMarkdown,
   onSelectCreature,
   onSelectView,
+  onSelectWindow,
   onApplyOriginalColors,
   onApplyAutoLanguageColors,
   onSetLanguageCount,
   onUpdateLanguageColor,
   onUpdateLanguageName,
   onResetLanguageColors,
-  onSetInWater,
+  onSetWaterMode,
   onSetBackgroundMode,
   onUpdateCustomBg,
   onUpdateCreatureConfig,
@@ -115,6 +119,14 @@ export function CustomizeWorkspace({
   onNextToPublish,
 }: CustomizeWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<CustomizeTab>("creature");
+  const [previewTab, setPreviewTab] = useState<PreviewTab>("profile");
+
+  const handleSwitchEditorTab = (tab: CustomizeTab) => {
+    setActiveTab(tab);
+    if (tab === "readme") {
+      setPreviewTab("profile");
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -122,7 +134,7 @@ export function CustomizeWorkspace({
         <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
           <Tabs
             value={activeTab}
-            onValueChange={(val) => setActiveTab(val as CustomizeTab)}
+            onValueChange={(val) => handleSwitchEditorTab(val as CustomizeTab)}
           >
             <TabsList>
               <TabsTrigger value="creature" className="gap-2 font-mono text-xs">
@@ -160,19 +172,21 @@ export function CustomizeWorkspace({
             <CreatureStepPanel
               config={creatureConfig}
               customBgHex={customBgHex}
+              snapshot={snapshot}
               onSelectCreature={onSelectCreature}
               onSelectView={onSelectView}
+              onSelectWindow={onSelectWindow}
               onApplyOriginalColors={onApplyOriginalColors}
               onApplyAutoLanguageColors={onApplyAutoLanguageColors}
               onSetLanguageCount={onSetLanguageCount}
               onUpdateLanguageColor={onUpdateLanguageColor}
               onUpdateLanguageName={onUpdateLanguageName}
               onResetLanguageColors={onResetLanguageColors}
-              onSetInWater={onSetInWater}
+              onSetWaterMode={onSetWaterMode}
               onSetBackgroundMode={onSetBackgroundMode}
               onUpdateCustomBg={onUpdateCustomBg}
               onUpdateConfig={onUpdateCreatureConfig}
-              onNextStep={() => setActiveTab("readme")}
+              onNextStep={() => handleSwitchEditorTab("readme")}
             />
           ) : (
             <ProfileReadmeStepPanel
@@ -192,24 +206,24 @@ export function CustomizeWorkspace({
               onUndoCombineStackCards={onUndoCombineStackCards}
               onAddCustomBadgeToCard={onAddCustomBadgeToCard}
               onReorderTags={onReorderTags}
-              onPrevStep={() => setActiveTab("creature")}
+              onPrevStep={() => handleSwitchEditorTab("creature")}
               onNextStep={onNextToPublish}
             />
           )}
         </div>
 
-        <div className="lg:sticky lg:top-20 lg:col-span-7">
+        <div className="lg:sticky lg:top-20 lg:col-span-7 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1">
           <PreviewWorkspace
+            editorTab={activeTab}
+            previewTab={previewTab}
+            onPreviewTabChange={setPreviewTab}
             creatureConfig={creatureConfig}
             readmeConfig={readmeConfig}
             readmeMarkdown={readmeMarkdown}
             snapshot={snapshot}
-            onEditReadme={() => setActiveTab("readme")}
+            onEditReadme={() => handleSwitchEditorTab("readme")}
             onOpenAutoEvolve={onOpenAutoEvolve}
             onSelectView={onSelectView}
-            onApplyCommits={(commits) =>
-              onUpdateCreatureConfig((prev) => ({ ...prev, commits }))
-            }
           />
         </div>
       </div>

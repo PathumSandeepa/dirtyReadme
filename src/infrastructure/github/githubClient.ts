@@ -49,7 +49,7 @@ export interface GitHubProfileSnapshot {
   followers: number;
   totalStars: number;
   annualCommits: number;
-  rollingCommits: number;
+  allTimeCommits: number;
   estimatedCommits: number;
   languages: LanguageStat[];
   profileRepoExists: boolean;
@@ -137,26 +137,22 @@ export async function fetchGitHubProfileSnapshot(
   }
   const currentYear = String(new Date().getUTCFullYear());
 
-  const [userRes, reposRes, profileRepoRes, contribAllRes, contribLastRes] =
-    await Promise.all([
-      fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-        headers,
-      }),
-      fetch(
-        `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`,
-        { headers }
-      ),
-      fetch(
-        `https://api.github.com/repos/${encodeURIComponent(username)}/${encodeURIComponent(username)}`,
-        { headers }
-      ).catch(() => null),
-      fetch(
-        `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}`
-      ).catch(() => null),
-      fetch(
-        `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}?y=last`
-      ).catch(() => null),
-    ]);
+  const [userRes, reposRes, profileRepoRes, contribAllRes] = await Promise.all([
+    fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+      headers,
+    }),
+    fetch(
+      `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`,
+      { headers }
+    ),
+    fetch(
+      `https://api.github.com/repos/${encodeURIComponent(username)}/${encodeURIComponent(username)}`,
+      { headers }
+    ).catch(() => null),
+    fetch(
+      `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}`
+    ).catch(() => null),
+  ]);
 
   if (userRes.status === 404) {
     throw new Error(`GitHub user "@${username}" was not found.`);
@@ -222,7 +218,8 @@ export async function fetchGitHubProfileSnapshot(
   }
 
   let annualCommits = 0;
-  let rollingCommits = 0;
+  let allTimeCommits = 0;
+  let hasCalendarTotals = false;
   let sourceNote = "Public contributions via GitHub calendar";
 
   if (contribAllRes && contribAllRes.ok) {
@@ -230,28 +227,30 @@ export async function fetchGitHubProfileSnapshot(
       const data = (await contribAllRes.json()) as {
         total?: Record<string, number>;
       };
-      if (data.total && typeof data.total[currentYear] === "number") {
-        annualCommits = data.total[currentYear];
+      if (data.total && typeof data.total === "object") {
+        let sumAll = 0;
+        let foundYear = false;
+        for (const [key, val] of Object.entries(data.total)) {
+          if (/^\d{4}$/.test(key) && typeof val === "number") {
+            sumAll += val;
+            foundYear = true;
+          }
+        }
+        if (foundYear) {
+          hasCalendarTotals = true;
+          allTimeCommits = sumAll;
+          annualCommits =
+            typeof data.total[currentYear] === "number"
+              ? data.total[currentYear]
+              : 0;
+        }
       }
     } catch {
-      annualCommits = 0;
+      hasCalendarTotals = false;
     }
   }
 
-  if (contribLastRes && contribLastRes.ok) {
-    try {
-      const data = (await contribLastRes.json()) as {
-        total?: { lastYear?: number };
-      };
-      if (data.total && typeof data.total.lastYear === "number") {
-        rollingCommits = data.total.lastYear;
-      }
-    } catch {
-      rollingCommits = 0;
-    }
-  }
-
-  if (annualCommits === 0 && rollingCommits === 0) {
+  if (!hasCalendarTotals) {
     let commitFallback = Math.max(40, user.public_repos * 42 + totalStars * 15);
     sourceNote = "Estimated from public repositories & stars";
     try {
@@ -273,10 +272,7 @@ export async function fetchGitHubProfileSnapshot(
       sourceNote = "Estimated from public repositories & stars";
     }
     annualCommits = commitFallback;
-    rollingCommits = commitFallback;
-  } else {
-    if (annualCommits === 0) annualCommits = rollingCommits;
-    if (rollingCommits === 0) rollingCommits = annualCommits;
+    allTimeCommits = commitFallback;
   }
 
   return {
@@ -292,7 +288,7 @@ export async function fetchGitHubProfileSnapshot(
     followers: user.followers,
     totalStars,
     annualCommits,
-    rollingCommits,
+    allTimeCommits,
     estimatedCommits: annualCommits,
     languages:
       topLanguages.length > 0
