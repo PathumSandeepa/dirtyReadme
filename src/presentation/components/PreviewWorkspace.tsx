@@ -16,9 +16,13 @@ import {
   Users,
 } from "lucide-react";
 import type { CameraView, CreatureConfig } from "@/domain/creature/entities";
-import { getCreatureMeta, getEvolutionStage } from "@/domain/creature/services";
-import { generateCreatureSvgDocument } from "@/domain/creature/svgRenderer";
-import type { ReadmeConfig } from "@/domain/profile/entities";
+import {
+  getCreatureMeta,
+  getEvolutionStage,
+  getSpriteKey,
+  getViewDisplayLabel,
+} from "@/domain/creature/services";
+import type { ReadmeBadge, ReadmeConfig } from "@/domain/profile/entities";
 import {
   buildActionLinkBadgeUrl,
   buildShieldBadgeUrl,
@@ -27,9 +31,13 @@ import {
 import {
   copyToClipboard,
   downloadBlobFile,
-  downloadTextFile,
 } from "@/infrastructure/browser/downloadAdapter";
-import { encodeAnimatedWebPFromSvgFrames } from "@/infrastructure/browser/webpEncoder";
+import { loadCreatureSprite } from "@/infrastructure/browser/spriteLoader";
+import {
+  encodeAnimatedGifFromCreature,
+  encodeAnimatedWebPFromCreature,
+  exportShareCardPngBlob,
+} from "@/infrastructure/browser/webpEncoder";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,18 +49,16 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ComparatorPanel } from "./ComparatorPanel";
-import { CreatureSvgView } from "./CreatureSvgView";
+import { CreatureAnimatedView } from "./CreatureAnimatedView";
 import { EvolutionPanel } from "./EvolutionPanel";
-import { ShareCardSvgView } from "./ShareCardSvgView";
+import { ShareCardCanvasView } from "./ShareCardCanvasView";
 
 type PreviewTab = "profile" | "share-card" | "compare" | "stages";
-type CodeSubTab = "visual" | "markdown" | "svg";
+type CodeSubTab = "visual" | "markdown";
 
 interface PreviewWorkspaceProps {
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
-  creatureSvg: string;
-  shareCardSvg: string;
   readmeMarkdown: string;
   snapshot: GitHubProfileSnapshot | null;
   onEditReadme: () => void;
@@ -64,8 +70,6 @@ interface PreviewWorkspaceProps {
 export function PreviewWorkspace({
   creatureConfig,
   readmeConfig,
-  creatureSvg,
-  shareCardSvg,
   readmeMarkdown,
   snapshot,
   onEditReadme,
@@ -79,12 +83,20 @@ export function PreviewWorkspace({
   const [showSidebar, setShowSidebar] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webpBusy, setWebpBusy] = useState(false);
+  const [gifBusy, setGifBusy] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
 
   const stage = getEvolutionStage(creatureConfig.commits);
   const meta = getCreatureMeta(creatureConfig.creature);
+  const viewLabel = getViewDisplayLabel(
+    creatureConfig.creature,
+    creatureConfig.view
+  );
   const username = creatureConfig.username.trim() || "your-username";
-  const enabledBadges = readmeConfig.badges.filter((b) => b.enabled);
-  const enabledLinks = readmeConfig.actionLinks.filter((l) => l.enabled);
+  const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
+  const enabledLinks = readmeConfig.actionLinks.filter(
+    (l) => l.enabled && l.label.trim()
+  );
 
   const displayName =
     readmeConfig.profileDisplayName.trim() || snapshot?.displayName || username;
@@ -108,20 +120,39 @@ export function PreviewWorkspace({
   const handleExportWebP = async () => {
     setWebpBusy(true);
     try {
-      const durationMs = Math.round(
-        3400 / Math.max(0.25, creatureConfig.animationSpeed || 1)
+      const sprite = await loadCreatureSprite(
+        getSpriteKey(creatureConfig.creature, creatureConfig.view)
       );
-      const blob = await encodeAnimatedWebPFromSvgFrames({
-        width: 920,
-        height: 460,
-        frameCount: 20,
-        durationMs,
-        buildFrameSvg: (phase) =>
-          generateCreatureSvgDocument(creatureConfig, phase),
-      });
+      const blob = await encodeAnimatedWebPFromCreature(creatureConfig, sprite);
       downloadBlobFile("creature.webp", blob);
     } finally {
       setWebpBusy(false);
+    }
+  };
+
+  const handleExportGif = async () => {
+    setGifBusy(true);
+    try {
+      const sprite = await loadCreatureSprite(
+        getSpriteKey(creatureConfig.creature, creatureConfig.view)
+      );
+      const blob = await encodeAnimatedGifFromCreature(creatureConfig, sprite);
+      downloadBlobFile("creature.gif", blob);
+    } finally {
+      setGifBusy(false);
+    }
+  };
+
+  const handleExportShareCardPng = async () => {
+    setShareBusy(true);
+    try {
+      const sprite = await loadCreatureSprite(
+        getSpriteKey(creatureConfig.creature, creatureConfig.view)
+      );
+      const blob = await exportShareCardPngBlob(creatureConfig, sprite);
+      downloadBlobFile("share-card.png", blob);
+    } finally {
+      setShareBusy(false);
     }
   };
 
@@ -143,8 +174,7 @@ export function PreviewWorkspace({
                 Live Creature Canvas — {meta.name}
               </CardTitle>
               <CardDescription className="font-mono text-xs">
-                Stage {stage.stage} ({stage.rank}) · View:{" "}
-                {creatureConfig.view.toUpperCase()}
+                Stage {stage.stage} ({stage.rank}) · View: {viewLabel}
               </CardDescription>
             </div>
           </div>
@@ -154,22 +184,21 @@ export function PreviewWorkspace({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() =>
-                downloadTextFile("creature.svg", creatureSvg, "image/svg+xml")
-              }
+              disabled={webpBusy}
+              onClick={handleExportWebP}
             >
               <Download data-icon="inline-start" />
-              SVG
+              {webpBusy ? "Encoding WebP..." : "Animated WebP"}
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              disabled={webpBusy}
-              onClick={handleExportWebP}
+              disabled={gifBusy}
+              onClick={handleExportGif}
             >
               <Download data-icon="inline-start" />
-              {webpBusy ? "Encoding..." : "Animated WebP"}
+              {gifBusy ? "Encoding GIF..." : "Animated GIF"}
             </Button>
             <Button
               type="button"
@@ -195,12 +224,12 @@ export function PreviewWorkspace({
           <div
             className={
               creatureConfig.backgroundMode === "transparent"
-                ? "bg-[#0d1117] p-4"
+                ? "transparency-grid p-4"
                 : "p-4"
             }
           >
             <div className="mx-auto max-w-2xl">
-              <CreatureSvgView config={creatureConfig} className="w-full" />
+              <CreatureAnimatedView config={creatureConfig} className="w-full" />
             </div>
           </div>
         </CardContent>
@@ -243,9 +272,6 @@ export function PreviewWorkspace({
                 </TabsTrigger>
                 <TabsTrigger value="markdown" className="text-xs">
                   README.md
-                </TabsTrigger>
-                <TabsTrigger value="svg" className="text-xs">
-                  SVG XML
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -460,20 +486,41 @@ export function PreviewWorkspace({
                               </p>
                             )}
 
-                            {!isMinimal && enabledBadges.length > 0 && (
-                              <div
-                                className={`flex flex-wrap gap-1.5 ${
-                                  isAlignedLeft ? "justify-start" : "justify-center"
-                                }`}
-                              >
-                                {enabledBadges.map((badge) => (
-                                  <img
-                                    key={badge.id}
-                                    src={buildShieldBadgeUrl(badge)}
-                                    alt={badge.label}
-                                    className="h-6 rounded"
-                                  />
-                                ))}
+                            {!isMinimal && (
+                              <div className="flex flex-col gap-3">
+                                {readmeConfig.stackCards.map((card) => {
+                                  const cardBadges = card.badgeIds
+                                    .map((id) => badgeById.get(id))
+                                    .filter((b): b is ReadmeBadge =>
+                                      Boolean(b && b.label.trim())
+                                    );
+                                  if (cardBadges.length === 0) return null;
+                                  return (
+                                    <div key={card.id} className="flex flex-col gap-1.5">
+                                      {card.title.trim() && (
+                                        <h4 className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                                          {card.title}
+                                        </h4>
+                                      )}
+                                      <div
+                                        className={`flex flex-wrap gap-1.5 ${
+                                          isAlignedLeft
+                                            ? "justify-start"
+                                            : "justify-center"
+                                        }`}
+                                      >
+                                        {cardBadges.map((badge) => (
+                                          <img
+                                            key={`${card.id}-${badge.id}`}
+                                            src={buildShieldBadgeUrl(badge)}
+                                            alt={badge.label}
+                                            className="h-6 rounded"
+                                          />
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
 
@@ -483,17 +530,29 @@ export function PreviewWorkspace({
                                   isAlignedLeft ? "justify-start" : "justify-center"
                                 }`}
                               >
-                                {enabledLinks.map((link) => (
-                                  <img
-                                    key={link.id}
-                                    src={buildActionLinkBadgeUrl(
-                                      link,
-                                      creatureConfig
-                                    )}
-                                    alt={link.label}
-                                    className="h-6 rounded"
-                                  />
-                                ))}
+                                {enabledLinks.map((link) => {
+                                  const href = resolveDynamicTokens(
+                                    link.url,
+                                    creatureConfig
+                                  );
+                                  return (
+                                    <a
+                                      key={link.id}
+                                      href={href}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                    >
+                                      <img
+                                        src={buildActionLinkBadgeUrl(
+                                          link,
+                                          creatureConfig
+                                        )}
+                                        alt={link.label}
+                                        className="h-6 rounded transition hover:opacity-85"
+                                      />
+                                    </a>
+                                  );
+                                })}
                               </div>
                             )}
                           </>
@@ -508,12 +567,12 @@ export function PreviewWorkspace({
                             className="w-full"
                             style={{
                               maxWidth: `${Math.min(
-                                780,
+                                920,
                                 Math.max(360, readmeConfig.imageWidth)
                               )}px`,
                             }}
                           >
-                            <CreatureSvgView
+                            <CreatureAnimatedView
                               config={creatureConfig}
                               className="w-full"
                             />
@@ -535,21 +594,6 @@ export function PreviewWorkspace({
                               )}
                             </p>
                           )}
-
-                        {readmeConfig.includeShareCard && (
-                          <div
-                            className={`mx-auto max-w-md overflow-hidden rounded-lg border ${
-                              githubTheme === "dark"
-                                ? "border-[#30363d]"
-                                : "border-[#d0d7de]"
-                            }`}
-                          >
-                            <ShareCardSvgView
-                              config={creatureConfig}
-                              className="w-full"
-                            />
-                          </div>
-                        )}
 
                         {!isMarkerOnly &&
                           (isTelemetry || readmeConfig.includeStatsTable) && (
@@ -597,7 +641,7 @@ export function PreviewWorkspace({
                                         Creature Model
                                       </td>
                                       <td className="px-3 py-1.5 font-medium">
-                                        {meta.name} ({creatureConfig.view.toUpperCase()})
+                                        {meta.name} ({viewLabel})
                                       </td>
                                     </tr>
                                     <tr>
@@ -629,6 +673,24 @@ export function PreviewWorkspace({
                                   </tbody>
                                 </table>
                               </div>
+                            </div>
+                          )}
+
+                        {!isMarkerOnly &&
+                          (isTelemetry || readmeConfig.includeShareCard) && (
+                            <div
+                              className={`overflow-hidden rounded-lg border ${
+                                isAlignedLeft ? "" : "mx-auto"
+                              } max-w-md ${
+                                githubTheme === "dark"
+                                  ? "border-[#30363d]"
+                                  : "border-[#d0d7de]"
+                              }`}
+                            >
+                              <ShareCardCanvasView
+                                config={creatureConfig}
+                                className="w-full"
+                              />
                             </div>
                           )}
 
@@ -689,33 +751,6 @@ export function PreviewWorkspace({
                 </pre>
               </div>
             )}
-
-            {codeSubTab === "svg" && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-muted-foreground">
-                    Pure-CSS animated SVG (
-                    {creatureSvg.length.toLocaleString("en-US")} bytes)
-                  </span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCopy("svg-tab", creatureSvg)}
-                  >
-                    {copiedId === "svg-tab" ? (
-                      <Check data-icon="inline-start" />
-                    ) : (
-                      <Copy data-icon="inline-start" />
-                    )}
-                    {copiedId === "svg-tab" ? "Copied" : "Copy SVG XML"}
-                  </Button>
-                </div>
-                <pre className="max-h-[500px] overflow-auto rounded-lg border bg-muted/40 p-4 font-mono text-xs leading-relaxed text-foreground">
-                  {creatureSvg}
-                </pre>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
@@ -728,23 +763,22 @@ export function PreviewWorkspace({
                 Social Share Banner (1280×640)
               </CardTitle>
               <CardDescription>
-                Optional banner synced with your active creature palette.
+                Optional PNG banner synced with your active creature palette.
               </CardDescription>
             </div>
             <Button
               type="button"
               size="sm"
-              onClick={() =>
-                downloadTextFile("share-card.svg", shareCardSvg, "image/svg+xml")
-              }
+              disabled={shareBusy}
+              onClick={handleExportShareCardPng}
             >
               <Download data-icon="inline-start" />
-              Download SVG
+              {shareBusy ? "Exporting..." : "Download PNG"}
             </Button>
           </CardHeader>
           <CardContent>
             <div className="overflow-hidden rounded-lg border">
-              <ShareCardSvgView config={creatureConfig} className="w-full" />
+              <ShareCardCanvasView config={creatureConfig} className="w-full" />
             </div>
           </CardContent>
         </Card>

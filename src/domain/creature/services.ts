@@ -13,6 +13,8 @@ import {
   type StageDefinition,
 } from "@/domain/creature/entities";
 
+export type SpriteKey = "tulkun-top" | "tulkun-side" | "jellyfish";
+
 export function normalizeHex(value: string, fallback = "#F4F6F8"): string {
   const trimmed = value.trim();
   if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) {
@@ -31,19 +33,12 @@ export function resolveBackgroundHex(
   mode: BackgroundMode,
   customHex: string
 ): string {
-  switch (mode) {
-    case "transparent":
-      return "transparent";
-    case "black":
-      return "#000000";
-    case "github-dark":
-      return "#0D1117";
-    case "custom":
-      return normalizeHex(customHex, "#0D1117");
-  }
+  return mode === "transparent"
+    ? "transparent"
+    : normalizeHex(customHex, "#0D1117");
 }
 
-function hexToRgb(hex: string): [number, number, number] {
+export function hexToRgb(hex: string): [number, number, number] {
   const clean = normalizeHex(hex).slice(1);
   return [
     parseInt(clean.slice(0, 2), 16),
@@ -74,9 +69,38 @@ export function mixHex(hexA: string, hexB: string, weightB: number): string {
   );
 }
 
-function getLuminance(hex: string): number {
+export function getLuminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function getEffectiveCameraView(
+  creature: CreatureId,
+  view: CameraView
+): CameraView {
+  if (creature === "jellyfish") return "side";
+  return view === "top" ? "top" : "side";
+}
+
+export function getSpriteKey(
+  creature: CreatureId,
+  view: CameraView
+): SpriteKey {
+  if (creature === "jellyfish") return "jellyfish";
+  return view === "top" ? "tulkun-top" : "tulkun-side";
+}
+
+export function getSpriteAssetPath(key: SpriteKey): string {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+  return `${basePath}/sprites/${key}.png`;
+}
+
+export function getViewDisplayLabel(
+  creature: CreatureId,
+  view: CameraView
+): string {
+  if (creature === "jellyfish") return "PELAGIC";
+  return getEffectiveCameraView(creature, view).toUpperCase();
 }
 
 export function applyLanguageColors(
@@ -87,7 +111,7 @@ export function applyLanguageColors(
   const lang2 = languages[1]?.color ?? "#FF6B00";
   const lang3 = languages[2]?.color ?? "#00E676";
 
-  const primary = mixHex("#F4F6F8", lang1, 0.18);
+  const primary = mixHex("#36506B", lang1, 0.55);
   const accent = normalizeHex(lang2, "#FF6B00");
   const energy =
     getLuminance(lang3) < 0.35
@@ -110,10 +134,10 @@ export function applyLanguageColors(
 }
 
 export function derivePalette(config: CreatureConfig): DerivedPalette {
-  const primary = normalizeHex(config.colors.primary, "#36506B");
-  const accent = normalizeHex(config.colors.accent, "#E4AE5B");
-  const energy = normalizeHex(config.colors.energy, "#4E9AE6");
-  const frame = normalizeHex(config.colors.frame, "#1F2E3E");
+  const primary = normalizeHex(config.colors.primary, "#2C4156");
+  const accent = normalizeHex(config.colors.accent, "#C86D3B");
+  const energy = normalizeHex(config.colors.energy, "#9CE2F8");
+  const frame = normalizeHex(config.colors.frame, "#141E2B");
   const isLightArmor = getLuminance(primary) > 0.45;
 
   const armorMid =

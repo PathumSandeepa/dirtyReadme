@@ -141,8 +141,6 @@ export function StudioApp() {
             readmeConfig={controller.readmeConfig}
             customBgHex={controller.customBgHex}
             snapshot={controller.snapshot}
-            creatureSvg={controller.creatureSvg}
-            shareCardSvg={controller.shareCardSvg}
             readmeMarkdown={controller.fullReadmeMarkdown}
             onSelectCreature={controller.selectCreature}
             onSelectView={controller.selectView}
@@ -152,11 +150,18 @@ export function StudioApp() {
             onUpdateCustomBg={controller.updateCustomBackground}
             onUpdateCreatureConfig={controller.setCreatureConfig}
             onUpdateReadmeField={controller.updateReadmeField}
+            onSelectTemplate={controller.selectReadmeTemplate}
             onChangeRawMarkdown={(raw) =>
               controller.updateReadmeField("rawOverride", raw)
             }
-            onReorderBadges={controller.reorderBadges}
-            onMoveBadge={controller.moveBadgeByStep}
+            onAddBadgeToCard={controller.addBadgeToCard}
+            onRemoveBadgeFromCard={controller.removeBadgeFromCard}
+            onMoveBadgeAcrossCards={controller.moveBadgeAcrossCards}
+            onAddStackCard={controller.addStackCard}
+            onRenameStackCard={controller.renameStackCard}
+            onDeleteStackCard={controller.deleteStackCard}
+            onReorderStackCards={controller.reorderCards}
+            onAddCustomBadgeToCard={controller.addCustomBadgeToCard}
             onReorderTags={controller.reorderSubtitleTags}
             onOpenAutoEvolve={() => setAutoEvolveOpen(true)}
             onBackToRepoGuide={() => setScreen("repo-guide")}
@@ -167,10 +172,12 @@ export function StudioApp() {
         {screen === "publish" && (
           <TokenPublishScreen
             creatureConfig={controller.creatureConfig}
-            creatureSvg={controller.creatureSvg}
-            shareCardSvg={controller.shareCardSvg}
+            readmeConfig={controller.readmeConfig}
             readmeMarkdown={controller.fullReadmeMarkdown}
-            includeShareCard={controller.readmeConfig.includeShareCard}
+            includeShareCard={
+              controller.readmeConfig.includeShareCard ||
+              controller.readmeConfig.templateId === "telemetry-stats"
+            }
             defaultBranch={controller.snapshot?.profileRepoBranch || "main"}
             onBack={() => setScreen("customize")}
           />
@@ -187,7 +194,7 @@ export function StudioApp() {
               <strong className="font-semibold text-foreground">
                 dynamic-creature
               </strong>{" "}
-              by PathumSandeepa · Pure-CSS animated SVG &amp; WebP GitHub profile builder.
+              by PathumSandeepa · S-curve Animated WebP &amp; GIF GitHub profile builder.
             </span>
           </div>
 
@@ -227,6 +234,7 @@ export function StudioApp() {
         open={autoEvolveOpen}
         onClose={() => setAutoEvolveOpen(false)}
         config={controller.creatureConfig}
+        readmeConfig={controller.readmeConfig}
       />
     </div>
   );

@@ -9,7 +9,11 @@ import type {
   CreatureId,
   THEME_PRESETS,
 } from "@/domain/creature/entities";
-import type { ReadmeConfig } from "@/domain/profile/entities";
+import type {
+  ReadmeBadge,
+  ReadmeConfig,
+  ReadmeTemplateId,
+} from "@/domain/profile/entities";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,8 +29,6 @@ interface CustomizeWorkspaceProps {
   readmeConfig: ReadmeConfig;
   customBgHex: string;
   snapshot: GitHubProfileSnapshot | null;
-  creatureSvg: string;
-  shareCardSvg: string;
   readmeMarkdown: string;
   onSelectCreature: (creature: CreatureId) => void;
   onSelectView: (view: CameraView) => void;
@@ -41,9 +43,28 @@ interface CustomizeWorkspaceProps {
     key: K,
     value: ReadmeConfig[K]
   ) => void;
+  onSelectTemplate: (templateId: ReadmeTemplateId) => void;
   onChangeRawMarkdown: (raw: string | null) => void;
-  onReorderBadges: (draggedId: string, targetId: string) => void;
-  onMoveBadge: (badgeId: string, direction: -1 | 1) => void;
+  onAddBadgeToCard: (
+    cardId: string,
+    badgeId: string,
+    beforeBadgeId?: string
+  ) => void;
+  onRemoveBadgeFromCard: (cardId: string, badgeId: string) => void;
+  onMoveBadgeAcrossCards: (
+    badgeId: string,
+    fromCardId: string,
+    toCardId: string,
+    targetBadgeId?: string
+  ) => void;
+  onAddStackCard: (title?: string) => string;
+  onRenameStackCard: (cardId: string, title: string) => void;
+  onDeleteStackCard: (cardId: string) => void;
+  onReorderStackCards: (fromIdx: number, toIdx: number) => void;
+  onAddCustomBadgeToCard: (
+    cardId: string,
+    badge: Omit<ReadmeBadge, "enabled">
+  ) => void;
   onReorderTags: (fromIdx: number, toIdx: number) => void;
   onOpenAutoEvolve: () => void;
   onBackToRepoGuide: () => void;
@@ -55,8 +76,6 @@ export function CustomizeWorkspace({
   readmeConfig,
   customBgHex,
   snapshot,
-  creatureSvg,
-  shareCardSvg,
   readmeMarkdown,
   onSelectCreature,
   onSelectView,
@@ -66,9 +85,16 @@ export function CustomizeWorkspace({
   onUpdateCustomBg,
   onUpdateCreatureConfig,
   onUpdateReadmeField,
+  onSelectTemplate,
   onChangeRawMarkdown,
-  onReorderBadges,
-  onMoveBadge,
+  onAddBadgeToCard,
+  onRemoveBadgeFromCard,
+  onMoveBadgeAcrossCards,
+  onAddStackCard,
+  onRenameStackCard,
+  onDeleteStackCard,
+  onReorderStackCards,
+  onAddCustomBadgeToCard,
   onReorderTags,
   onOpenAutoEvolve,
   onBackToRepoGuide,
@@ -134,9 +160,16 @@ export function CustomizeWorkspace({
               creatureConfig={creatureConfig}
               readmeConfig={readmeConfig}
               onUpdateField={onUpdateReadmeField}
+              onSelectTemplate={onSelectTemplate}
               onChangeRawMarkdown={onChangeRawMarkdown}
-              onReorderBadges={onReorderBadges}
-              onMoveBadge={onMoveBadge}
+              onAddBadgeToCard={onAddBadgeToCard}
+              onRemoveBadgeFromCard={onRemoveBadgeFromCard}
+              onMoveBadgeAcrossCards={onMoveBadgeAcrossCards}
+              onAddStackCard={onAddStackCard}
+              onRenameStackCard={onRenameStackCard}
+              onDeleteStackCard={onDeleteStackCard}
+              onReorderStackCards={onReorderStackCards}
+              onAddCustomBadgeToCard={onAddCustomBadgeToCard}
               onReorderTags={onReorderTags}
               onPrevStep={() => setActiveTab("creature")}
               onNextStep={onNextToPublish}
@@ -148,8 +181,6 @@ export function CustomizeWorkspace({
           <PreviewWorkspace
             creatureConfig={creatureConfig}
             readmeConfig={readmeConfig}
-            creatureSvg={creatureSvg}
-            shareCardSvg={shareCardSvg}
             readmeMarkdown={readmeMarkdown}
             snapshot={snapshot}
             onEditReadme={() => setActiveTab("readme")}

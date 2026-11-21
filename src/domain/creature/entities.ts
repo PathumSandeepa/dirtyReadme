@@ -1,12 +1,12 @@
 export type CreatureId = "tulkun" | "jellyfish";
 
-export type CameraView = "side" | "dive" | "top";
+export type CameraView = "side" | "top";
 
 export type ContributionWindow = "annual" | "rolling";
 
 export type ColorMode = "canonical" | "languages" | "custom";
 
-export type BackgroundMode = "transparent" | "black" | "github-dark" | "custom";
+export type BackgroundMode = "transparent" | "custom";
 
 export type ThemePresetId =
   | "ocean-slate"
@@ -53,6 +53,7 @@ export interface CreatureMeta {
   designation: string;
   description: string;
   defaultTitle: string;
+  supportsViewSelection: boolean;
 }
 
 export interface CameraViewMeta {
@@ -104,8 +105,9 @@ export const CREATURE_CATALOG: CreatureMeta[] = [
     subtitle: "Armored Leviathan",
     designation: "UNIT-01 // TULKUN",
     description:
-      "Crisp left-swimming pixel leviathan with dithered throat pleats, golden brow armor, long sweeping pectoral wings, and forked tail fluke.",
+      "Armored pixel-art leviathan with Side and Top views, animated with smooth S-curve body swimming, pectoral fin sweeps, and forked tail propulsion.",
     defaultTitle: "MATURE TULKUN",
+    supportsViewSelection: true,
   },
   {
     id: "jellyfish",
@@ -113,32 +115,26 @@ export const CREATURE_CATALOG: CreatureMeta[] = [
     subtitle: "Bioluminescent Medusa",
     designation: "UNIT-02 // MEDUSA",
     description:
-      "Left-facing pixel-art jellyfish on a transparent background with a pulsing translucent bell, undulating frill ribbons, and waving tentacles.",
+      "Pelagic pixel-art jellyfish with rhythmic bell head contraction, jet-propulsion surge, and fluid S-curve undulating oral arms and trailing filaments.",
     defaultTitle: "PELAGIC JELLYFISH",
+    supportsViewSelection: false,
   },
 ];
 
 export const CAMERA_VIEWS: CameraViewMeta[] = [
   {
     id: "side",
-    name: "Lateral Swim",
+    name: "Side View",
     shortLabel: "Side",
     description:
-      "Classic left-facing swimming profile showcasing full silhouette, fins or tentacles, and fluid stroke cycle.",
-  },
-  {
-    id: "dive",
-    name: "Angled Dive",
-    shortLabel: "Dive",
-    description:
-      "Dynamic angled glide perspective highlighting downward sweep motion and depth contrast.",
+      "Lateral swimming profile showcasing the copper brow crest, pleated jaw, sweeping pectoral fins, and vertical S-curve tail wave.",
   },
   {
     id: "top",
-    name: "Panoramic Drift",
+    name: "Top View",
     shortLabel: "Top",
     description:
-      "Wide balanced drift angle emphasizing wingspan, bell rim, or full trailing wave array.",
+      "Dorsal top-down view showcasing full symmetrical wingspan, glowing spine runes, and fluid horizontal S-curve swimming.",
   },
 ];
 
@@ -150,7 +146,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     minCommits: 0,
     rangeLabel: "0 - 149",
     sampleCommits: 64,
-    unlocks: "Compact starter body silhouette, gentle swim glide, and starter fin/tentacle cluster.",
+    unlocks: "Compact starter silhouette with smooth baseline S-curve swim glide.",
   },
   {
     stage: 2,
@@ -159,7 +155,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     minCommits: 150,
     rangeLabel: "150 - 499",
     sampleCommits: 320,
-    unlocks: "Extended body length, secondary trailing fins/ribbons, and active telemetry nodes.",
+    unlocks: "Larger body span with starter bioluminescent wake motes.",
   },
   {
     stage: 3,
@@ -168,7 +164,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     minCommits: 500,
     rangeLabel: "500 - 1,199",
     sampleCommits: 840,
-    unlocks: "Full lateral glow striping, stronger pectoral sweep, and denser pixel highlight detail.",
+    unlocks: "Expanded swim amplitude and richer ambient wake particle stream.",
   },
   {
     stage: 4,
@@ -177,7 +173,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     minCommits: 1200,
     rangeLabel: "1,200 - 2,499",
     sampleCommits: 1990,
-    unlocks: "Signature armored crest or full frill halo with maximum articulated tail and tentacle sweep.",
+    unlocks: "Full mature scale with dense glowing wake trail and full telemetry.",
   },
   {
     stage: 5,
@@ -186,7 +182,7 @@ export const STAGE_DEFINITIONS: StageDefinition[] = [
     minCommits: 2500,
     rangeLabel: "2,500+",
     sampleCommits: 2940,
-    unlocks: "Elder colossus scale, radiant energy crests, and overcharged bioluminescent filaments.",
+    unlocks: "Maximum elder colossus span and overcharged bioluminescent particle stream.",
   },
 ];
 
@@ -194,31 +190,31 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: "ocean-slate",
     name: "Ocean Tulkun",
-    tagline: "Slate Navy / Gold Crest / Sky Stripe",
+    tagline: "Original Slate / Copper Crest / Cyan Glow",
     colors: {
-      primary: "#36506B",
-      accent: "#E4AE5B",
-      energy: "#4E9AE6",
-      frame: "#1F2E3E",
+      primary: "#2C4156",
+      accent: "#C86D3B",
+      energy: "#9CE2F8",
+      frame: "#141E2B",
     },
   },
   {
     id: "biolume-azure",
     name: "Biolume Azure",
-    tagline: "Ice Cyan / Sky Blue / Deep Cobalt",
+    tagline: "Original Electric Azure / Ice Cyan / Cobalt",
     colors: {
-      primary: "#4399F2",
-      accent: "#9AE6FF",
-      energy: "#1E5DC8",
-      frame: "#122C66",
+      primary: "#1F75E8",
+      accent: "#7AE0FF",
+      energy: "#0D3E9E",
+      frame: "#0A2259",
     },
   },
   {
     id: "mecha-prototype",
     name: "Mecha White",
-    tagline: "Matte White / Safety Orange / Cyber Green",
+    tagline: "Matte Silver / Safety Orange / Cyber Green",
     colors: {
-      primary: "#ECEFF4",
+      primary: "#CBD5E1",
       accent: "#FF6B00",
       energy: "#00E676",
       frame: "#1F242D",
@@ -227,7 +223,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: "cobalt-indigo",
     name: "Pastel Indigo",
-    tagline: "Periwinkle / Mint / Coral",
+    tagline: "Periwinkle / Coral / Mint Glow",
     colors: {
       primary: "#5B65D8",
       accent: "#F89B79",
@@ -238,7 +234,7 @@ export const THEME_PRESETS: ThemePreset[] = [
   {
     id: "sunset-coral",
     name: "Orchid Coral",
-    tagline: "Violet Pearl / Coral Pink / Aqua",
+    tagline: "Violet Pearl / Sunset Coral / Aqua",
     colors: {
       primary: "#7E57C2",
       accent: "#FF8A65",

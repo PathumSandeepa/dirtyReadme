@@ -1,3 +1,19 @@
+import { GIFEncoder, applyPalette, quantize } from "gifenc";
+import {
+  CANVAS_HEIGHT,
+  CANVAS_WIDTH,
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  SHARE_CARD_HEIGHT,
+  SHARE_CARD_WIDTH,
+  getLoopDurationMs,
+  recolorSpriteRgba,
+  renderCreatureFrameRgba,
+  renderShareCardToCanvas,
+  type SpriteRgba,
+} from "@/domain/creature/animationEngine";
+import type { CreatureConfig } from "@/domain/creature/entities";
+
 function writeUint32LE(buf: Uint8Array, offset: number, val: number): void {
   buf[offset] = val & 0xff;
   buf[offset + 1] = (val >>> 8) & 0xff;
@@ -35,14 +51,14 @@ function readUint32LE(buf: Uint8Array, offset: number): number {
   );
 }
 
-interface ParsedWebPFrame {
+export interface ParsedWebPFrame {
   alphChunk: Uint8Array | null;
   imageChunkId: "VP8 " | "VP8L";
   imageChunkPayload: Uint8Array;
   hasAlpha: boolean;
 }
 
-function extractSingleWebPFrame(data: Uint8Array): ParsedWebPFrame {
+export function extractSingleWebPFrame(data: Uint8Array): ParsedWebPFrame {
   if (readAscii(data, 0, 4) !== "RIFF" || readAscii(data, 8, 4) !== "WEBP") {
     throw new Error("Browser failed to produce a valid WebP frame.");
   }
@@ -90,12 +106,12 @@ function makeChunk(id: string, payload: Uint8Array): Uint8Array {
   return chunk;
 }
 
-function assembleAnimatedWebP(
+export function assembleAnimatedWebP(
   width: number,
   height: number,
   frames: ParsedWebPFrame[],
   frameDelayMs: number
-): Blob {
+): Uint8Array {
   const hasAnyAlpha = frames.some((f) => f.hasAlpha);
   const vp8xPayload = new Uint8Array(10);
   let flags = 0x02;
@@ -106,12 +122,6 @@ function assembleAnimatedWebP(
   const vp8xChunk = makeChunk("VP8X", vp8xPayload);
 
   const animPayload = new Uint8Array(6);
-  animPayload[0] = 0;
-  animPayload[1] = 0;
-  animPayload[2] = 0;
-  animPayload[3] = 0;
-  animPayload[4] = 0;
-  animPayload[5] = 0;
   const animChunk = makeChunk("ANIM", animPayload);
 
   const anmfChunks: Uint8Array[] = [];
@@ -151,70 +161,138 @@ function assembleAnimatedWebP(
     cursor += chunk.length;
   }
 
-  return new Blob([finalBytes], { type: "image/webp" });
+  return finalBytes;
 }
 
-function loadSvgFrameOnCanvas(
-  svgString: string,
-  canvas: HTMLCanvasElement,
-  ctx: CanvasRenderingContext2D
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const blob = new Blob([svgString], {
-      type: "image/svg+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      resolve();
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Failed rasterizing SVG frame."));
-    };
-    img.src = url;
-  });
-}
+export async function encodeAnimatedWebPFromCreature(
+  config: CreatureConfig,
+  sprite: SpriteRgba,
+  frameCount = 24
+): Promise<Blob> {
+  const recolored = recolorSpriteRgba(sprite, config);
+  const durationMs = getLoopDurationMs(config.animationSpeed);
+  const frameDelayMs = Math.max(20, Math.round(durationMs / frameCount));
 
-export async function encodeAnimatedWebPFromSvgFrames(params: {
-  width: number;
-  height: number;
-  frameCount: number;
-  durationMs: number;
-  buildFrameSvg: (phase: number) => string;
-}): Promise<Blob> {
-  const { width, height, frameCount, durationMs, buildFrameSvg } = params;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
+  const logicalCanvas = document.createElement("canvas");
+  logicalCanvas.width = LOGICAL_WIDTH;
+  logicalCanvas.height = LOGICAL_HEIGHT;
+  const logicalCtx = logicalCanvas.getContext("2d");
+
+  const outCanvas = document.createElement("canvas");
+  outCanvas.width = CANVAS_WIDTH;
+  outCanvas.height = CANVAS_HEIGHT;
+  const outCtx = outCanvas.getContext("2d");
+
+  if (!logicalCtx || !outCtx) {
     throw new Error("2D canvas context unavailable.");
   }
+  outCtx.imageSmoothingEnabled = false;
 
+  const imgData = logicalCtx.createImageData(LOGICAL_WIDTH, LOGICAL_HEIGHT);
   const parsedFrames: ParsedWebPFrame[] = [];
+
   for (let i = 0; i < frameCount; i++) {
     const phase = i / frameCount;
-    const svg = buildFrameSvg(phase);
-    await loadSvgFrameOnCanvas(svg, canvas, ctx);
+    const frameRgba = renderCreatureFrameRgba(recolored, config, phase);
+    imgData.data.set(frameRgba);
+    logicalCtx.putImageData(imgData, 0, 0);
+
+    outCtx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    outCtx.drawImage(logicalCanvas, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
     const frameBlob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob(
+      outCanvas.toBlob(
         (b) => (b ? resolve(b) : reject(new Error("WebP encoding unsupported."))),
         "image/webp",
-        0.92
+        0.94
       );
     });
     const buf = new Uint8Array(await frameBlob.arrayBuffer());
     parsedFrames.push(extractSingleWebPFrame(buf));
   }
 
-  return assembleAnimatedWebP(
-    width,
-    height,
+  const webpBytes = assembleAnimatedWebP(
+    CANVAS_WIDTH,
+    CANVAS_HEIGHT,
     parsedFrames,
-    durationMs / frameCount
+    frameDelayMs
   );
+  return new Blob([new Uint8Array(webpBytes)], { type: "image/webp" });
+}
+
+export async function encodeAnimatedGifFromCreature(
+  config: CreatureConfig,
+  sprite: SpriteRgba,
+  frameCount = 24
+): Promise<Blob> {
+  const recolored = recolorSpriteRgba(sprite, config);
+  const durationMs = getLoopDurationMs(config.animationSpeed);
+  const frameDelayMs = Math.max(20, Math.round(durationMs / frameCount));
+  const isTransparent = config.backgroundMode === "transparent";
+
+  const gif = GIFEncoder();
+
+  for (let i = 0; i < frameCount; i++) {
+    const phase = i / frameCount;
+    const frameRgba = renderCreatureFrameRgba(recolored, config, phase);
+
+    if (isTransparent) {
+      const palette = quantize(frameRgba, 255, {
+        format: "rgba4444",
+        oneBitAlpha: true,
+      });
+      let transparentIndex = palette.findIndex((c) => (c[3] ?? 255) === 0);
+      if (transparentIndex === -1) {
+        palette.unshift([0, 0, 0, 0]);
+        transparentIndex = 0;
+      }
+
+      const index = applyPalette(frameRgba, palette, "rgba4444");
+      const totalPixels = LOGICAL_WIDTH * LOGICAL_HEIGHT;
+      for (let p = 0; p < totalPixels; p++) {
+        if (frameRgba[p * 4 + 3] < 64) {
+          index[p] = transparentIndex;
+        }
+      }
+
+      gif.writeFrame(index, LOGICAL_WIDTH, LOGICAL_HEIGHT, {
+        palette,
+        delay: frameDelayMs,
+        transparent: true,
+        transparentIndex,
+        dispose: 2,
+        repeat: 0,
+      });
+    } else {
+      const palette = quantize(frameRgba, 256, { format: "rgb565" });
+      const index = applyPalette(frameRgba, palette, "rgb565");
+      gif.writeFrame(index, LOGICAL_WIDTH, LOGICAL_HEIGHT, {
+        palette,
+        delay: frameDelayMs,
+        dispose: 1,
+        repeat: 0,
+      });
+    }
+  }
+
+  gif.finish();
+  return new Blob([new Uint8Array(gif.bytesView())], { type: "image/gif" });
+}
+
+export async function exportShareCardPngBlob(
+  config: CreatureConfig,
+  sprite: SpriteRgba
+): Promise<Blob> {
+  const recolored = recolorSpriteRgba(sprite, config);
+  const canvas = document.createElement("canvas");
+  canvas.width = SHARE_CARD_WIDTH;
+  canvas.height = SHARE_CARD_HEIGHT;
+  renderShareCardToCanvas(canvas, recolored, config, 0.25);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("PNG export unsupported."))),
+      "image/png"
+    );
+  });
 }

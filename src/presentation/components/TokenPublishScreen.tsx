@@ -15,18 +15,32 @@ import {
   Zap,
 } from "lucide-react";
 import {
+  generateCreatureConfigJson,
   generateEvolveScriptMjs,
   generateEvolveWorkflowYaml,
   getMidnightCronForTimezone,
 } from "@/domain/automation/workflowService";
 import type { CreatureConfig } from "@/domain/creature/entities";
-import { generateCreatureSvgDocument } from "@/domain/creature/svgRenderer";
+import { getSpriteKey } from "@/domain/creature/services";
+import type { ReadmeConfig } from "@/domain/profile/entities";
 import {
+  blobToBase64,
   downloadBlobFile,
   downloadTextFile,
 } from "@/infrastructure/browser/downloadAdapter";
-import { encodeAnimatedWebPFromSvgFrames } from "@/infrastructure/browser/webpEncoder";
-import { publishFilesToProfileRepo } from "@/infrastructure/github/githubClient";
+import {
+  fetchSpritePngBase64,
+  loadCreatureSprite,
+} from "@/infrastructure/browser/spriteLoader";
+import {
+  encodeAnimatedGifFromCreature,
+  encodeAnimatedWebPFromCreature,
+  exportShareCardPngBlob,
+} from "@/infrastructure/browser/webpEncoder";
+import {
+  publishFilesToProfileRepo,
+  type PublishFileInput,
+} from "@/infrastructure/github/githubClient";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,8 +64,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface TokenPublishScreenProps {
   creatureConfig: CreatureConfig;
-  creatureSvg: string;
-  shareCardSvg: string;
+  readmeConfig: ReadmeConfig;
   readmeMarkdown: string;
   includeShareCard: boolean;
   defaultBranch: string;
@@ -60,8 +73,7 @@ interface TokenPublishScreenProps {
 
 export function TokenPublishScreen({
   creatureConfig,
-  creatureSvg,
-  shareCardSvg,
+  readmeConfig,
   readmeMarkdown,
   includeShareCard,
   defaultBranch,
@@ -69,8 +81,10 @@ export function TokenPublishScreen({
 }: TokenPublishScreenProps) {
   const [tokenInput, setTokenInput] = useState("");
   const [includeWorkflowFiles, setIncludeWorkflowFiles] = useState(false);
+  const [timezoneMode, setTimezoneMode] = useState<"local" | "utc">("local");
   const [pushLoading, setPushLoading] = useState(false);
   const [webpBusy, setWebpBusy] = useState(false);
+  const [gifBusy, setGifBusy] = useState(false);
   const [pushError, setPushError] = useState<string | null>(null);
   const [publishResult, setPublishResult] = useState<{
     username: string;
@@ -85,20 +99,15 @@ export function TokenPublishScreen({
     return getMidnightCronForTimezone(offsetMinutesEast);
   }, []);
 
+  const cronExpression = timezoneMode === "local" ? localCron : "0 0 * * *";
+
   const handleDownloadWebP = async () => {
     setWebpBusy(true);
     try {
-      const durationMs = Math.round(
-        3400 / Math.max(0.25, creatureConfig.animationSpeed || 1)
+      const sprite = await loadCreatureSprite(
+        getSpriteKey(creatureConfig.creature, creatureConfig.view)
       );
-      const blob = await encodeAnimatedWebPFromSvgFrames({
-        width: 920,
-        height: 460,
-        frameCount: 20,
-        durationMs,
-        buildFrameSvg: (phase) =>
-          generateCreatureSvgDocument(creatureConfig, phase),
-      });
+      const blob = await encodeAnimatedWebPFromCreature(creatureConfig, sprite);
       downloadBlobFile("creature.webp", blob);
     } catch (err) {
       setPushError(
@@ -106,6 +115,23 @@ export function TokenPublishScreen({
       );
     } finally {
       setWebpBusy(false);
+    }
+  };
+
+  const handleDownloadGif = async () => {
+    setGifBusy(true);
+    try {
+      const sprite = await loadCreatureSprite(
+        getSpriteKey(creatureConfig.creature, creatureConfig.view)
+      );
+      const blob = await encodeAnimatedGifFromCreature(creatureConfig, sprite);
+      downloadBlobFile("creature.gif", blob);
+    } catch (err) {
+      setPushError(
+        err instanceof Error ? err.message : "Failed encoding animated GIF."
+      );
+    } finally {
+      setGifBusy(false);
     }
   };
 
@@ -121,11 +147,22 @@ export function TokenPublishScreen({
     setPublishResult(null);
 
     try {
-      const files = [
+      const spriteKey = getSpriteKey(
+        creatureConfig.creature,
+        creatureConfig.view
+      );
+      const sprite = await loadCreatureSprite(spriteKey);
+      const webpBlob = await encodeAnimatedWebPFromCreature(
+        creatureConfig,
+        sprite
+      );
+      const webpBase64 = await blobToBase64(webpBlob);
+
+      const files: PublishFileInput[] = [
         {
-          path: "creature.svg",
-          content: creatureSvg,
-          message: "feat: update animated pixel creature SVG",
+          path: "creature.webp",
+          base64Content: webpBase64,
+          message: "feat: update animated pixel creature WebP",
         },
         {
           path: "README.md",
@@ -135,24 +172,36 @@ export function TokenPublishScreen({
       ];
 
       if (includeShareCard) {
+        const shareBlob = await exportShareCardPngBlob(creatureConfig, sprite);
         files.push({
-          path: "share-card.svg",
-          content: shareCardSvg,
+          path: "share-card.png",
+          base64Content: await blobToBase64(shareBlob),
           message: "feat: update creature social share banner",
         });
       }
 
       if (includeWorkflowFiles) {
+        const spritePngBase64 = await fetchSpritePngBase64(spriteKey);
         files.push(
           {
+            path: "assets/creature-sprite.png",
+            base64Content: spritePngBase64,
+            message: "ci: store base pixel creature sprite for 12AM updates",
+          },
+          {
+            path: "creature-config.json",
+            content: generateCreatureConfigJson(creatureConfig, readmeConfig),
+            message: "ci: save creature & README marker configuration",
+          },
+          {
             path: ".github/workflows/evolve-creature.yml",
-            content: generateEvolveWorkflowYaml(creatureConfig, localCron),
+            content: generateEvolveWorkflowYaml(creatureConfig, cronExpression),
             message: "ci: add 12:00 AM daily creature auto-evolve workflow",
           },
           {
             path: "scripts/evolve-creature.mjs",
-            content: generateEvolveScriptMjs(creatureConfig),
-            message: "ci: add daily creature evolution script",
+            content: generateEvolveScriptMjs(creatureConfig, readmeConfig),
+            message: "ci: add daily creature WebP & README evolution script",
           }
         );
       }
@@ -286,25 +335,57 @@ export function TokenPublishScreen({
                   </div>
                 </Field>
 
-                <Field orientation="horizontal" className="rounded-lg border bg-muted/40 p-3.5">
-                  <Checkbox
-                    id="auto-evolve-check"
-                    checked={includeWorkflowFiles}
-                    onCheckedChange={(val) => setIncludeWorkflowFiles(Boolean(val))}
-                  />
-                  <div className="flex flex-col gap-1">
-                    <FieldLabel
-                      htmlFor="auto-evolve-check"
-                      className="font-mono text-xs font-semibold"
-                    >
-                      Include 12:00 AM Daily Auto-Evolve GitHub Action
-                    </FieldLabel>
-                    <FieldDescription className="text-xs">
-                      Requires <code>workflow</code> scope on your PAT. Leave unchecked
-                      to push only <code>creature.svg</code> and <code>README.md</code>.
-                    </FieldDescription>
-                  </div>
-                </Field>
+                <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3.5">
+                  <Field orientation="horizontal">
+                    <Checkbox
+                      id="auto-evolve-check"
+                      checked={includeWorkflowFiles}
+                      onCheckedChange={(val) =>
+                        setIncludeWorkflowFiles(Boolean(val))
+                      }
+                    />
+                    <div className="flex flex-col gap-1">
+                      <FieldLabel
+                        htmlFor="auto-evolve-check"
+                        className="font-mono text-xs font-semibold"
+                      >
+                        Include 12:00 AM Daily Auto-Evolve GitHub Action
+                      </FieldLabel>
+                      <FieldDescription className="text-xs">
+                        Requires <code>workflow</code> scope on your PAT. Automatically
+                        re-renders <code>creature.webp</code> &amp; updates{" "}
+                        <code>README.md</code> every midnight.
+                      </FieldDescription>
+                    </div>
+                  </Field>
+
+                  {includeWorkflowFiles && (
+                    <div className="grid grid-cols-2 gap-2 pl-6">
+                      <button
+                        type="button"
+                        onClick={() => setTimezoneMode("local")}
+                        className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
+                          timezoneMode === "local"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "bg-card text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        12:00 AM Local ({localCron})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTimezoneMode("utc")}
+                        className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
+                          timezoneMode === "utc"
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "bg-card text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        12:00 AM UTC (0 0 * * *)
+                      </button>
+                    </div>
+                  )}
+                </div>
               </FieldGroup>
 
               {pushError && (
@@ -393,22 +474,21 @@ export function TokenPublishScreen({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  downloadTextFile("creature.svg", creatureSvg, "image/svg+xml")
-                }
-              >
-                <Download data-icon="inline-start" />
-                creature.svg
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
                 disabled={webpBusy}
                 onClick={handleDownloadWebP}
               >
                 <Download data-icon="inline-start" />
                 {webpBusy ? "Encoding..." : "creature.webp"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={gifBusy}
+                onClick={handleDownloadGif}
+              >
+                <Download data-icon="inline-start" />
+                {gifBusy ? "Encoding..." : "creature.gif"}
               </Button>
               <Button
                 type="button"

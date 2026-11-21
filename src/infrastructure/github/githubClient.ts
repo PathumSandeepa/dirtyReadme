@@ -73,7 +73,8 @@ interface GitHubRepoResponse {
 
 export interface PublishFileInput {
   path: string;
-  content: string;
+  content?: string;
+  base64Content?: string;
   message: string;
 }
 
@@ -275,7 +276,7 @@ export async function fetchGitHubProfileSnapshot(
     username: user.login,
     displayName: user.name || user.login,
     avatarUrl: user.avatar_url,
-    bio: user.bio || "Open-source builder & cybernetic creature keeper.",
+    bio: user.bio?.trim() || "",
     location: user.location || "",
     company: user.company || "",
     website: normalizeWebsiteUrl(user.blog),
@@ -367,7 +368,7 @@ export async function publishFilesToProfileRepo(params: {
       headers,
       body: JSON.stringify({
         message: file.message,
-        content: encodeBase64Utf8(file.content),
+        content: file.base64Content ?? encodeBase64Utf8(file.content ?? ""),
         branch: targetBranch,
         ...(existingSha ? { sha: existingSha } : {}),
       }),

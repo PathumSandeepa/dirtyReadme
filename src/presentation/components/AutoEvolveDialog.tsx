@@ -1,13 +1,24 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, Clock, Copy, FileText, FolderGit2 } from "lucide-react";
 import {
+  Check,
+  Clock,
+  Copy,
+  Download,
+  FileCode2,
+  FileText,
+  FolderGit2,
+} from "lucide-react";
+import {
+  generateCreatureConfigJson,
   generateEvolveScriptMjs,
   generateEvolveWorkflowYaml,
   getMidnightCronForTimezone,
 } from "@/domain/automation/workflowService";
 import type { CreatureConfig } from "@/domain/creature/entities";
+import { getSpriteAssetPath, getSpriteKey } from "@/domain/creature/services";
+import type { ReadmeConfig } from "@/domain/profile/entities";
 import { copyToClipboard } from "@/infrastructure/browser/downloadAdapter";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,18 +36,20 @@ interface AutoEvolveDialogProps {
   open: boolean;
   onClose: () => void;
   config: CreatureConfig;
+  readmeConfig: ReadmeConfig;
 }
 
 export function AutoEvolveDialog({
   open,
   onClose,
   config,
+  readmeConfig,
 }: AutoEvolveDialogProps) {
-  const [activeTab, setActiveTab] = useState<"workflow" | "script">("workflow");
-  const [timezoneMode, setTimezoneMode] = useState<"local" | "utc">("local");
-  const [copiedTarget, setCopiedTarget] = useState<"workflow" | "script" | null>(
-    null
+  const [activeTab, setActiveTab] = useState<"workflow" | "script" | "config">(
+    "workflow"
   );
+  const [timezoneMode, setTimezoneMode] = useState<"local" | "utc">("local");
+  const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
 
   const localCron = useMemo(() => {
     const offsetMinutesEast = -new Date().getTimezoneOffset();
@@ -53,11 +66,27 @@ export function AutoEvolveDialog({
 
   const cronExpression = timezoneMode === "local" ? localCron : "0 0 * * *";
   const workflowYaml = generateEvolveWorkflowYaml(config, cronExpression);
-  const scriptMjs = generateEvolveScriptMjs(config);
-  const currentCode = activeTab === "workflow" ? workflowYaml : scriptMjs;
+  const scriptMjs = generateEvolveScriptMjs(config, readmeConfig);
+  const configJson = generateCreatureConfigJson(config, readmeConfig);
+  const spriteAssetUrl = getSpriteAssetPath(
+    getSpriteKey(config.creature, config.view)
+  );
 
-  const handleCopy = async (target: "workflow" | "script") => {
-    await copyToClipboard(target === "workflow" ? workflowYaml : scriptMjs);
+  const currentCode =
+    activeTab === "workflow"
+      ? workflowYaml
+      : activeTab === "script"
+        ? scriptMjs
+        : configJson;
+
+  const handleCopy = async (target: "workflow" | "script" | "config") => {
+    const content =
+      target === "workflow"
+        ? workflowYaml
+        : target === "script"
+          ? scriptMjs
+          : configJson;
+    await copyToClipboard(content);
     setCopiedTarget(target);
     window.setTimeout(() => {
       setCopiedTarget((curr) => (curr === target ? null : curr));
@@ -75,8 +104,10 @@ export function AutoEvolveDialog({
             </DialogTitle>
           </div>
           <DialogDescription>
-            Automatically updates creature.svg and README.md telemetry markers every
-            midnight.
+            Regenerates animated <code>creature.webp</code> and updates{" "}
+            <code>README.md</code> markers every midnight — works out of the box with
+            zero custom secrets (optional <code>PROFILE_PAT</code> secret counts private
+            commits).
           </DialogDescription>
         </DialogHeader>
 
@@ -103,17 +134,21 @@ export function AutoEvolveDialog({
             </ToggleGroup>
           </div>
 
-          <ol className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+          <ol className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
             <li className="rounded-md border bg-card p-2.5">
               <strong className="text-foreground">1.</strong> Push{" "}
-              <code>creature.svg</code> and <code>README.md</code>.
+              <code>creature.webp</code> &amp; <code>README.md</code>.
             </li>
             <li className="rounded-md border bg-card p-2.5">
               <strong className="text-foreground">2.</strong> Add{" "}
-              <code>.github/workflows/evolve-creature.yml</code>.
+              <code>assets/creature-sprite.png</code>.
             </li>
             <li className="rounded-md border bg-card p-2.5">
               <strong className="text-foreground">3.</strong> Add{" "}
+              <code>creature-config.json</code>.
+            </li>
+            <li className="rounded-md border bg-card p-2.5">
+              <strong className="text-foreground">4.</strong> Add workflow &amp;{" "}
               <code>scripts/evolve-creature.mjs</code>.
             </li>
           </ol>
@@ -122,7 +157,9 @@ export function AutoEvolveDialog({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Tabs
             value={activeTab}
-            onValueChange={(val) => setActiveTab(val as "workflow" | "script")}
+            onValueChange={(val) =>
+              setActiveTab(val as "workflow" | "script" | "config")
+            }
           >
             <TabsList>
               <TabsTrigger value="workflow" className="gap-1.5 font-mono text-xs">
@@ -133,22 +170,37 @@ export function AutoEvolveDialog({
                 <FileText className="size-3.5" />
                 evolve-creature.mjs
               </TabsTrigger>
+              <TabsTrigger value="config" className="gap-1.5 font-mono text-xs">
+                <FileCode2 className="size-3.5" />
+                creature-config.json
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => void handleCopy(activeTab)}
-          >
-            {copiedTarget === activeTab ? (
-              <Check data-icon="inline-start" />
-            ) : (
-              <Copy data-icon="inline-start" />
-            )}
-            {copiedTarget === activeTab ? "Copied" : "Copy File"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              render={<a href={spriteAssetUrl} download="creature-sprite.png" />}
+            >
+              <Download data-icon="inline-start" />
+              creature-sprite.png
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void handleCopy(activeTab)}
+            >
+              {copiedTarget === activeTab ? (
+                <Check data-icon="inline-start" />
+              ) : (
+                <Copy data-icon="inline-start" />
+              )}
+              {copiedTarget === activeTab ? "Copied" : "Copy File"}
+            </Button>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto rounded-lg border bg-[#0d1117] p-4">

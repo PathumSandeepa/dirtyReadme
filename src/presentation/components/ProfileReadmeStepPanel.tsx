@@ -1,28 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
+  Check,
   ChevronLeft,
   ChevronRight,
   FileText,
   GripVertical,
+  Layers,
   Link2,
   Plus,
   RefreshCw,
+  RotateCcw,
   Tag,
   Trash2,
   User,
 } from "lucide-react";
 import type { CreatureConfig } from "@/domain/creature/entities";
 import {
+  CTA_LOGO_PRESETS,
+  CTA_QUICK_TEMPLATES,
+  DEFAULT_DUMMY_INTRO,
   DYNAMIC_TOKENS,
   README_TEMPLATES,
+  TECH_CATEGORIES_ORDER,
+  TECH_CATEGORY_LABELS,
+  type ReadmeBadge,
   type ReadmeConfig,
+  type ReadmeTemplateId,
   type TechCategory,
 } from "@/domain/profile/entities";
-import { buildGeneratedReadmeMarkdown } from "@/domain/profile/readmeService";
+import {
+  buildGeneratedReadmeMarkdown,
+  reorderItems,
+} from "@/domain/profile/readmeService";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ProfileReadmeStepPanelProps {
   creatureConfig: CreatureConfig;
@@ -31,9 +48,28 @@ interface ProfileReadmeStepPanelProps {
     key: K,
     value: ReadmeConfig[K]
   ) => void;
+  onSelectTemplate: (templateId: ReadmeTemplateId) => void;
   onChangeRawMarkdown: (raw: string | null) => void;
-  onReorderBadges: (draggedId: string, targetId: string) => void;
-  onMoveBadge: (badgeId: string, direction: -1 | 1) => void;
+  onAddBadgeToCard: (
+    cardId: string,
+    badgeId: string,
+    beforeBadgeId?: string
+  ) => void;
+  onRemoveBadgeFromCard: (cardId: string, badgeId: string) => void;
+  onMoveBadgeAcrossCards: (
+    badgeId: string,
+    fromCardId: string,
+    toCardId: string,
+    targetBadgeId?: string
+  ) => void;
+  onAddStackCard: (title?: string) => string;
+  onRenameStackCard: (cardId: string, title: string) => void;
+  onDeleteStackCard: (cardId: string) => void;
+  onReorderStackCards: (fromIdx: number, toIdx: number) => void;
+  onAddCustomBadgeToCard: (
+    cardId: string,
+    badge: Omit<ReadmeBadge, "enabled">
+  ) => void;
   onReorderTags: (fromIdx: number, toIdx: number) => void;
   onPrevStep: () => void;
   onNextStep: () => void;
@@ -41,43 +77,109 @@ interface ProfileReadmeStepPanelProps {
 
 type CategoryFilter = "all" | TechCategory;
 
+interface DragPayload {
+  badgeId: string;
+  fromCardId: string | null;
+}
+
+function normalizeActionUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (
+    /^https?:\/\//i.test(trimmed) ||
+    /^mailto:/i.test(trimmed) ||
+    trimmed.startsWith("#") ||
+    trimmed.startsWith("/")
+  ) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
 export function ProfileReadmeStepPanel({
   creatureConfig,
   readmeConfig,
   onUpdateField,
+  onSelectTemplate,
   onChangeRawMarkdown,
-  onReorderBadges,
-  onMoveBadge,
+  onAddBadgeToCard,
+  onRemoveBadgeFromCard,
+  onMoveBadgeAcrossCards,
+  onAddStackCard,
+  onRenameStackCard,
+  onDeleteStackCard,
+  onReorderStackCards,
+  onAddCustomBadgeToCard,
   onReorderTags,
   onPrevStep,
   onNextStep,
 }: ProfileReadmeStepPanelProps) {
+  const nextIdRef = useRef(1);
   const [badgeCategory, setBadgeCategory] = useState<CategoryFilter>("all");
   const [badgeSearch, setBadgeSearch] = useState("");
-  const [draggedBadgeId, setDraggedBadgeId] = useState<string | null>(null);
-  const [dragOverBadgeId, setDragOverBadgeId] = useState<string | null>(null);
-  const [dropZoneActive, setDropZoneActive] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string>(
+    readmeConfig.stackCards[0]?.id ?? ""
+  );
+  const [dragPayload, setDragPayload] = useState<DragPayload | null>(null);
+  const [dropCardId, setDropCardId] = useState<string | null>(null);
+  const [dragOverChip, setDragOverChip] = useState<{
+    cardId: string;
+    badgeId: string;
+  } | null>(null);
   const [draggedTagIdx, setDraggedTagIdx] = useState<number | null>(null);
 
   const [newTagInput, setNewTagInput] = useState("");
   const [newBadgeLabel, setNewBadgeLabel] = useState("");
-  const [newBadgeColor, setNewBadgeColor] = useState("#0F172A");
+  const [newBadgeLogo, setNewBadgeLogo] = useState("");
+  const [newBadgeColor, setNewBadgeColor] = useState("#2563EB");
+
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkText, setNewLinkText] = useState("");
-  const [newLinkUrl, setNewLinkUrl] = useState("https://");
-  const [newLinkColor, setNewLinkColor] = useState("#0F172A");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
+  const [newLinkLogo, setNewLinkLogo] = useState("googlechrome");
+  const [newLinkColor, setNewLinkColor] = useState("#4F46E5");
   const [showRawEditor, setShowRawEditor] = useState(false);
 
-  const activeBadges = readmeConfig.badges.filter((b) => b.enabled);
-  const availableBadges = readmeConfig.badges.filter((b) => {
-    if (b.enabled) return false;
-    const matchesCat =
-      badgeCategory === "all" || b.category === badgeCategory;
-    const matchesQuery = b.label
-      .toLowerCase()
-      .includes(badgeSearch.trim().toLowerCase());
-    return matchesCat && matchesQuery;
-  });
+  const activeCardId = readmeConfig.stackCards.some(
+    (c) => c.id === selectedCardId
+  )
+    ? selectedCardId
+    : (readmeConfig.stackCards[0]?.id ?? "");
+
+  const badgeById = useMemo(
+    () => new Map(readmeConfig.badges.map((b) => [b.id, b])),
+    [readmeConfig.badges]
+  );
+
+  const activeCardBadgeSet = useMemo(() => {
+    const activeCard = readmeConfig.stackCards.find(
+      (c) => c.id === activeCardId
+    );
+    return new Set(activeCard?.badgeIds ?? []);
+  }, [readmeConfig.stackCards, activeCardId]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: readmeConfig.badges.length };
+    for (const b of readmeConfig.badges) {
+      const cat = b.category ?? "skills";
+      counts[cat] = (counts[cat] ?? 0) + 1;
+    }
+    return counts;
+  }, [readmeConfig.badges]);
+
+  const filteredBadges = useMemo(() => {
+    const query = badgeSearch.trim().toLowerCase();
+    return readmeConfig.badges.filter((b) => {
+      const matchesCat =
+        badgeCategory === "all" || b.category === badgeCategory;
+      const matchesQuery =
+        !query ||
+        b.label.toLowerCase().includes(query) ||
+        (b.category &&
+          TECH_CATEGORY_LABELS[b.category].toLowerCase().includes(query));
+      return matchesCat && matchesQuery;
+    });
+  }, [readmeConfig.badges, badgeCategory, badgeSearch]);
 
   const generatedMarkdown = buildGeneratedReadmeMarkdown(
     creatureConfig,
@@ -88,37 +190,56 @@ export function ProfileReadmeStepPanel({
       ? readmeConfig.rawOverride
       : generatedMarkdown;
 
-  function toggleBadge(id: string, enabled: boolean) {
-    onUpdateField( "badges",
-      readmeConfig.badges.map((b) => (b.id === id ? { ...b, enabled } : b))
-    );
+  function readPayloadFromEvent(e: React.DragEvent): DragPayload | null {
+    const raw = e.dataTransfer?.getData("application/json");
+    if (raw) {
+      try {
+        return JSON.parse(raw) as DragPayload;
+      } catch {
+        // Fallback to React state payload
+      }
+    }
+    return dragPayload;
   }
 
-  function handleDropOnBadge(targetId: string) {
-    if (!draggedBadgeId) return;
-    const dragged = readmeConfig.badges.find((b) => b.id === draggedBadgeId);
-    if (dragged && !dragged.enabled) {
-      onUpdateField( "badges",
-        readmeConfig.badges.map((b) =>
-          b.id === draggedBadgeId ? { ...b, enabled: true } : b
-        )
+  function handleDropOnCard(e: React.DragEvent, targetCardId: string) {
+    e.preventDefault();
+    const payload = readPayloadFromEvent(e);
+    if (!payload) return;
+    if (payload.fromCardId) {
+      onMoveBadgeAcrossCards(payload.badgeId, payload.fromCardId, targetCardId);
+    } else {
+      onAddBadgeToCard(targetCardId, payload.badgeId);
+    }
+    setSelectedCardId(targetCardId);
+    setDragPayload(null);
+    setDropCardId(null);
+    setDragOverChip(null);
+  }
+
+  function handleDropOnChip(
+    e: React.DragEvent,
+    targetCardId: string,
+    targetBadgeId: string
+  ) {
+    e.preventDefault();
+    e.stopPropagation();
+    const payload = readPayloadFromEvent(e);
+    if (!payload) return;
+    if (payload.fromCardId) {
+      onMoveBadgeAcrossCards(
+        payload.badgeId,
+        payload.fromCardId,
+        targetCardId,
+        targetBadgeId
       );
+    } else {
+      onAddBadgeToCard(targetCardId, payload.badgeId, targetBadgeId);
     }
-    onReorderBadges(draggedBadgeId, targetId);
-    setDraggedBadgeId(null);
-    setDragOverBadgeId(null);
-    setDropZoneActive(false);
-  }
-
-  function handleDropInSelectedZone() {
-    if (!draggedBadgeId) return;
-    const dragged = readmeConfig.badges.find((b) => b.id === draggedBadgeId);
-    if (dragged && !dragged.enabled) {
-      toggleBadge(draggedBadgeId, true);
-    }
-    setDraggedBadgeId(null);
-    setDragOverBadgeId(null);
-    setDropZoneActive(false);
+    setSelectedCardId(targetCardId);
+    setDragPayload(null);
+    setDropCardId(null);
+    setDragOverChip(null);
   }
 
   function handleAddTag(e: React.FormEvent) {
@@ -132,37 +253,52 @@ export function ProfileReadmeStepPanel({
   function handleAddCustomBadge(e: React.FormEvent) {
     e.preventDefault();
     const label = newBadgeLabel.trim();
-    if (!label) return;
-    onUpdateField("badges", [
-      ...readmeConfig.badges,
-      {
-        id: `custom-${Date.now()}`,
-        label,
-        color: newBadgeColor.replace("#", ""),
-        category: "devops",
-        enabled: true,
-      },
-    ]);
+    if (!label || !activeCardId) return;
+    const logoSlug = newBadgeLogo.trim().toLowerCase().replace(/\s+/g, "");
+    const seq = nextIdRef.current++;
+    onAddCustomBadgeToCard(activeCardId, {
+      id: `custom-${seq}`,
+      label,
+      color: newBadgeColor.replace("#", ""),
+      ...(logoSlug ? { logo: logoSlug, logoColor: "white" } : {}),
+      category: "skills",
+    });
     setNewBadgeLabel("");
+    setNewBadgeLogo("");
   }
 
   function handleAddActionLink(e: React.FormEvent) {
     e.preventDefault();
-    if (!newLinkLabel.trim() || !newLinkUrl.trim()) return;
+    const normalizedUrl = normalizeActionUrl(newLinkUrl);
+    if (!newLinkLabel.trim() || !normalizedUrl) return;
+    const seq = nextIdRef.current++;
     onUpdateField("actionLinks", [
       ...readmeConfig.actionLinks,
       {
-        id: `link-${Date.now()}`,
+        id: `link-${seq}`,
         label: newLinkLabel.trim().toUpperCase(),
         valueText: (newLinkText.trim() || "OPEN").toUpperCase(),
-        url: newLinkUrl.trim(),
+        url: normalizedUrl,
         color: newLinkColor.replace("#", ""),
+        ...(newLinkLogo && newLinkLogo !== "none" ? { logo: newLinkLogo } : {}),
         enabled: true,
       },
     ]);
     setNewLinkLabel("");
     setNewLinkText("");
-    setNewLinkUrl("https://");
+    setNewLinkUrl("");
+  }
+
+  function handleQuickAddCta(tpl: (typeof CTA_QUICK_TEMPLATES)[number]) {
+    const seq = nextIdRef.current++;
+    onUpdateField("actionLinks", [
+      ...readmeConfig.actionLinks,
+      {
+        id: `link-${seq}-${tpl.label.toLowerCase()}`,
+        ...tpl,
+        enabled: true,
+      },
+    ]);
   }
 
   function insertToken(token: string) {
@@ -175,15 +311,15 @@ export function ProfileReadmeStepPanel({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm ">
+      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
         <div className="mb-4 flex items-center gap-2.5">
-          <User className="h-5 w-5 text-foreground/85 " />
+          <User className="h-5 w-5 text-foreground/85" />
           <div>
-            <h2 className="text-base font-semibold text-foreground ">
+            <h2 className="text-base font-semibold text-foreground">
               Customize Every Text on Your Profile
             </h2>
-            <p className="text-sm text-muted-foreground ">
-              Edit headings, bio, tags, sidebar details, and captions freely.
+            <p className="text-sm text-muted-foreground">
+              Edit headings, intro paragraph, tags, sidebar details, and captions freely.
             </p>
           </div>
         </div>
@@ -191,7 +327,7 @@ export function ProfileReadmeStepPanel({
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                 Display Name
               </label>
               <input
@@ -200,12 +336,12 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileDisplayName", e.target.value)
                 }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                 Location
               </label>
               <input
@@ -214,12 +350,12 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileLocation", e.target.value)
                 }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                 Role / Organization
               </label>
               <input
@@ -228,12 +364,12 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileCompany", e.target.value)
                 }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                 Website URL
               </label>
               <input
@@ -242,13 +378,13 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("profileWebsite", e.target.value)
                 }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
               Sidebar Status Bio
             </label>
             <input
@@ -257,24 +393,24 @@ export function ProfileReadmeStepPanel({
               onChange={(e) =>
                 onUpdateField("profileStatusBio", e.target.value)
               }
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
               README Main Headline
             </label>
             <input
               type="text"
               value={readmeConfig.headline}
               onChange={(e) => onUpdateField("headline", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm font-medium text-foreground focus:border-primary focus:bg-background focus:outline-none "
+              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm font-medium text-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
               Role Tagline Chips (Drag to reorder)
             </label>
             <div className="mb-2.5 flex flex-wrap gap-2">
@@ -290,9 +426,9 @@ export function ProfileReadmeStepPanel({
                     }
                     setDraggedTagIdx(null);
                   }}
-                  className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground active:cursor-grabbing "
+                  className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground active:cursor-grabbing"
                 >
-                  <GripVertical className="h-3.5 w-3.5 text-slate-400" />
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
                   <input
                     type="text"
                     value={tag}
@@ -306,11 +442,12 @@ export function ProfileReadmeStepPanel({
                   <button
                     type="button"
                     onClick={() =>
-                      onUpdateField( "subtitleTags",
+                      onUpdateField(
+                        "subtitleTags",
                         readmeConfig.subtitleTags.filter((_, i) => i !== idx)
                       )
                     }
-                    className="text-slate-400 hover:text-red-600"
+                    className="text-muted-foreground hover:text-destructive"
                   >
                     ×
                   </button>
@@ -323,11 +460,11 @@ export function ProfileReadmeStepPanel({
                 value={newTagInput}
                 onChange={(e) => setNewTagInput(e.target.value)}
                 placeholder="Add role tag (e.g. CLOUD ARCHITECT)"
-                className="flex-1 rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder-slate-400 focus:border-primary focus:bg-background focus:outline-none "
+                className="flex-1 rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
               <button
                 type="submit"
-                className="rounded-xl border bg-card px-4 py-2 text-sm font-medium text-foreground/85 hover:bg-muted/50 "
+                className="rounded-xl border bg-card px-4 py-2 text-sm font-medium text-foreground/85 hover:bg-muted/50"
               >
                 Add Tag
               </button>
@@ -335,32 +472,44 @@ export function ProfileReadmeStepPanel({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
-              About / Intro Paragraph
-            </label>
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <label className="text-xs font-medium text-foreground/85">
+                About / Intro Paragraph
+              </label>
+              <button
+                type="button"
+                onClick={() => onUpdateField("bio", DEFAULT_DUMMY_INTRO)}
+                className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              >
+                <RotateCcw className="size-3" />
+                Use Sample Intro
+              </button>
+            </div>
             <textarea
               rows={3}
               value={readmeConfig.bio}
+              placeholder={DEFAULT_DUMMY_INTRO}
               onChange={(e) => onUpdateField("bio", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2.5 text-sm leading-relaxed text-foreground focus:border-primary focus:bg-background focus:outline-none "
+              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
               Call-To-Action Line
             </label>
             <input
               type="text"
               value={readmeConfig.ctaLine}
               onChange={(e) => onUpdateField("ctaLine", e.target.value)}
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
-              Creature Caption Text (supports {"{{CREATURE}}"}, {"{{STAGE}}"}, {"{{COMMITS}}"})
+            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+              Creature Caption Text (supports {"{{CREATURE}}"}, {"{{STAGE}}"},{" "}
+              {"{{COMMITS}}"})
             </label>
             <input
               type="text"
@@ -368,13 +517,13 @@ export function ProfileReadmeStepPanel({
               onChange={(e) =>
                 onUpdateField("telemetryCaptionTemplate", e.target.value)
               }
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                 Extra Section Heading (Optional)
               </label>
               <input
@@ -384,12 +533,12 @@ export function ProfileReadmeStepPanel({
                   onUpdateField("customSectionTitle", e.target.value)
                 }
                 placeholder="e.g. Current Focus"
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder-slate-400 focus:border-primary focus:bg-background focus:outline-none "
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
                 Telemetry Table Title
               </label>
               <input
@@ -398,13 +547,13 @@ export function ProfileReadmeStepPanel({
                 onChange={(e) =>
                   onUpdateField("statsTableTitle", e.target.value)
                 }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none "
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground/85 ">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/85">
               Extra Custom Markdown Block (Optional)
             </label>
             <textarea
@@ -414,203 +563,390 @@ export function ProfileReadmeStepPanel({
                 onUpdateField("customFooterMarkdown", e.target.value)
               }
               placeholder="Write any extra Markdown lines or links..."
-              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 font-mono text-xs text-foreground placeholder-slate-400 focus:border-primary focus:bg-background focus:outline-none "
+              className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
             />
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm ">
-        <div className="mb-4 flex items-center gap-2.5">
-          <Tag className="h-5 w-5 text-foreground/85 " />
-          <div>
-            <h2 className="text-base font-semibold text-foreground ">
-              Drag &amp; Drop Tech Stack Builder
-            </h2>
-            <p className="text-sm text-muted-foreground ">
-              Drag badges to reorder them, or drag any skill from the library into your active stack.
-            </p>
+      {/* Drag & Drop Multi-Card Tech Stack Builder */}
+      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Tag className="h-5 w-5 text-foreground/85" />
+            <div>
+              <h2 className="text-base font-semibold text-foreground">
+                Drag &amp; Drop Tech Stack Builder
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                3 default cards ready — drag skills across cards, reorder chips, or click
+                from {readmeConfig.badges.length}+ techs &amp; skills below.
+              </p>
+            </div>
           </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const id = onAddStackCard(
+                `Stack Group ${readmeConfig.stackCards.length + 1}`
+              );
+              setSelectedCardId(id);
+            }}
+          >
+            <Plus data-icon="inline-start" />
+            Add Card
+          </Button>
         </div>
 
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDropZoneActive(true);
-          }}
-          onDragLeave={() => setDropZoneActive(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            handleDropInSelectedZone();
-          }}
-          className={`rounded-xl border-2 border-dashed p-4 transition ${
-            dropZoneActive
-              ? "border-primary bg-accent/60"
-              : "bg-muted/40"
-          }`}
-        >
-          <div className="mb-2.5 flex items-center justify-between text-xs font-semibold text-muted-foreground">
-            <span>Active Tech Stack ({activeBadges.length}) — Drag to Reorder</span>
-            <span className="font-normal text-muted-foreground">
-              Drop skills here
-            </span>
-          </div>
+        <div className="space-y-3">
+          {readmeConfig.stackCards.map((card, cardIdx) => {
+            const isSelected = card.id === activeCardId;
+            const isDropping = dropCardId === card.id;
+            const resolvedBadges = card.badgeIds
+              .map((id) => badgeById.get(id))
+              .filter((b): b is ReadmeBadge => Boolean(b));
 
-          {activeBadges.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              Drag or click skills below to add them to your README.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {activeBadges.map((badge, idx) => (
-                <div
-                  key={badge.id}
-                  draggable
-                  onDragStart={() => setDraggedBadgeId(badge.id)}
-                  onDragEnd={() => {
-                    setDraggedBadgeId(null);
-                    setDragOverBadgeId(null);
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOverBadgeId(badge.id);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleDropOnBadge(badge.id);
-                  }}
-                  className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-card px-2.5 py-1.5 text-xs font-medium text-card-foreground shadow-xs transition active:cursor-grabbing ${
-                    dragOverBadgeId === badge.id
-                      ? "border-primary ring-2 ring-primary/25"
-                      : "border-border"
-                  }`}
-                >
-                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: `#${badge.color}` }}
-                  />
-                  <span>{badge.label}</span>
-                  <div className="ml-1 flex items-center gap-0.5 border-l border-border pl-1">
+            return (
+              <div
+                key={card.id}
+                onClick={() => setSelectedCardId(card.id)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDropCardId(card.id);
+                }}
+                onDragLeave={() => {
+                  if (dropCardId === card.id) setDropCardId(null);
+                }}
+                onDrop={(e) => handleDropOnCard(e, card.id)}
+                className={`rounded-xl border-2 p-3.5 transition ${
+                  isDropping
+                    ? "border-dashed border-primary bg-accent/70"
+                    : isSelected
+                      ? "border-primary/75 bg-muted/40 ring-1 ring-primary/25"
+                      : "border-border bg-muted/25 hover:border-foreground/30"
+                }`}
+              >
+                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <Layers className="size-3.5 shrink-0 text-primary" />
+                    <input
+                      type="text"
+                      value={card.title}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCardId(card.id);
+                      }}
+                      onChange={(e) =>
+                        onRenameStackCard(card.id, e.target.value)
+                      }
+                      placeholder="Card heading..."
+                      className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground focus:border-border focus:bg-background focus:outline-none"
+                    />
+                    <Badge variant="secondary" className="font-mono text-[10px]">
+                      {resolvedBadges.length}
+                    </Badge>
+                    {isSelected && (
+                      <Badge className="font-mono text-[10px]">Active</Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      disabled={idx === 0}
-                      onClick={() => onMoveBadge(badge.id, -1)}
-                      aria-label={`Move ${badge.label} left`}
-                      className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                      disabled={cardIdx === 0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReorderStackCards(cardIdx, cardIdx - 1);
+                      }}
+                      aria-label="Move card up"
+                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
-                      <ChevronLeft className="h-3 w-3" />
+                      <ArrowUp className="size-3.5" />
                     </button>
                     <button
                       type="button"
-                      disabled={idx === activeBadges.length - 1}
-                      onClick={() => onMoveBadge(badge.id, 1)}
-                      aria-label={`Move ${badge.label} right`}
-                      className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                      disabled={cardIdx === readmeConfig.stackCards.length - 1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onReorderStackCards(cardIdx, cardIdx + 1);
+                      }}
+                      aria-label="Move card down"
+                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
-                      <ChevronRight className="h-3 w-3" />
+                      <ArrowDown className="size-3.5" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => toggleBadge(badge.id, false)}
-                      aria-label={`Remove ${badge.label}`}
-                      className="rounded p-0.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                      disabled={readmeConfig.stackCards.length <= 1}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteStackCard(card.id);
+                      }}
+                      aria-label="Delete card"
+                      className="rounded p-1 text-muted-foreground hover:bg-destructive/15 hover:text-destructive disabled:opacity-30"
                     >
-                      ×
+                      <Trash2 className="size-3.5" />
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {resolvedBadges.length === 0 ? (
+                  <p className="rounded-lg border border-dashed py-3 text-center text-xs text-muted-foreground">
+                    Drop skills here or click any badge below to add to this card.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {resolvedBadges.map((badge, idx) => (
+                      <div
+                        key={`${card.id}-${badge.id}`}
+                        draggable
+                        onDragStart={(e) => {
+                          e.stopPropagation();
+                          const payload: DragPayload = {
+                            badgeId: badge.id,
+                            fromCardId: card.id,
+                          };
+                          setDragPayload(payload);
+                          e.dataTransfer.setData(
+                            "application/json",
+                            JSON.stringify(payload)
+                          );
+                        }}
+                        onDragEnd={() => {
+                          setDragPayload(null);
+                          setDropCardId(null);
+                          setDragOverChip(null);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDragOverChip({ cardId: card.id, badgeId: badge.id });
+                        }}
+                        onDrop={(e) => handleDropOnChip(e, card.id, badge.id)}
+                        className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-card px-2 py-1 text-xs font-medium text-card-foreground shadow-xs transition active:cursor-grabbing ${
+                          dragOverChip?.cardId === card.id &&
+                          dragOverChip?.badgeId === badge.id
+                            ? "border-primary ring-2 ring-primary/30"
+                            : "border-border"
+                        }`}
+                      >
+                        <GripVertical className="h-3 w-3 text-muted-foreground" />
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: `#${badge.color}` }}
+                        />
+                        <span>{badge.label}</span>
+                        <div className="ml-0.5 flex items-center gap-0.5 border-l border-border pl-1">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMoveBadgeAcrossCards(
+                                badge.id,
+                                card.id,
+                                card.id,
+                                resolvedBadges[idx - 1]?.id
+                              );
+                            }}
+                            aria-label={`Move ${badge.label} left`}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                          >
+                            <ChevronLeft className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === resolvedBadges.length - 1}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const nextItem = resolvedBadges[idx + 1];
+                              if (nextItem) {
+                                onMoveBadgeAcrossCards(
+                                  nextItem.id,
+                                  card.id,
+                                  card.id,
+                                  badge.id
+                                );
+                              }
+                            }}
+                            aria-label={`Move ${badge.label} right`}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                          >
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveBadgeFromCard(card.id, badge.id);
+                            }}
+                            aria-label={`Remove ${badge.label}`}
+                            className="rounded p-0.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
-        <div className="mt-4 flex flex-col gap-3">
+        {/* Massive Searchable Skills & Tech Library */}
+        <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap gap-1">
-              {(
-                [ "all", "languages", "frontend", "backend", "devops", "design",
-                ] as const
-              ).map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setBadgeCategory(cat)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium capitalize transition ${
-                    badgeCategory === cat
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+            <span className="font-mono text-xs font-medium text-foreground">
+              Tech Stack &amp; Skills Library ({filteredBadges.length} shown)
+            </span>
             <input
               type="text"
               value={badgeSearch}
               onChange={(e) => setBadgeSearch(e.target.value)}
-              placeholder="Search skills..."
-              className="rounded-lg border border-border bg-muted/50 px-3 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
+              placeholder="Search React, Rust, Docker, System Design..."
+              className="w-full rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:w-64"
             />
           </div>
 
-          <div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto rounded-xl border border-border bg-muted/40 p-3">
-            {availableBadges.map((badge) => (
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setBadgeCategory("all")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                badgeCategory === "all"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+            >
+              All ({categoryCounts.all ?? 0})
+            </button>
+            {TECH_CATEGORIES_ORDER.map((cat) => (
               <button
-                key={badge.id}
+                key={cat}
                 type="button"
-                draggable
-                onDragStart={() => setDraggedBadgeId(badge.id)}
-                onDragEnd={() => setDraggedBadgeId(null)}
-                onClick={() => toggleBadge(badge.id, true)}
-                className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-medium text-card-foreground transition hover:border-primary/60 hover:bg-accent/50 active:cursor-grabbing"
+                onClick={() => setBadgeCategory(cat)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                  badgeCategory === cat
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
               >
-                <Plus className="h-3 w-3 text-muted-foreground" />
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: `#${badge.color}` }}
-                />
-                <span>{badge.label}</span>
+                {TECH_CATEGORY_LABELS[cat]} ({categoryCounts[cat] ?? 0})
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleAddCustomBadge} className="flex gap-2">
+          <div className="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-border bg-muted/40 p-3">
+            {filteredBadges.length === 0 ? (
+              <p className="w-full py-4 text-center text-xs text-muted-foreground">
+                No matching skills found. Create a custom badge below!
+              </p>
+            ) : (
+              filteredBadges.map((badge) => {
+                const inActiveCard = activeCardBadgeSet.has(badge.id);
+                return (
+                  <button
+                    key={badge.id}
+                    type="button"
+                    draggable
+                    onDragStart={(e) => {
+                      const payload: DragPayload = {
+                        badgeId: badge.id,
+                        fromCardId: null,
+                      };
+                      setDragPayload(payload);
+                      e.dataTransfer.setData(
+                        "application/json",
+                        JSON.stringify(payload)
+                      );
+                    }}
+                    onDragEnd={() => {
+                      setDragPayload(null);
+                      setDropCardId(null);
+                    }}
+                    onClick={() => {
+                      if (!activeCardId) return;
+                      if (inActiveCard) {
+                        onRemoveBadgeFromCard(activeCardId, badge.id);
+                      } else {
+                        onAddBadgeToCard(activeCardId, badge.id);
+                      }
+                    }}
+                    className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition active:cursor-grabbing ${
+                      inActiveCard
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border bg-card text-card-foreground hover:border-primary/60 hover:bg-accent/50"
+                    }`}
+                  >
+                    {inActiveCard ? (
+                      <Check className="h-3 w-3 text-primary" />
+                    ) : (
+                      <Plus className="h-3 w-3 text-muted-foreground" />
+                    )}
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: `#${badge.color}` }}
+                    />
+                    <span>{badge.label}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <form
+            onSubmit={handleAddCustomBadge}
+            className="grid grid-cols-1 gap-2 sm:grid-cols-12"
+          >
             <input
               type="text"
               value={newBadgeLabel}
               onChange={(e) => setNewBadgeLabel(e.target.value)}
-              placeholder="Create custom badge (e.g. TensorFlow)"
-              className="flex-1 rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder-slate-400 focus:border-primary focus:bg-background focus:outline-none "
+              placeholder="Custom badge label (e.g. Zig, WebGPU)"
+              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:col-span-5"
             />
             <input
-              type="color"
-              value={newBadgeColor}
-              onChange={(e) => setNewBadgeColor(e.target.value)}
-              aria-label="Custom badge color"
-              className="h-10 w-11 cursor-pointer rounded-xl border border-border bg-transparent"
+              type="text"
+              value={newBadgeLogo}
+              onChange={(e) => setNewBadgeLogo(e.target.value)}
+              placeholder="Optional icon slug (e.g. python)"
+              className="rounded-xl border bg-muted/50 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:col-span-4"
             />
-            <button
-              type="submit"
-              className="rounded-xl border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 "
-            >
-              Add
-            </button>
+            <div className="flex gap-1.5 sm:col-span-3">
+              <input
+                type="color"
+                value={newBadgeColor}
+                onChange={(e) => setNewBadgeColor(e.target.value)}
+                aria-label="Custom badge color"
+                className="h-9 w-10 shrink-0 cursor-pointer rounded-xl border border-border bg-transparent"
+              />
+              <button
+                type="submit"
+                className="flex-1 rounded-xl border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50"
+              >
+                Add
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
-      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm ">
+      {/* CTA Buttons & Layout Options */}
+      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
         <div className="mb-4 flex items-center gap-2.5">
-          <Link2 className="h-5 w-5 text-foreground/85 " />
+          <Link2 className="h-5 w-5 text-foreground/85" />
           <div>
-            <h2 className="text-base font-semibold text-foreground ">
+            <h2 className="text-base font-semibold text-foreground">
               CTA Buttons &amp; Layout Options
             </h2>
-            <p className="text-sm text-muted-foreground ">
-              Customize your profile links, layout template, and optional Markdown blocks.
+            <p className="text-sm text-muted-foreground">
+              Configure clickable profile buttons, banner alignment, sizing, and README
+              sections.
             </p>
           </div>
         </div>
@@ -620,54 +956,157 @@ export function ProfileReadmeStepPanel({
             {readmeConfig.actionLinks.map((link, idx) => (
               <div
                 key={link.id}
-                className="grid grid-cols-1 gap-2 rounded-xl border bg-muted/40 p-3  sm:grid-cols-12"
+                className="flex flex-col gap-2 rounded-xl border bg-muted/40 p-3"
               >
-                <input
-                  type="text"
-                  value={link.label}
-                  onChange={(e) => {
-                    const updated = [...readmeConfig.actionLinks];
-                    updated[idx] = { ...link, label: e.target.value };
-                    onUpdateField("actionLinks", updated);
-                  }}
-                  placeholder="Label"
-                  className="rounded-lg border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground   sm:col-span-3"
-                />
-                <input
-                  type="text"
-                  value={link.valueText}
-                  onChange={(e) => {
-                    const updated = [...readmeConfig.actionLinks];
-                    updated[idx] = { ...link, valueText: e.target.value };
-                    onUpdateField("actionLinks", updated);
-                  }}
-                  placeholder="Text"
-                  className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground   sm:col-span-3"
-                />
-                <input
-                  type="text"
-                  value={link.url}
-                  onChange={(e) => {
-                    const updated = [...readmeConfig.actionLinks];
-                    updated[idx] = { ...link, url: e.target.value };
-                    onUpdateField("actionLinks", updated);
-                  }}
-                  placeholder="https://..."
-                  className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground/85   sm:col-span-5"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    onUpdateField( "actionLinks",
-                      readmeConfig.actionLinks.filter((l) => l.id !== link.id)
-                    )
-                  }
-                  aria-label="Delete link"
-                  className="flex items-center justify-center rounded-lg border bg-card p-1.5 text-slate-400 hover:text-red-600 "
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
+                  <div className="flex items-center gap-2 sm:col-span-3">
+                    <input
+                      type="checkbox"
+                      checked={link.enabled}
+                      onChange={(e) => {
+                        const updated = [...readmeConfig.actionLinks];
+                        updated[idx] = { ...link, enabled: e.target.checked };
+                        onUpdateField("actionLinks", updated);
+                      }}
+                      aria-label={`Toggle ${link.label}`}
+                      className="size-4 accent-primary"
+                    />
+                    <input
+                      type="text"
+                      value={link.label}
+                      onChange={(e) => {
+                        const updated = [...readmeConfig.actionLinks];
+                        updated[idx] = { ...link, label: e.target.value };
+                        onUpdateField("actionLinks", updated);
+                      }}
+                      placeholder="Label"
+                      className="w-full rounded-lg border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={link.valueText}
+                    onChange={(e) => {
+                      const updated = [...readmeConfig.actionLinks];
+                      updated[idx] = { ...link, valueText: e.target.value };
+                      onUpdateField("actionLinks", updated);
+                    }}
+                    placeholder="Text"
+                    className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground sm:col-span-3"
+                  />
+                  <input
+                    type="text"
+                    value={link.url}
+                    onChange={(e) => {
+                      const updated = [...readmeConfig.actionLinks];
+                      updated[idx] = { ...link, url: e.target.value };
+                      onUpdateField("actionLinks", updated);
+                    }}
+                    placeholder="https://... or {{USERNAME}}"
+                    className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground/85 sm:col-span-6"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={link.logo || "none"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const updated = [...readmeConfig.actionLinks];
+                        updated[idx] = {
+                          ...link,
+                          logo: val === "none" ? undefined : val,
+                        };
+                        onUpdateField("actionLinks", updated);
+                      }}
+                      className="rounded-lg border bg-card px-2 py-1 text-xs text-foreground"
+                    >
+                      {CTA_LOGO_PRESETS.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          Icon: {preset.label}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="color"
+                      value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
+                      onChange={(e) => {
+                        const updated = [...readmeConfig.actionLinks];
+                        updated[idx] = {
+                          ...link,
+                          color: e.target.value.replace("#", "").toUpperCase(),
+                        };
+                        onUpdateField("actionLinks", updated);
+                      }}
+                      aria-label={`Color for ${link.label}`}
+                      className="h-7 w-9 cursor-pointer rounded border border-border bg-transparent"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() =>
+                        onUpdateField(
+                          "actionLinks",
+                          reorderItems(readmeConfig.actionLinks, idx, idx - 1)
+                        )
+                      }
+                      aria-label="Move CTA button up"
+                      className="rounded border bg-card p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === readmeConfig.actionLinks.length - 1}
+                      onClick={() =>
+                        onUpdateField(
+                          "actionLinks",
+                          reorderItems(readmeConfig.actionLinks, idx, idx + 1)
+                        )
+                      }
+                      aria-label="Move CTA button down"
+                      className="rounded border bg-card p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateField(
+                          "actionLinks",
+                          readmeConfig.actionLinks.filter((l) => l.id !== link.id)
+                        )
+                      }
+                      aria-label="Delete link"
+                      className="rounded border bg-card p-1 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
               </div>
+            ))}
+          </div>
+
+          {/* Quick-Add CTA Presets */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-mono text-[11px] text-muted-foreground">
+              Quick add:
+            </span>
+            {CTA_QUICK_TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.label}
+                type="button"
+                onClick={() => handleQuickAddCta(tpl)}
+                className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-1 font-mono text-[11px] text-foreground transition hover:bg-muted"
+              >
+                <Plus className="size-3" />
+                {tpl.label}
+              </button>
             ))}
           </div>
 
@@ -680,44 +1119,110 @@ export function ProfileReadmeStepPanel({
               value={newLinkLabel}
               onChange={(e) => setNewLinkLabel(e.target.value)}
               placeholder="Label (PORTFOLIO)"
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground   sm:col-span-3"
+              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-3"
             />
             <input
               type="text"
               value={newLinkText}
               onChange={(e) => setNewLinkText(e.target.value)}
               placeholder="Text (VISIT)"
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground   sm:col-span-3"
+              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-3"
             />
             <input
-              type="url"
+              type="text"
               value={newLinkUrl}
               onChange={(e) => setNewLinkUrl(e.target.value)}
-              placeholder="https://..."
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground   sm:col-span-4"
+              placeholder="https://... or domain.com"
+              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-6"
             />
-            <div className="flex gap-1.5 sm:col-span-2">
+            <select
+              value={newLinkLogo}
+              onChange={(e) => setNewLinkLogo(e.target.value)}
+              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-6"
+            >
+              {CTA_LOGO_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  Icon: {preset.label}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-1.5 sm:col-span-6">
               <input
                 type="color"
                 value={newLinkColor}
                 onChange={(e) => setNewLinkColor(e.target.value)}
-                className="h-9 w-9 rounded-lg border border-border bg-transparent"
+                aria-label="New link badge color"
+                className="h-9 w-10 rounded-lg border border-border bg-transparent"
               />
               <button
                 type="submit"
-                className="flex-1 rounded-xl border bg-card px-2 text-xs font-medium text-foreground hover:bg-muted/50 "
+                className="flex-1 rounded-xl border bg-card px-3 text-xs font-medium text-foreground hover:bg-muted/50"
               >
-                Add
+                Add CTA Button
               </button>
             </div>
           </form>
 
-          <div className="grid grid-cols-2 gap-2.5 border-t border-border pt-4 ">
+          {/* Layout Options: Alignment & Banner Width */}
+          <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <span className="font-mono text-xs font-medium text-foreground">
+                Content Alignment
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {(["left", "center"] as const).map((alignVal) => {
+                  const active = readmeConfig.align === alignVal;
+                  return (
+                    <button
+                      key={alignVal}
+                      type="button"
+                      onClick={() => onUpdateField("align", alignVal)}
+                      className={`rounded-lg border px-3 py-2 font-mono text-xs font-semibold capitalize transition ${
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "bg-muted/40 text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {alignVal}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between font-mono text-xs">
+                <span className="font-medium text-foreground">
+                  Creature Banner Width
+                </span>
+                <span className="font-semibold text-foreground">
+                  {readmeConfig.imageWidth}px
+                </span>
+              </div>
+              <input
+                type="range"
+                aria-label="Creature Banner Width"
+                min={480}
+                max={920}
+                step={20}
+                value={readmeConfig.imageWidth}
+                onChange={(e) => {
+                  const next = parseInt(e.target.value, 10);
+                  if (Number.isFinite(next)) {
+                    onUpdateField("imageWidth", next);
+                  }
+                }}
+                className="h-2 w-full cursor-pointer accent-primary"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 border-t border-border pt-4">
             {README_TEMPLATES.map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"
-                onClick={() => onUpdateField("templateId", tpl.id)}
+                onClick={() => onSelectTemplate(tpl.id)}
                 className={`rounded-xl border p-3 text-left transition ${
                   readmeConfig.templateId === tpl.id
                     ? "border-primary bg-accent/60 ring-1 ring-primary"
@@ -758,11 +1263,11 @@ export function ProfileReadmeStepPanel({
             ))}
           </div>
 
-          <div className="border-t border-border pt-3 ">
+          <div className="border-t border-border pt-3">
             <button
               type="button"
               onClick={() => setShowRawEditor((v) => !v)}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-foreground/85 underline underline-offset-4 hover:text-foreground "
+              className="inline-flex items-center gap-2 text-xs font-semibold text-foreground/85 underline underline-offset-4 hover:text-foreground"
             >
               <FileText className="h-3.5 w-3.5" />
               {showRawEditor
@@ -771,7 +1276,7 @@ export function ProfileReadmeStepPanel({
             </button>
 
             {showRawEditor && (
-              <div className="mt-3 overflow-hidden rounded-xl border border-border bg-slate-950 ">
+              <div className="mt-3 overflow-hidden rounded-xl border border-border bg-slate-950">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 px-3 py-2">
                   <div className="flex flex-wrap gap-1.5">
                     {DYNAMIC_TOKENS.map((t) => (
@@ -813,7 +1318,7 @@ export function ProfileReadmeStepPanel({
         <button
           type="button"
           onClick={onPrevStep}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border bg-card px-5 py-3.5 text-sm font-semibold text-foreground/85 transition hover:bg-muted/50 "
+          className="inline-flex items-center justify-center gap-2 rounded-xl border bg-card px-5 py-3.5 text-sm font-semibold text-foreground/85 transition hover:bg-muted/50"
         >
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -821,7 +1326,7 @@ export function ProfileReadmeStepPanel({
         <button
           type="button"
           onClick={onNextStep}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 "
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
         >
           Next: Enter Token &amp; Push
           <ArrowRight className="h-4 w-4" />

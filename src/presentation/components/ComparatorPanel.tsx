@@ -19,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { CreatureSvgView } from "./CreatureSvgView";
+import { CreatureAnimatedView } from "./CreatureAnimatedView";
 
 interface ComparatorPanelProps {
   baseConfig: CreatureConfig;
@@ -152,7 +152,7 @@ export function ComparatorPanel({ baseConfig }: ComparatorPanelProps) {
                     </Badge>
                   </div>
                   <div className="bg-[#0d1117] p-3">
-                    <CreatureSvgView config={cfg} className="w-full" />
+                    <CreatureAnimatedView config={cfg} className="w-full" />
                   </div>
                 </div>
               );

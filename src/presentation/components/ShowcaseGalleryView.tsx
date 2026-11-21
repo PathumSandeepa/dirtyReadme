@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { ArrowRight, Clock, Cpu, Layers, ShieldCheck, Sparkles } from "lucide-react";
 import {
+  CAMERA_VIEWS,
   CREATURE_CATALOG,
   STAGE_DEFINITIONS,
   THEME_PRESETS,
+  type CameraView,
   type CreatureConfig,
 } from "@/domain/creature/entities";
-import type { ReadmeConfig } from "@/domain/profile/entities";
+import { getCreatureMeta } from "@/domain/creature/services";
+import type { ReadmeBadge, ReadmeConfig } from "@/domain/profile/entities";
 import {
   buildActionLinkBadgeUrl,
   buildShieldBadgeUrl,
@@ -23,9 +26,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { CreatureSvgView } from "./CreatureSvgView";
-import { ShareCardSvgView } from "./ShareCardSvgView";
+import { CreatureAnimatedView } from "./CreatureAnimatedView";
+import { ShareCardCanvasView } from "./ShareCardCanvasView";
 
 interface ShowcaseGalleryViewProps {
   creatureConfig: CreatureConfig;
@@ -39,6 +41,7 @@ export function ShowcaseGalleryView({
   onStartCustomize,
 }: ShowcaseGalleryViewProps) {
   const [previewCreature, setPreviewCreature] = useState(creatureConfig.creature);
+  const [previewView, setPreviewView] = useState<CameraView>(creatureConfig.view);
   const [previewThemeId, setPreviewThemeId] = useState(creatureConfig.themeId);
   const [previewStage, setPreviewStage] = useState<number>(4);
 
@@ -47,10 +50,12 @@ export function ShowcaseGalleryView({
   const stageObj =
     STAGE_DEFINITIONS.find((s) => s.stage === previewStage) ??
     STAGE_DEFINITIONS[3];
+  const meta = getCreatureMeta(previewCreature);
 
   const showcaseConfig: CreatureConfig = {
     ...creatureConfig,
     creature: previewCreature,
+    view: meta.supportsViewSelection ? previewView : "side",
     themeId: selectedTheme.id,
     colorMode: "canonical",
     commits: stageObj.sampleCommits,
@@ -59,9 +64,17 @@ export function ShowcaseGalleryView({
       ...selectedTheme.colors,
       background: "transparent",
     },
+    backgroundMode: "transparent",
   };
 
-  const sampleBadges = readmeConfig.badges.filter((b) => b.enabled).slice(0, 10);
+  const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
+  const sampleBadges = readmeConfig.stackCards
+    .flatMap((card) =>
+      card.badgeIds
+        .map((id) => badgeById.get(id))
+        .filter((b): b is ReadmeBadge => Boolean(b))
+    )
+    .slice(0, 10);
   const sampleLinks = readmeConfig.actionLinks.filter((l) => l.enabled);
 
   return (
@@ -72,18 +85,19 @@ export function ShowcaseGalleryView({
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-mono">
                 <Sparkles data-icon="inline-start" />
-                PIXEL SVG + ANIMATED WEBP
+                ANIMATED WEBP + GIF
               </Badge>
               <Badge variant="outline" className="font-mono">
                 GITHUB PROFILE STUDIO
               </Badge>
             </div>
             <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Pixel-Art Cybernetic Creatures for GitHub READMEs
+              Pixel-Art Marine Creatures for GitHub READMEs
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Preview the left-swimming Tulkun and animated Bioluminescent Jellyfish below.
-              Click <strong className="text-foreground">Add Profile</strong> to customize
+              Preview the S-curve swimming Tulkun (Top &amp; Side views) and pulsing
+              Bioluminescent Jellyfish below. Click{" "}
+              <strong className="text-foreground">Add Profile</strong> to customize
               everything with your GitHub username.
             </p>
           </div>
@@ -109,7 +123,7 @@ export function ShowcaseGalleryView({
           </div>
           <div className="font-mono text-3xl font-bold tracking-tight">02</div>
           <div className="font-mono text-xs opacity-80">
-            Tulkun &amp; Biolume Jellyfish
+            Tulkun (Top/Side) &amp; Jellyfish
           </div>
         </div>
 
@@ -171,7 +185,7 @@ export function ShowcaseGalleryView({
             <CardHeader>
               <CardTitle className="font-mono">Available Creatures</CardTitle>
               <CardDescription>
-                Select either left-facing animated creature to inspect live swimming motion.
+                Select either sprite-animated creature to inspect live swimming motion.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
@@ -183,6 +197,9 @@ export function ShowcaseGalleryView({
                     type="button"
                     onClick={() => {
                       setPreviewCreature(item.id);
+                      if (!item.supportsViewSelection) {
+                        setPreviewView("side");
+                      }
                       if (item.id === "jellyfish" && previewThemeId === "ocean-slate") {
                         setPreviewThemeId("biolume-azure");
                       } else if (item.id === "tulkun" && previewThemeId === "biolume-azure") {
@@ -209,6 +226,28 @@ export function ShowcaseGalleryView({
                   </button>
                 );
               })}
+
+              {meta.supportsViewSelection && (
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  {CAMERA_VIEWS.map((view) => {
+                    const active = previewView === view.id;
+                    return (
+                      <button
+                        key={view.id}
+                        type="button"
+                        onClick={() => setPreviewView(view.id)}
+                        className={`rounded-lg border px-3 py-1.5 font-mono text-xs font-semibold transition ${
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "bg-muted/40 text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {view.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -216,7 +255,7 @@ export function ShowcaseGalleryView({
             <CardHeader>
               <CardTitle className="font-mono">Palettes &amp; Stages</CardTitle>
               <CardDescription>
-                Colors and anatomical growth tiers included in export.
+                Colors and anatomical growth tiers included in WebP &amp; GIF export.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -256,25 +295,25 @@ export function ShowcaseGalleryView({
                 })}
               </div>
 
-              <ToggleGroup
-                value={[String(previewStage)]}
-                onValueChange={(vals) => {
-                  const v = vals[0];
-                  if (v) setPreviewStage(Number(v));
-                }}
-                variant="outline"
-                className="grid w-full grid-cols-5"
-              >
-                {STAGE_DEFINITIONS.map((st) => (
-                  <ToggleGroupItem
-                    key={st.stage}
-                    value={String(st.stage)}
-                    className="font-mono text-xs"
-                  >
-                    S{st.stage}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
+              <div className="grid grid-cols-5 gap-1.5">
+                {STAGE_DEFINITIONS.map((st) => {
+                  const active = previewStage === st.stage;
+                  return (
+                    <button
+                      key={st.stage}
+                      type="button"
+                      onClick={() => setPreviewStage(st.stage)}
+                      className={`rounded-lg border py-1.5 font-mono text-xs font-semibold transition ${
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "bg-muted/40 text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      S{st.stage}
+                    </button>
+                  );
+                })}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -295,8 +334,8 @@ export function ShowcaseGalleryView({
               </Badge>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="bg-[#0d1117] p-4">
-                <CreatureSvgView config={showcaseConfig} className="w-full" />
+              <div className="transparency-grid p-4">
+                <CreatureAnimatedView config={showcaseConfig} className="w-full" />
               </div>
             </CardContent>
           </Card>
@@ -305,8 +344,8 @@ export function ShowcaseGalleryView({
             <CardHeader>
               <CardTitle className="font-mono">Profile README Template</CardTitle>
               <CardDescription>
-                Customize every heading, bio, drag-and-drop badge, and CTA after adding
-                your profile.
+                Customize every heading, intro paragraph, 3+ drag-and-drop tech cards,
+                and CTA links after adding your profile.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -350,12 +389,12 @@ export function ShowcaseGalleryView({
         <CardHeader>
           <CardTitle className="font-mono">Social Share Card (1280×640)</CardTitle>
           <CardDescription>
-            Exportable SVG banner synchronized with your creature and commit stage.
+            Exportable PNG banner synchronized with your creature and commit stage.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-hidden rounded-lg border">
-            <ShareCardSvgView config={showcaseConfig} className="w-full" />
+            <ShareCardCanvasView config={showcaseConfig} className="w-full" />
           </div>
         </CardContent>
       </Card>

@@ -1,13 +1,24 @@
 import type { CreatureConfig } from "@/domain/creature/entities";
-import { getCreatureMeta, getEvolutionStage } from "@/domain/creature/services";
+import {
+  getCreatureMeta,
+  getEvolutionStage,
+  getViewDisplayLabel,
+} from "@/domain/creature/services";
 import type {
   ReadmeActionLink,
   ReadmeBadge,
   ReadmeConfig,
+  TechStackCard,
 } from "@/domain/profile/entities";
 
+function escapeShieldsSegment(text: string): string {
+  return encodeURIComponent(
+    text.trim().replace(/-/g, "--").replace(/_/g, "__")
+  );
+}
+
 export function buildShieldBadgeUrl(badge: ReadmeBadge): string {
-  const label = encodeURIComponent(badge.label.trim().replace(/-/g, "--"));
+  const label = escapeShieldsSegment(badge.label || "SKILL");
   const color = badge.color.replace("#", "") || "1F242D";
   const params = new URLSearchParams({ style: "for-the-badge" });
   if (badge.logo) params.set("logo", badge.logo);
@@ -19,13 +30,11 @@ export function buildActionLinkBadgeUrl(
   link: ReadmeActionLink,
   creature: CreatureConfig
 ): string {
-  const left = encodeURIComponent(
-    resolveDynamicTokens(link.label, creature).trim().replace(/-/g, "--") ||
-      "LINK"
+  const left = escapeShieldsSegment(
+    resolveDynamicTokens(link.label, creature) || "LINK"
   );
-  const right = encodeURIComponent(
-    resolveDynamicTokens(link.valueText, creature).trim().replace(/-/g, "--") ||
-      "OPEN"
+  const right = escapeShieldsSegment(
+    resolveDynamicTokens(link.valueText, creature) || "OPEN"
   );
   const color = link.color.replace("#", "") || "18181B";
   const params = new URLSearchParams({
@@ -49,6 +58,7 @@ export function resolveDynamicTokens(
     Math.floor(creature.commits || 0)
   ).toLocaleString("en-US");
   const langsText = creature.languages.map((l) => l.name).join(" · ");
+  const viewText = getViewDisplayLabel(creature.creature, creature.view);
 
   return text
     .replaceAll("{{USERNAME}}", safeUser)
@@ -56,14 +66,14 @@ export function resolveDynamicTokens(
     .replaceAll("{{STAGE}}", String(stage.stage))
     .replaceAll("{{RANK}}", stage.rank)
     .replaceAll("{{COMMITS}}", commitsText)
-    .replaceAll("{{VIEW}}", creature.view.toUpperCase())
+    .replaceAll("{{VIEW}}", viewText)
     .replaceAll("{{LANGUAGES}}", langsText);
 }
 
 export function getCreatureImageSrc(
   creature: CreatureConfig,
   readme: ReadmeConfig,
-  filename = "creature.svg"
+  filename = "creature.webp"
 ): string {
   const safeUser = creature.username.trim() || "your-username";
   return readme.useOutputBranchUrl
@@ -91,15 +101,77 @@ export function reorderItems<T>(
   return copy;
 }
 
-export function reorderEnabledBadges(
-  badges: ReadmeBadge[],
-  draggedId: string,
-  targetId: string
-): ReadmeBadge[] {
-  if (draggedId === targetId) return badges;
-  const fromIndex = badges.findIndex((b) => b.id === draggedId);
-  const toIndex = badges.findIndex((b) => b.id === targetId);
-  return reorderItems(badges, fromIndex, toIndex);
+export function addBadgeToStackCard(
+  cards: TechStackCard[],
+  cardId: string,
+  badgeId: string,
+  beforeBadgeId?: string
+): TechStackCard[] {
+  return cards.map((card) => {
+    if (card.id !== cardId) return card;
+    const without = card.badgeIds.filter((id) => id !== badgeId);
+    if (!beforeBadgeId) {
+      return { ...card, badgeIds: [...without, badgeId] };
+    }
+    const targetIdx = without.indexOf(beforeBadgeId);
+    if (targetIdx === -1) {
+      return { ...card, badgeIds: [...without, badgeId] };
+    }
+    const next = [...without];
+    next.splice(targetIdx, 0, badgeId);
+    return { ...card, badgeIds: next };
+  });
+}
+
+export function removeBadgeFromStackCard(
+  cards: TechStackCard[],
+  cardId: string,
+  badgeId: string
+): TechStackCard[] {
+  return cards.map((card) =>
+    card.id === cardId
+      ? { ...card, badgeIds: card.badgeIds.filter((id) => id !== badgeId) }
+      : card
+  );
+}
+
+export function moveBadgeBetweenStackCards(
+  cards: TechStackCard[],
+  badgeId: string,
+  fromCardId: string,
+  toCardId: string,
+  targetBadgeId?: string
+): TechStackCard[] {
+  if (fromCardId === toCardId) {
+    return cards.map((card) => {
+      if (card.id !== toCardId) return card;
+      const fromIdx = card.badgeIds.indexOf(badgeId);
+      if (fromIdx === -1) return card;
+      if (!targetBadgeId) {
+        return {
+          ...card,
+          badgeIds: reorderItems(card.badgeIds, fromIdx, card.badgeIds.length - 1),
+        };
+      }
+      const toIdx = card.badgeIds.indexOf(targetBadgeId);
+      if (toIdx === -1) return card;
+      return {
+        ...card,
+        badgeIds: reorderItems(card.badgeIds, fromIdx, toIdx),
+      };
+    });
+  }
+
+  const removed = removeBadgeFromStackCard(cards, fromCardId, badgeId);
+  return addBadgeToStackCard(removed, toCardId, badgeId, targetBadgeId);
+}
+
+export function reorderStackCards(
+  cards: TechStackCard[],
+  fromIdx: number,
+  toIdx: number
+): TechStackCard[] {
+  return reorderItems(cards, fromIdx, toIdx);
 }
 
 export function buildMarkerSection(
@@ -109,17 +181,15 @@ export function buildMarkerSection(
   const meta = getCreatureMeta(creature.creature);
   const stage = getEvolutionStage(creature.commits);
   const safeUser = creature.username.trim() || "your-username";
-  const imgSrc = getCreatureImageSrc(creature, readme, "creature.svg");
+  const imgSrc = getCreatureImageSrc(creature, readme, "creature.webp");
 
   const lines: string[] = [];
   if (readme.includeMarkers) {
     lines.push("<!-- CYBER-CREATURE:START -->");
   }
 
-  lines.push(`<p align="center">`);
-  lines.push(
-    `  <a href="https://github.com/${safeUser}/${safeUser}">`
-  );
+  lines.push(`<p align="${readme.align}">`);
+  lines.push(`  <a href="https://github.com/${safeUser}/${safeUser}">`);
   lines.push(
     `    <img src="${imgSrc}" width="${readme.imageWidth}" alt="${meta.name} - Stage ${stage.stage} ${stage.rank}" />`
   );
@@ -133,7 +203,7 @@ export function buildMarkerSection(
     ).trim();
     if (resolvedCaption) {
       lines.push("");
-      lines.push(`<p align="center"><sub>${resolvedCaption}</sub></p>`);
+      lines.push(`<p align="${readme.align}"><sub>${resolvedCaption}</sub></p>`);
     }
   }
 
@@ -144,18 +214,49 @@ export function buildMarkerSection(
   return lines.join("\n");
 }
 
-export function buildGeneratedReadmeMarkdown(
+export function buildStatsTableSection(
   creature: CreatureConfig,
   readme: ReadmeConfig
 ): string {
-  const safeUser = creature.username.trim() || "your-username";
   const meta = getCreatureMeta(creature.creature);
   const stage = getEvolutionStage(creature.commits);
   const commitsText = Math.max(
     0,
     Math.floor(creature.commits || 0)
   ).toLocaleString("en-US");
+  const viewLabel = getViewDisplayLabel(creature.creature, creature.view);
+  const langList = creature.languages.map((l) => `\`${l.name}\``).join(" · ");
+  const tableHeading =
+    resolveDynamicTokens(readme.statsTableTitle, creature).trim() ||
+    "Cybernetic Telemetry";
 
+  const rows = [
+    `### ${tableHeading}`,
+    ``,
+    `| Metric | Active Value |`,
+    `| --- | --- |`,
+    `| **Guardian Chassis** | ${meta.name} (\`${meta.designation}\`) |`,
+    `| **Evolution Stage** | Stage ${stage.stage} / 5 — **${stage.rank}** |`,
+    `| **Contributions (${creature.windowMode})** | \`${commitsText}\` commits |`,
+    `| **Camera Angle** | \`${viewLabel}\` |`,
+    `| **Top Languages** | ${langList} |`,
+  ];
+
+  if (readme.includeMarkers) {
+    return [
+      "<!-- CYBER-CREATURE-STATS:START -->",
+      ...rows,
+      "<!-- CYBER-CREATURE-STATS:END -->",
+    ].join("\n");
+  }
+  return rows.join("\n");
+}
+
+export function buildGeneratedReadmeMarkdown(
+  creature: CreatureConfig,
+  readme: ReadmeConfig
+): string {
+  const safeUser = creature.username.trim() || "your-username";
   const markerBlock = buildMarkerSection(creature, readme);
   if (readme.templateId === "auto-evolve-block") {
     return markerBlock;
@@ -165,15 +266,14 @@ export function buildGeneratedReadmeMarkdown(
   const resolvedHeadline = resolveDynamicTokens(readme.headline, creature).trim();
   const resolvedBio = resolveDynamicTokens(readme.bio, creature).trim();
   const resolvedCta = resolveDynamicTokens(readme.ctaLine, creature).trim();
+  const isMinimal = readme.templateId === "minimal-header";
+  const isTelemetry = readme.templateId === "telemetry-stats";
 
   if (resolvedHeadline) {
     parts.push(`## ${resolvedHeadline}`);
   }
 
-  if (
-    readme.subtitleTags.length > 0 &&
-    readme.templateId !== "minimal-header"
-  ) {
+  if (readme.subtitleTags.length > 0 && !isMinimal) {
     const tagLine = readme.subtitleTags
       .map((t) => resolveDynamicTokens(t, creature).trim().toUpperCase())
       .filter(Boolean)
@@ -187,25 +287,40 @@ export function buildGeneratedReadmeMarkdown(
     parts.push(resolvedBio);
   }
 
-  if (resolvedCta && readme.templateId !== "minimal-header") {
+  if (resolvedCta && !isMinimal) {
     parts.push(resolvedCta);
   }
 
-  const activeBadges = readme.badges.filter((b) => b.enabled && b.label.trim());
-  if (activeBadges.length > 0 && readme.templateId !== "minimal-header") {
-    const badgeImages = activeBadges
-      .map(
-        (b) =>
-          `  <img src="${buildShieldBadgeUrl(b)}" alt="${b.label.trim()}" />`
-      )
-      .join("\n");
-    parts.push(`<p align="${readme.align}">\n${badgeImages}\n</p>`);
+  if (!isMinimal) {
+    const badgeById = new Map(readme.badges.map((b) => [b.id, b]));
+    const cardSections = readme.stackCards
+      .map((card) => {
+        const badges = card.badgeIds
+          .map((id) => badgeById.get(id))
+          .filter((b): b is ReadmeBadge => Boolean(b && b.label.trim()));
+        if (badges.length === 0) return null;
+        const imgs = badges
+          .map(
+            (b) =>
+              `  <img src="${buildShieldBadgeUrl(b)}" alt="${b.label.trim()}" />`
+          )
+          .join("\n");
+        const title = card.title.trim();
+        return title
+          ? `#### ${title}\n\n<p align="${readme.align}">\n${imgs}\n</p>`
+          : `<p align="${readme.align}">\n${imgs}\n</p>`;
+      })
+      .filter((s): s is string => Boolean(s));
+
+    if (cardSections.length > 0) {
+      parts.push(cardSections.join("\n\n"));
+    }
   }
 
   const activeLinks = readme.actionLinks.filter(
     (l) => l.enabled && l.label.trim()
   );
-  if (activeLinks.length > 0 && readme.templateId !== "minimal-header") {
+  if (activeLinks.length > 0 && !isMinimal) {
     const linkImages = activeLinks
       .map((l) => {
         const href = resolveDynamicTokens(l.url, creature);
@@ -217,42 +332,24 @@ export function buildGeneratedReadmeMarkdown(
 
   parts.push(markerBlock);
 
-  if (readme.includeStatsTable && readme.templateId !== "minimal-header") {
-    const langList = creature.languages
-      .map((l) => `\`${l.name}\``)
-      .join(" · ");
-    const tableHeading =
-      resolveDynamicTokens(readme.statsTableTitle, creature).trim() ||
-      "Cybernetic Telemetry";
-    parts.push(
-      [
-        `### ${tableHeading}`,
-        ``,
-        `| Metric | Active Value |`,
-        `| --- | --- |`,
-        `| **Guardian Chassis** | ${meta.name} (\`${meta.designation}\`) |`,
-        `| **Evolution Stage** | Stage ${stage.stage} / 5 — **${stage.rank}** |`,
-        `| **Contributions (${creature.windowMode})** | \`${commitsText}\` commits |`,
-        `| **Camera Angle** | \`${creature.view}\` |`,
-        `| **Top Languages** | ${langList} |`,
-      ].join("\n")
-    );
+  if (!isMinimal && (isTelemetry || readme.includeStatsTable)) {
+    parts.push(buildStatsTableSection(creature, readme));
   }
 
-  if (readme.includeShareCard) {
-    const shareSrc = getCreatureImageSrc(creature, readme, "share-card.svg");
+  if (!isMinimal && (isTelemetry || readme.includeShareCard)) {
+    const shareSrc = getCreatureImageSrc(creature, readme, "share-card.png");
     parts.push(
       [
         `### Annual Share Card`,
         ``,
-        `<p align="center">`,
+        `<p align="${readme.align}">`,
         `  <img src="${shareSrc}" width="${readme.imageWidth}" alt="@${safeUser} Cyber Creature Share Card" />`,
         `</p>`,
       ].join("\n")
     );
   }
 
-  if (readme.customFooterMarkdown.trim()) {
+  if (!isMinimal && readme.customFooterMarkdown.trim()) {
     const heading = resolveDynamicTokens(
       readme.customSectionTitle,
       creature

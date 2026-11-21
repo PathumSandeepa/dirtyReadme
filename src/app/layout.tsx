@@ -17,9 +17,9 @@ const SITE_URL = "https://pathumsandeepa.github.io/dynamic-readme-creature/";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title:
-    "Dynamic Cybernetic Creature Studio — Animated SVG & GitHub Profile README Generator",
+    "Dynamic Cybernetic Creature Studio — Animated WebP/GIF & GitHub Profile README Generator",
   description:
-    "Create self-contained animated SVG creatures (Cyber-Tulkun, Cyber-Serpent, Cyber-Manta, and Cyber-Jellyfish), customize your entire GitHub profile README with drag-and-drop tech badges, and publish directly from your browser.",
+    "Create S-curve animated pixel creatures (Pixel Tulkun in Top/Side views and Bioluminescent Jellyfish) as Animated WebP or GIF, customize your GitHub profile README with multi-card drag-and-drop tech badges, and publish directly from your browser.",
   applicationName: "Dynamic Cybernetic Creature Studio",
   keywords: [
     "GitHub Profile README Generator",
@@ -50,12 +50,12 @@ export const metadata: Metadata = {
     url: SITE_URL,
     siteName: "Dynamic Cybernetic Creature Studio",
     title:
-      "Dynamic Cybernetic Creature Studio — Animated SVG & GitHub Profile README Generator",
+      "Dynamic Cybernetic Creature Studio — Animated WebP/GIF & GitHub Profile README Generator",
     description:
-      "Design an animated cybernetic creature and customizable GitHub profile README with drag-and-drop tech stack badges and 12:00 AM daily evolution.",
+      "Design an S-curve animated pixel creature and customizable GitHub profile README with drag-and-drop tech stack cards and 12:00 AM daily evolution.",
     images: [
       {
-        url: "showcase/share-card.svg",
+        url: "showcase/share-card.png",
         width: 1280,
         height: 640,
         alt: "Dynamic Cybernetic Creature Studio Social Preview",
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
     title:
       "Dynamic Cybernetic Creature Studio — Animated GitHub README Generator",
     description:
-      "Design pure-CSS animated SVG creatures and publish a custom GitHub profile README directly from your browser.",
-    images: ["showcase/share-card.svg"],
+      "Design S-curve animated WebP/GIF pixel creatures and publish a custom GitHub profile README directly from your browser.",
+    images: ["showcase/share-card.png"],
   },
   icons: {
     icon: [{ url: "favicon.svg", type: "image/svg+xml" }],

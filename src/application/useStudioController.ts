@@ -15,18 +15,20 @@ import {
   resolveBackgroundHex,
 } from "@/domain/creature/services";
 import {
-  generateCreatureSvgDocument,
-  generateShareCardSvgDocument,
-} from "@/domain/creature/svgRenderer";
-import {
+  DEFAULT_DUMMY_INTRO,
   DEFAULT_README_CONFIG,
+  type ReadmeBadge,
   type ReadmeConfig,
+  type ReadmeTemplateId,
 } from "@/domain/profile/entities";
 import {
+  addBadgeToStackCard,
   buildMarkerSection,
   getEffectiveReadmeMarkdown,
-  reorderEnabledBadges,
+  moveBadgeBetweenStackCards,
+  removeBadgeFromStackCard,
   reorderItems,
+  reorderStackCards,
 } from "@/domain/profile/readmeService";
 import {
   type GitHubProfileSnapshot,
@@ -41,20 +43,10 @@ export function useStudioController() {
   const [readmeConfig, setReadmeConfig] = useState<ReadmeConfig>(
     DEFAULT_README_CONFIG
   );
-  const [customBgHex, setCustomBgHex] = useState("#0B1020");
+  const [customBgHex, setCustomBgHex] = useState("#0D1117");
   const [snapshot, setSnapshot] = useState<GitHubProfileSnapshot | null>(null);
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
-
-  const creatureSvg = useMemo(
-    () => generateCreatureSvgDocument(creatureConfig),
-    [creatureConfig]
-  );
-
-  const shareCardSvg = useMemo(
-    () => generateShareCardSvgDocument(creatureConfig),
-    [creatureConfig]
-  );
 
   const markerBlock = useMemo(
     () => buildMarkerSection(creatureConfig, readmeConfig),
@@ -67,11 +59,47 @@ export function useStudioController() {
   );
 
   function selectCreature(creature: CreatureId) {
-    setCreatureConfig((prev) => ({ ...prev, creature }));
+    setCreatureConfig((prev) => {
+      const nextView: CameraView = creature === "jellyfish" ? "side" : prev.view;
+      if (creature === "jellyfish" && prev.themeId === "ocean-slate") {
+        const preset = THEME_PRESETS[1];
+        return {
+          ...prev,
+          creature,
+          view: nextView,
+          colorMode: "canonical",
+          themeId: preset.id,
+          colors: {
+            ...preset.colors,
+            background: prev.colors.background,
+          },
+        };
+      }
+      if (creature === "tulkun" && prev.themeId === "biolume-azure") {
+        const preset = THEME_PRESETS[0];
+        return {
+          ...prev,
+          creature,
+          view: nextView,
+          colorMode: "canonical",
+          themeId: preset.id,
+          colors: {
+            ...preset.colors,
+            background: prev.colors.background,
+          },
+        };
+      }
+      return { ...prev, creature, view: nextView };
+    });
   }
 
   function selectView(view: CameraView) {
-    setCreatureConfig((prev) => ({ ...prev, view }));
+    setCreatureConfig((prev) => {
+      if (prev.creature === "jellyfish") {
+        return { ...prev, view: "side" };
+      }
+      return { ...prev, view };
+    });
   }
 
   function selectWindow(windowMode: ContributionWindow) {
@@ -154,29 +182,110 @@ export function useStudioController() {
     }));
   }
 
-  function reorderBadges(draggedId: string, targetId: string) {
+  function selectReadmeTemplate(templateId: ReadmeTemplateId) {
     setReadmeConfig((prev) => ({
       ...prev,
+      templateId,
       rawOverride: null,
-      badges: reorderEnabledBadges(prev.badges, draggedId, targetId),
+      ...(templateId === "telemetry-stats"
+        ? { includeStatsTable: true, includeShareCard: true }
+        : {}),
     }));
   }
 
-  function moveBadgeByStep(badgeId: string, direction: -1 | 1) {
+  function addBadgeToCard(
+    cardId: string,
+    badgeId: string,
+    beforeBadgeId?: string
+  ) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: addBadgeToStackCard(
+        prev.stackCards,
+        cardId,
+        badgeId,
+        beforeBadgeId
+      ),
+    }));
+  }
+
+  function removeBadgeFromCard(cardId: string, badgeId: string) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: removeBadgeFromStackCard(prev.stackCards, cardId, badgeId),
+    }));
+  }
+
+  function moveBadgeAcrossCards(
+    badgeId: string,
+    fromCardId: string,
+    toCardId: string,
+    targetBadgeId?: string
+  ) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: moveBadgeBetweenStackCards(
+        prev.stackCards,
+        badgeId,
+        fromCardId,
+        toCardId,
+        targetBadgeId
+      ),
+    }));
+  }
+
+  function addStackCard(title = "New Skill Group") {
+    const newId = `card-${Date.now()}`;
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: [...prev.stackCards, { id: newId, title, badgeIds: [] }],
+    }));
+    return newId;
+  }
+
+  function renameStackCard(cardId: string, title: string) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: prev.stackCards.map((c) =>
+        c.id === cardId ? { ...c, title } : c
+      ),
+    }));
+  }
+
+  function deleteStackCard(cardId: string) {
     setReadmeConfig((prev) => {
-      const enabled = prev.badges.filter((b) => b.enabled);
-      const idx = enabled.findIndex((b) => b.id === badgeId);
-      const nextIdx = idx + direction;
-      if (idx === -1 || nextIdx < 0 || nextIdx >= enabled.length) {
-        return prev;
-      }
-      const targetId = enabled[nextIdx].id;
+      if (prev.stackCards.length <= 1) return prev;
       return {
         ...prev,
         rawOverride: null,
-        badges: reorderEnabledBadges(prev.badges, badgeId, targetId),
+        stackCards: prev.stackCards.filter((c) => c.id !== cardId),
       };
     });
+  }
+
+  function reorderCards(fromIdx: number, toIdx: number) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: reorderStackCards(prev.stackCards, fromIdx, toIdx),
+    }));
+  }
+
+  function addCustomBadgeToCard(
+    cardId: string,
+    badge: Omit<ReadmeBadge, "enabled">
+  ) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      badges: [...prev.badges, { ...badge, enabled: true }],
+      stackCards: addBadgeToStackCard(prev.stackCards, cardId, badge.id),
+    }));
   }
 
   function reorderSubtitleTags(fromIdx: number, toIdx: number) {
@@ -218,6 +327,23 @@ export function useStudioController() {
 
       setReadmeConfig((prev) => {
         const langSet = new Set(snap.languages.map((l) => l.name.toLowerCase()));
+        const matchedBadgeIds = prev.badges
+          .filter((b) => langSet.has(b.label.toLowerCase()))
+          .map((b) => b.id);
+
+        const alreadyInCards = new Set(
+          prev.stackCards.flatMap((c) => c.badgeIds)
+        );
+        const newLangIds = matchedBadgeIds.filter((id) => !alreadyInCards.has(id));
+        const nextCards =
+          newLangIds.length > 0 && prev.stackCards.length > 0
+            ? prev.stackCards.map((card, idx) =>
+                idx === 0
+                  ? { ...card, badgeIds: [...newLangIds, ...card.badgeIds] }
+                  : card
+              )
+            : prev.stackCards;
+
         const nextLinks = [
           {
             id: "github",
@@ -262,16 +388,14 @@ export function useStudioController() {
         return {
           ...prev,
           profileDisplayName: snap.displayName,
-          profileStatusBio: snap.bio,
+          profileStatusBio: snap.bio || prev.profileStatusBio,
           profileLocation: snap.location || prev.profileLocation,
           profileCompany: snap.company || prev.profileCompany,
           profileWebsite: snap.website || `https://github.com/${snap.username}`,
           headline: `${snap.displayName} | Software Engineer`,
-          bio: snap.bio,
+          bio: snap.bio || DEFAULT_DUMMY_INTRO,
           actionLinks: nextLinks,
-          badges: prev.badges.map((b) =>
-            langSet.has(b.label.toLowerCase()) ? { ...b, enabled: true } : b
-          ),
+          stackCards: nextCards,
         };
       });
       return snap;
@@ -288,7 +412,7 @@ export function useStudioController() {
   function resetAll() {
     setCreatureConfig(DEFAULT_CREATURE_CONFIG);
     setReadmeConfig(DEFAULT_README_CONFIG);
-    setCustomBgHex("#0B1020");
+    setCustomBgHex("#0D1117");
     setSnapshot(null);
     setSyncError(null);
   }
@@ -302,8 +426,6 @@ export function useStudioController() {
     snapshot,
     syncLoading,
     syncError,
-    creatureSvg,
-    shareCardSvg,
     markerBlock,
     fullReadmeMarkdown,
     selectCreature,
@@ -315,8 +437,15 @@ export function useStudioController() {
     setBackgroundMode,
     updateCustomBackground,
     updateReadmeField,
-    reorderBadges,
-    moveBadgeByStep,
+    selectReadmeTemplate,
+    addBadgeToCard,
+    removeBadgeFromCard,
+    moveBadgeAcrossCards,
+    addStackCard,
+    renameStackCard,
+    deleteStackCard,
+    reorderCards,
+    addCustomBadgeToCard,
     reorderSubtitleTags,
     syncFromGitHub,
     resetAll,

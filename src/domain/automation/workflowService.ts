@@ -1,5 +1,7 @@
 import type { CreatureConfig } from "@/domain/creature/entities";
-import { getCreatureMeta } from "@/domain/creature/services";
+import { GLYPHS_5X7 } from "@/domain/creature/pixelArt";
+import { getCreatureMeta, getSpriteKey } from "@/domain/creature/services";
+import type { ReadmeConfig } from "@/domain/profile/entities";
 
 export function getMidnightCronForTimezone(offsetMinutesEast: number): string {
   let utcMinutes = (24 * 60 - offsetMinutesEast) % (24 * 60);
@@ -7,6 +9,28 @@ export function getMidnightCronForTimezone(offsetMinutesEast: number): string {
   const hour = Math.floor(utcMinutes / 60);
   const minute = utcMinutes % 60;
   return `${minute} ${hour} * * *`;
+}
+
+export function generateCreatureConfigJson(
+  creatureConfig: CreatureConfig,
+  readmeConfig: ReadmeConfig
+): string {
+  return JSON.stringify(
+    {
+      ...creatureConfig,
+      readme: {
+        align: readmeConfig.align,
+        imageWidth: readmeConfig.imageWidth,
+        useOutputBranchUrl: readmeConfig.useOutputBranchUrl,
+        includeMarkers: readmeConfig.includeMarkers,
+        includeTelemetryCaption: readmeConfig.includeTelemetryCaption,
+        telemetryCaptionTemplate: readmeConfig.telemetryCaptionTemplate,
+        statsTableTitle: readmeConfig.statsTableTitle,
+      },
+    },
+    null,
+    2
+  );
 }
 
 export function generateEvolveWorkflowYaml(
@@ -19,11 +43,13 @@ on:
   schedule:
     - cron: "${cronExpression}"
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: write
+
+concurrency:
+  group: evolve-creature
+  cancel-in-progress: true
 
 jobs:
   evolve:
@@ -37,19 +63,23 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Update Creature SVG & Profile README Telemetry
+      - name: Install Sharp WebP encoder
+        run: npm install --no-save --prefix /tmp/creature-deps sharp
+
+      - name: Fetch Live Telemetry & Regenerate Animated creature.webp
         env:
           GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          PROFILE_PAT: \${{ secrets.PROFILE_PAT }}
           GITHUB_USERNAME: \${{ github.repository_owner }}
           CREATURE_WINDOW: "${config.windowMode}"
           CREATURE_VIEW: "${config.view}"
-        run: node scripts/evolve-creature.mjs
+        run: NODE_PATH=/tmp/creature-deps/node_modules node scripts/evolve-creature.mjs
 
-      - name: Commit updated creature.svg and README.md
+      - name: Commit updated creature.webp, creature-config.json & README.md
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add creature.svg README.md 2>/dev/null || true
+          git add creature.webp README.md creature-config.json 2>/dev/null || true
           if ! git diff --cached --quiet; then
             git commit -m "chore: 12AM daily profile & creature telemetry update"
             git push
@@ -59,196 +89,784 @@ jobs:
 `;
 }
 
-export function generateEvolveScriptMjs(config: CreatureConfig): string {
-  const meta = getCreatureMeta(config.creature);
-  const energyColor = config.colors.energy;
-  const customTitle = config.customTitle.trim();
+export function generateEvolveScriptMjs(
+  creatureConfig: CreatureConfig,
+  readmeConfig: ReadmeConfig
+): string {
+  const embeddedConfig = JSON.parse(
+    generateCreatureConfigJson(creatureConfig, readmeConfig)
+  );
+  const spriteKey = getSpriteKey(creatureConfig.creature, creatureConfig.view);
+  const meta = getCreatureMeta(creatureConfig.creature);
+  const glyphsJson = JSON.stringify(GLYPHS_5X7);
 
   return `import fs from "node:fs";
 import path from "node:path";
+import { createRequire } from "node:module";
 
-const USERNAME = process.env.GITHUB_USERNAME || process.env.GITHUB_ACTOR;
-const TOKEN = process.env.GITHUB_TOKEN;
-const WINDOW_MODE = process.env.CREATURE_WINDOW || ${JSON.stringify(config.windowMode)};
-const VIEW_MODE = process.env.CREATURE_VIEW || ${JSON.stringify(config.view)};
-const SVG_PATH = path.resolve("creature.svg");
-const README_PATH = path.resolve("README.md");
-
-const CREATURE_NAME = ${JSON.stringify(meta.name.toUpperCase())};
-const CREATURE_DISPLAY = ${JSON.stringify(meta.name)};
-const CUSTOM_TITLE = ${JSON.stringify(customTitle)};
-const ENERGY_COLOR = ${JSON.stringify(energyColor)};
+const LOGICAL_WIDTH = 460;
+const LOGICAL_HEIGHT = 230;
+const CANVAS_WIDTH = 920;
+const CANVAS_HEIGHT = 460;
+const BASE_LOOP_DURATION_MS = 2800;
+const FRAME_COUNT = 24;
+const STAGE_SCALES = [0.74, 0.82, 0.9, 0.98, 1.05];
 
 const STAGES = [
-  { stage: 1, rank: "PROTOTYPE", min: 0 },
-  { stage: 2, rank: "RECON", min: 150 },
-  { stage: 3, rank: "ARMORED", min: 500 },
-  { stage: 4, rank: "APEX", min: 1200 },
-  { stage: 5, rank: "ASCENDED", min: 2500 },
+  { stage: 1, rank: "CALF", min: 0 },
+  { stage: 2, rank: "YOUNG", min: 150 },
+  { stage: 3, rank: "SUB-ADULT", min: 500 },
+  { stage: 4, rank: "MATURE", min: 1200 },
+  { stage: 5, rank: "ELDER", min: 2500 },
 ];
 
+const EMBEDDED_CONFIG = ${JSON.stringify(embeddedConfig, null, 2)};
+const DEFAULT_SPRITE_KEY = ${JSON.stringify(spriteKey)};
+const CREATURE_DESIGNATION = ${JSON.stringify(meta.designation)};
+const CREATURE_DISPLAY_NAME = ${JSON.stringify(meta.name)};
+const GLYPHS_5X7 = ${glyphsJson};
+
+function loadConfig() {
+  const cfgPath = path.resolve("creature-config.json");
+  if (fs.existsSync(cfgPath)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(cfgPath, "utf8"));
+      return {
+        ...EMBEDDED_CONFIG,
+        ...parsed,
+        colors: { ...EMBEDDED_CONFIG.colors, ...(parsed.colors || {}) },
+        readme: { ...EMBEDDED_CONFIG.readme, ...(parsed.readme || {}) },
+      };
+    } catch {
+      return EMBEDDED_CONFIG;
+    }
+  }
+  return EMBEDDED_CONFIG;
+}
+
+async function loadSharp() {
+  const req = createRequire(import.meta.url);
+  const nodePathDirs = (process.env.NODE_PATH || "")
+    .split(path.delimiter)
+    .filter(Boolean)
+    .map((dir) => path.join(dir, "sharp"));
+  const candidates = [
+    ...nodePathDirs,
+    "/tmp/creature-deps/node_modules/sharp",
+    path.resolve("node_modules/sharp"),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return req(candidate);
+    }
+  }
+  return req("sharp");
+}
+
 function getEvolutionStage(commits) {
+  const safe = Math.max(0, Math.floor(commits || 0));
   for (let i = STAGES.length - 1; i >= 0; i--) {
-    if (commits >= STAGES[i].min) return STAGES[i];
+    if (safe >= STAGES[i].min) return STAGES[i];
   }
   return STAGES[0];
 }
 
-function escapeXml(str) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+function clamp(v, lo, hi) {
+  return v < lo ? lo : v > hi ? hi : v;
 }
 
-async function fetchProfileTelemetry(username, token, windowMode) {
-  if (!username || !token) {
-    throw new Error("Missing GITHUB_USERNAME or GITHUB_TOKEN");
+function smoothstep(e0, e1, x) {
+  const t = clamp((x - e0) / (e1 - e0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function hexToRgb(hex, fallback = "#2C4156") {
+  const clean = (hex || fallback).trim().replace("#", "");
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) {
+    return hexToRgb(fallback, "#2C4156");
   }
+  return [
+    parseInt(clean.slice(0, 2), 16),
+    parseInt(clean.slice(2, 4), 16),
+    parseInt(clean.slice(4, 6), 16),
+  ];
+}
 
-  const now = new Date();
-  const fromDate =
-    windowMode === "annual"
-      ? new Date(Date.UTC(now.getUTCFullYear(), 0, 1)).toISOString()
-      : new Date(now.getTime() - 365 * 86400 * 1000).toISOString();
+function mixHex(hexA, hexB, weightB) {
+  const [r1, g1, b1] = hexToRgb(hexA);
+  const [r2, g2, b2] = hexToRgb(hexB);
+  const w = clamp(weightB, 0, 1);
+  return (
+    "#" +
+    [r1 * (1 - w) + r2 * w, g1 * (1 - w) + g2 * w, b1 * (1 - w) + b2 * w]
+      .map((n) => clamp(Math.round(n), 0, 255).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase()
+  );
+}
 
-  const query = \`
-    query($login: String!, $from: DateTime!, $to: DateTime!) {
-      user(login: $login) {
-        contributionsCollection(from: $from, to: $to) {
-          contributionCalendar {
-            totalContributions
-          }
-        }
-        repositories(first: 30, ownerAffiliations: OWNER, isFork: false, orderBy: { field: UPDATED_AT, direction: DESC }) {
-          nodes {
-            primaryLanguage {
-              name
-              color
-            }
-          }
+function getLuminance(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => v / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function rgbToHsl(r, g, b) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if (max === rn) h = (gn - bn) / d + (gn < bn ? 6 : 0);
+  else if (max === gn) h = (bn - rn) / d + 2;
+  else h = (rn - gn) / d + 4;
+  return [h * 60, s, l];
+}
+
+function hslToRgb(h, s, l) {
+  const hue = ((h % 360) + 360) % 360;
+  if (s <= 0.0001) {
+    const g = Math.round(clamp(l, 0, 1) * 255);
+    return [g, g, g];
+  }
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const hue2rgb = (t) => {
+    let tt = t < 0 ? t + 1 : t > 1 ? t - 1 : t;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+  const hn = hue / 360;
+  return [
+    Math.round(hue2rgb(hn + 1 / 3) * 255),
+    Math.round(hue2rgb(hn) * 255),
+    Math.round(hue2rgb(hn - 1 / 3) * 255),
+  ];
+}
+
+function recolorSprite(sprite, config) {
+  const isOriginalTulkun =
+    config.creature === "tulkun" &&
+    config.colorMode === "canonical" &&
+    config.themeId === "ocean-slate";
+  const isOriginalJelly =
+    config.creature === "jellyfish" &&
+    config.colorMode === "canonical" &&
+    config.themeId === "biolume-azure";
+  if (isOriginalTulkun || isOriginalJelly) return sprite;
+
+  const [pH, pS, pL] = rgbToHsl(...hexToRgb(config.colors.primary));
+  const [aH, aS, aL] = rgbToHsl(...hexToRgb(config.colors.accent));
+  const [eH, eS, eL] = rgbToHsl(...hexToRgb(config.colors.energy));
+  const out = new Uint8ClampedArray(sprite.data.length);
+  const src = sprite.data;
+
+  for (let i = 0; i < src.length; i += 4) {
+    const a = src[i + 3];
+    if (a === 0) continue;
+    const r = src[i];
+    const g = src[i + 1];
+    const b = src[i + 2];
+    const [h, s, l] = rgbToHsl(r, g, b);
+    if (l < 0.13 || (l > 0.9 && s < 0.16)) {
+      out[i] = r;
+      out[i + 1] = g;
+      out[i + 2] = b;
+      out[i + 3] = a;
+      continue;
+    }
+    let rgb;
+    if (config.creature === "tulkun") {
+      if (h >= 6 && h <= 54 && s > 0.24) {
+        rgb = hslToRgb(aH, Math.max(s * 0.45, aS * 0.9), clamp(l * 0.65 + aL * 0.35, 0.18, 0.85));
+      } else if (l > 0.56 && h >= 172 && h <= 228 && s > 0.14) {
+        rgb = hslToRgb(eH, clamp(eS * 0.85, 0.2, 0.95), clamp(l * 0.72 + eL * 0.28, 0.35, 0.92));
+      } else if (s <= 0.15 && l > 0.65) {
+        rgb = hslToRgb(pH, Math.min(0.14, pS * 0.3), l);
+      } else {
+        rgb = hslToRgb(pH, clamp(pS * 0.92 + s * 0.12, 0.04, 0.88), clamp(pL + (l - 0.31) * 0.85, 0.14, 0.88));
+      }
+    } else {
+      if (l > 0.68) {
+        rgb = hslToRgb(aH, clamp(aS * 0.92, 0.25, 0.96), clamp(l * 0.74 + aL * 0.26, 0.55, 0.94));
+      } else if (l < 0.34) {
+        rgb = hslToRgb(eH, clamp(eS * 0.95, 0.35, 0.98), clamp(l * 0.65 + eL * 0.35, 0.16, 0.58));
+      } else {
+        rgb = hslToRgb(pH, clamp(pS * 0.95, 0.25, 0.98), clamp(pL + (l - 0.48) * 0.85, 0.2, 0.82));
+      }
+    }
+    out[i] = rgb[0];
+    out[i + 1] = rgb[1];
+    out[i + 2] = rgb[2];
+    out[i + 3] = a;
+  }
+  return { width: sprite.width, height: sprite.height, data: out };
+}
+
+function fillRectRgba(buf, x, y, w, h, rgba) {
+  const x0 = Math.max(0, Math.floor(x));
+  const y0 = Math.max(0, Math.floor(y));
+  const x1 = Math.min(LOGICAL_WIDTH, Math.ceil(x + w));
+  const y1 = Math.min(LOGICAL_HEIGHT, Math.ceil(y + h));
+  const [r, g, b, a] = rgba;
+  const alpha = a / 255;
+  for (let py = y0; py < y1; py++) {
+    for (let px = x0; px < x1; px++) {
+      const idx = (py * LOGICAL_WIDTH + px) * 4;
+      if (alpha >= 1 || buf[idx + 3] === 0) {
+        buf[idx] = r;
+        buf[idx + 1] = g;
+        buf[idx + 2] = b;
+        buf[idx + 3] = a;
+      } else if (alpha > 0) {
+        const inv = 1 - alpha;
+        buf[idx] = Math.round(r * alpha + buf[idx] * inv);
+        buf[idx + 1] = Math.round(g * alpha + buf[idx + 1] * inv);
+        buf[idx + 2] = Math.round(b * alpha + buf[idx + 2] * inv);
+        buf[idx + 3] = Math.min(255, Math.round(a + buf[idx + 3] * inv));
+      }
+    }
+  }
+}
+
+function drawPixelTextRgba(buf, text, ox, oy, rgba) {
+  const upper = String(text || "").toUpperCase();
+  let cx = Math.round(ox);
+  const sy = Math.round(oy);
+  for (let i = 0; i < upper.length; i++) {
+    const glyph = GLYPHS_5X7[upper[i]] || GLYPHS_5X7[" "];
+    for (let row = 0; row < glyph.length; row++) {
+      const bits = glyph[row];
+      for (let col = 0; col < bits.length; col++) {
+        if (bits[col] === "1") {
+          fillRectRgba(buf, cx + col, sy + row, 1, 1, rgba);
         }
       }
     }
-  \`;
-
-  const response = await fetch("https://api.github.com/graphql", {
-    method: "POST",
-    headers: {
-      Authorization: \`Bearer \${token}\`,
-      "Content-Type": "application/json",
-      "User-Agent": "dynamic-readme-creature",
-    },
-    body: JSON.stringify({
-      query,
-      variables: { login: username, from: fromDate, to: now.toISOString() },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(\`GitHub GraphQL error: \${response.status}\`);
+    cx += 6;
   }
-
-  const payload = await response.json();
-  const user = payload?.data?.user;
-  const total = user?.contributionsCollection?.contributionCalendar?.totalContributions;
-
-  if (typeof total !== "number") {
-    throw new Error("Unable to read totalContributions from GitHub API");
-  }
-
-  const langCounts = new Map();
-  for (const repo of user?.repositories?.nodes || []) {
-    const lang = repo?.primaryLanguage;
-    if (!lang?.name) continue;
-    const prev = langCounts.get(lang.name) || { name: lang.name, color: lang.color || "#8B949E", count: 0 };
-    prev.count += 1;
-    langCounts.set(lang.name, prev);
-  }
-
-  const topLanguages = Array.from(langCounts.values())
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 3);
-
-  return { commits: total, topLanguages };
 }
 
-function updateReadmeMarkers(username, stage, rank, commits, topLanguages) {
-  if (!fs.existsSync(README_PATH)) return;
-  const startMarker = "<!-- CYBER-CREATURE:START -->";
-  const endMarker = "<!-- CYBER-CREATURE:END -->";
-  const raw = fs.readFileSync(README_PATH, "utf8");
-  const startIdx = raw.indexOf(startMarker);
-  const endIdx = raw.indexOf(endMarker);
+function invertDisplacement(creature, view, lx, ly, drawW, drawH, stageScale, t) {
+  if (creature === "jellyfish") {
+    const pulse =
+      (0.62 * Math.sin(t) + 0.26 * Math.sin(2 * t - 0.5) + 0.08 * Math.sin(3 * t - 1.0)) / 0.92;
+    const u = clamp(lx / drawW + 0.5, 0, 1);
+    const v = clamp((ly / drawH) * 2, -1.2, 1.2);
+    const trailWeight = smoothstep(0.21, 0.29, u);
+    const bellWeight = 1 - trailWeight;
 
-  if (startIdx === -1 || endIdx === -1 || endIdx <= startIdx) {
-    return;
+    const rimFactor = smoothstep(0.02, 0.24, u);
+    const bellScaleY = 1.0 - 0.145 * pulse * (0.25 + 0.75 * rimFactor);
+    const bellScaleX = 1.0 + 0.075 * pulse * (1.0 - 0.35 * rimFactor);
+    const rimRipple = 1.35 * rimFactor * Math.sin(v * Math.PI * 3.0) * pulse;
+    const pivotLx = (0.14 - 0.5) * drawW;
+    const bellSrcX = pivotLx + (lx - pivotLx) / bellScaleX;
+    const bellSrcY = (ly - rimRipple) / bellScaleY;
+
+    const trailT = clamp((u - 0.21) / 0.79, 0, 1);
+    const vPhase = v * 0.65;
+    const waveY =
+      14.5 * Math.pow(trailT, 1.12) * Math.sin(1.65 * Math.PI * 2 * trailT - t + vPhase) +
+      3.0 * Math.pow(trailT, 1.35) * Math.sin(2.7 * Math.PI * 2 * trailT - 2 * t - vPhase);
+    const dragX = 4.6 * Math.pow(trailT, 0.85) * Math.sin(t - 0.65 - trailT * 1.4);
+    const baseRimAttach = 1.0 - 0.11 * pulse * (1.0 - trailT * 0.85);
+    const trailSrcX = lx - dragX;
+    const trailSrcY = (ly - waveY) / baseRimAttach;
+
+    return [
+      bellSrcX * bellWeight + trailSrcX * trailWeight,
+      bellSrcY * bellWeight + trailSrcY * trailWeight,
+    ];
   }
 
-  const formattedCommits = commits.toLocaleString("en-US");
-  const langsSummary =
-    topLanguages.length > 0
-      ? \` · Top Stack: \${topLanguages.map((l) => \`<code>\${l.name}</code>\`).join(" ")}\`
+  const isTop = view === "top";
+  const maxAmp = (isTop ? 16.5 : 15.5) * (0.85 + 0.15 * stageScale);
+  const k = isTop ? 1.45 : 1.35;
+  const envPower = isTop ? 1.55 : 1.65;
+  const envBase = isTop ? 0.09 : 0.11;
+  let srcX = lx;
+  let srcY = ly;
+
+  for (let iter = 0; iter < 2; iter++) {
+    const u = clamp(srcX / drawW + 0.5, 0, 1);
+    const v = clamp((srcY / drawH) * 2, -1, 1);
+    const env = envBase + (1 - envBase) * Math.pow(u, envPower);
+    const waveAngle = k * Math.PI * 2 * u - t;
+    const spineY = maxAmp * env * Math.sin(waveAngle);
+    const dEnv = (1 - envBase) * envPower * Math.pow(Math.max(u, 0.001), envPower - 1) / drawW;
+    const dWave = (k * Math.PI * 2) / drawW;
+    const slopeY = maxAmp * (dEnv * Math.sin(waveAngle) + env * Math.cos(waveAngle) * dWave);
+
+    if (isTop) {
+      const wingMask = Math.exp(-Math.pow((u - 0.34) / 0.11, 2)) * smoothstep(0.24, 0.52, Math.abs(v));
+      srcY = ly - spineY - 2.8 * wingMask * Math.sign(v) * Math.cos(t - 0.6);
+      srcX = lx - 6.5 * wingMask * Math.sin(t - 0.6) + slopeY * srcY * 0.28;
+    } else {
+      const finMask = Math.exp(-Math.pow((u - 0.42) / 0.13, 2)) * smoothstep(0.18, 0.58, v);
+      srcY = ly - spineY - 3.2 * finMask * Math.cos(t - 0.9);
+      srcX = lx - 6.0 * finMask * Math.sin(t - 0.9) + slopeY * srcY * 0.24;
+    }
+  }
+  return [srcX, srcY];
+}
+
+function renderFrameRgba(recoloredSprite, config, phase) {
+  const out = new Uint8ClampedArray(LOGICAL_WIDTH * LOGICAL_HEIGHT * 4);
+  if (config.backgroundMode !== "transparent") {
+    const [br, bg, bb] = hexToRgb(config.colors.background, "#0D1117");
+    for (let i = 0; i < out.length; i += 4) {
+      out[i] = br;
+      out[i + 1] = bg;
+      out[i + 2] = bb;
+      out[i + 3] = 255;
+    }
+  }
+
+  const stageInfo = getEvolutionStage(config.commits);
+  const stageScale = STAGE_SCALES[stageInfo.stage - 1] || 1.0;
+  const view = config.creature === "jellyfish" ? "side" : (config.view === "top" ? "top" : "side");
+  const t = phase * Math.PI * 2;
+
+  // Stage wake particles
+  if (stageInfo.stage >= 2) {
+    const count = stageInfo.stage === 2 ? 4 : stageInfo.stage === 3 ? 7 : stageInfo.stage === 4 ? 11 : 15;
+    const [er, eg, eb] = hexToRgb(mixHex(config.colors.energy, "#FFFFFF", 0.45));
+    const [ar, ag, ab] = hexToRgb(config.colors.accent);
+    const maxY = config.showHud ? 176 : 216;
+    for (let i = 0; i < count; i++) {
+      const s1 = ((i * 73 + 19) % 100) / 100;
+      const s2 = ((i * 41 + 7) % 100) / 100;
+      const mul = (i % 3) + 1;
+      const px = Math.round(28 + ((s1 + phase * mul) % 1) * (LOGICAL_WIDTH - 56));
+      const py = Math.round(24 + s2 * (maxY - 36) + Math.sin((phase * mul + s1) * Math.PI * 2) * 4);
+      const sz = i % 4 === 0 && stageInfo.stage >= 4 ? 2 : 1;
+      const acc = i % 5 === 0 && stageInfo.stage >= 4;
+      const alpha = clamp(Math.round(135 + 50 * Math.sin((phase + s2) * Math.PI * 2) + 50), 90, 235);
+      fillRectRgba(out, px, py, sz, sz, [acc ? ar : er, acc ? ag : eg, acc ? ab : eb, alpha]);
+    }
+  }
+
+  const maxFitW = 342 * stageScale;
+  const maxFitH = (config.showHud ? 136 : 170) * stageScale;
+  const fitScale = Math.min(maxFitW / recoloredSprite.width, maxFitH / recoloredSprite.height);
+  const drawW = recoloredSprite.width * fitScale;
+  const drawH = recoloredSprite.height * fitScale;
+  const centerX = LOGICAL_WIDTH * 0.5;
+  const centerY = config.showHud ? 92 : 115;
+
+  let gx = 0;
+  let gy = 0;
+  if (config.creature === "jellyfish") {
+    gx = -6.5 * Math.sin(t - 0.45) - 1.6 * Math.sin(2 * t - 0.9);
+    gy = 2.4 * Math.sin(t + 0.5);
+  } else if (view === "top") {
+    gx = -2.2 * Math.cos(t);
+    gy = 1.4 * Math.sin(t + 0.3);
+  } else {
+    gx = -2.6 * Math.cos(t);
+    gy = 2.0 * Math.sin(t + 0.5);
+  }
+
+  const minDx = Math.max(0, Math.floor(centerX + gx - drawW * 0.5 - 24));
+  const maxDx = Math.min(LOGICAL_WIDTH - 1, Math.ceil(centerX + gx + drawW * 0.5 + 24));
+  const minDy = Math.max(0, Math.floor(centerY + gy - drawH * 0.5 - 30));
+  const maxDy = Math.min(LOGICAL_HEIGHT - 1, Math.ceil(centerY + gy + drawH * 0.5 + 30));
+  const srcData = recoloredSprite.data;
+
+  for (let dy = minDy; dy <= maxDy; dy++) {
+    const ly = dy - centerY - gy;
+    for (let dx = minDx; dx <= maxDx; dx++) {
+      const lx = dx - centerX - gx;
+      const [slx, sly] = invertDisplacement(config.creature, view, lx, ly, drawW, drawH, stageScale, t);
+      const sx = Math.round((slx / drawW + 0.5) * (recoloredSprite.width - 1));
+      const sy = Math.round((sly / drawH + 0.5) * (recoloredSprite.height - 1));
+      if (sx < 0 || sx >= recoloredSprite.width || sy < 0 || sy >= recoloredSprite.height) continue;
+      const sp = (sy * recoloredSprite.width + sx) * 4;
+      const sa = srcData[sp + 3];
+      if (sa < 12) continue;
+      const dp = (dy * LOGICAL_WIDTH + dx) * 4;
+      if (sa >= 250 || out[dp + 3] === 0) {
+        out[dp] = srcData[sp];
+        out[dp + 1] = srcData[sp + 1];
+        out[dp + 2] = srcData[sp + 2];
+        out[dp + 3] = sa;
+      } else {
+        const a = sa / 255;
+        const inv = 1 - a;
+        out[dp] = Math.round(srcData[sp] * a + out[dp] * inv);
+        out[dp + 1] = Math.round(srcData[sp + 1] * a + out[dp + 1] * inv);
+        out[dp + 2] = Math.round(srcData[sp + 2] * a + out[dp + 2] * inv);
+        out[dp + 3] = Math.min(255, Math.round(sa + out[dp + 3] * inv));
+      }
+    }
+  }
+
+  if (config.showHud) {
+    const title = (config.customTitle || "").trim()
+      ? config.customTitle.trim().toUpperCase()
+      : \`\${stageInfo.rank} \${config.creature.toUpperCase()}\`;
+    const commitsStr = Math.max(0, Math.floor(config.commits || 0)).toLocaleString("en-US");
+    const isLightBg = config.backgroundMode !== "transparent" && getLuminance(config.colors.background) > 0.55;
+    const [ar, ag, ab] = hexToRgb(config.colors.accent);
+    const [lr, lg, lb] = hexToRgb(isLightBg ? "#1E293B" : mixHex(config.colors.energy, "#CBEBFF", 0.55));
+    const [cr, cg, cb] = hexToRgb(isLightBg ? "#0F172A" : mixHex(mixHex(config.colors.energy, "#FFFFFF", 0.45), "#FFFFFF", 0.4));
+
+    fillRectRgba(out, 24, 190, 4, 7, [ar, ag, ab, 255]);
+    drawPixelTextRgba(out, \`STAGE \${stageInfo.stage}: \${title}\`, 31, 190, [lr, lg, lb, 255]);
+    drawPixelTextRgba(out, \`CONTRIBUTIONS: \${commitsStr}\`, 24, 201, [cr, cg, cb, 255]);
+
+    let chipX = 24;
+    for (const lang of (config.languages || []).slice(0, 3)) {
+      const nameShort = lang.name.toUpperCase().slice(0, 10);
+      const [sr, sg, sb] = hexToRgb(lang.color, "#8B949E");
+      fillRectRgba(out, chipX, 212, 4, 7, [sr, sg, sb, 255]);
+      drawPixelTextRgba(out, nameShort, chipX + 7, 212, [lr, lg, lb, 255]);
+      chipX += 7 + nameShort.length * 6 + 9;
+    }
+  }
+  return out;
+}
+
+function upscaleRgba2x(logical) {
+  const out = Buffer.alloc(CANVAS_WIDTH * CANVAS_HEIGHT * 4);
+  for (let y = 0; y < LOGICAL_HEIGHT; y++) {
+    const r0 = y * 2 * CANVAS_WIDTH * 4;
+    const r1 = (y * 2 + 1) * CANVAS_WIDTH * 4;
+    for (let x = 0; x < LOGICAL_WIDTH; x++) {
+      const sp = (y * LOGICAL_WIDTH + x) * 4;
+      const r = logical[sp], g = logical[sp + 1], b = logical[sp + 2], a = logical[sp + 3];
+      const d0 = r0 + x * 8;
+      const d1 = r1 + x * 8;
+      out[d0] = r; out[d0 + 1] = g; out[d0 + 2] = b; out[d0 + 3] = a;
+      out[d0 + 4] = r; out[d0 + 5] = g; out[d0 + 6] = b; out[d0 + 7] = a;
+      out[d1] = r; out[d1 + 1] = g; out[d1 + 2] = b; out[d1 + 3] = a;
+      out[d1 + 4] = r; out[d1 + 5] = g; out[d1 + 6] = b; out[d1 + 7] = a;
+    }
+  }
+  return out;
+}
+
+function writeUint32LE(buf, off, val) {
+  buf[off] = val & 0xff; buf[off + 1] = (val >>> 8) & 0xff;
+  buf[off + 2] = (val >>> 16) & 0xff; buf[off + 3] = (val >>> 24) & 0xff;
+}
+function writeUint24LE(buf, off, val) {
+  buf[off] = val & 0xff; buf[off + 1] = (val >>> 8) & 0xff; buf[off + 2] = (val >>> 16) & 0xff;
+}
+function extractSingleWebPFrame(data) {
+  if (data.toString("ascii", 0, 4) !== "RIFF" || data.toString("ascii", 8, 12) !== "WEBP") {
+    throw new Error("Invalid single WebP frame");
+  }
+  let off = 12, alphChunk = null, imageChunkId = null, imageChunkPayload = null;
+  while (off + 8 <= data.length) {
+    const id = data.toString("ascii", off, off + 4);
+    const size = data.readUInt32LE(off + 4);
+    const payload = data.subarray(off + 8, off + 8 + size);
+    if (id === "ALPH") alphChunk = payload;
+    else if (id === "VP8 " || id === "VP8L") { imageChunkId = id; imageChunkPayload = payload; }
+    off += 8 + size + (size % 2);
+  }
+  return { alphChunk, imageChunkId, imageChunkPayload, hasAlpha: Boolean(alphChunk) || imageChunkId === "VP8L" };
+}
+function makeChunk(id, payload) {
+  const chunk = Buffer.alloc(8 + payload.length + (payload.length % 2));
+  chunk.write(id, 0, "ascii");
+  writeUint32LE(chunk, 4, payload.length);
+  Buffer.from(payload).copy(chunk, 8);
+  return chunk;
+}
+function assembleAnimatedWebP(width, height, frames, frameDelayMs) {
+  const vp8x = Buffer.alloc(10);
+  vp8x[0] = frames.some((f) => f.hasAlpha) ? 0x12 : 0x02;
+  writeUint24LE(vp8x, 4, width - 1);
+  writeUint24LE(vp8x, 7, height - 1);
+  const anmfChunks = frames.map((f) => {
+    const subs = [];
+    if (f.alphChunk) subs.push(makeChunk("ALPH", f.alphChunk));
+    subs.push(makeChunk(f.imageChunkId, f.imageChunkPayload));
+    const subLen = subs.reduce((a, c) => a + c.length, 0);
+    const anmf = Buffer.alloc(16 + subLen);
+    writeUint24LE(anmf, 6, width - 1);
+    writeUint24LE(anmf, 9, height - 1);
+    writeUint24LE(anmf, 12, Math.max(20, Math.round(frameDelayMs)));
+    anmf[15] = 0x02;
+    let pos = 16;
+    for (const s of subs) { s.copy(anmf, pos); pos += s.length; }
+    return makeChunk("ANMF", anmf);
+  });
+  const chunks = [makeChunk("VP8X", vp8x), makeChunk("ANIM", Buffer.alloc(6)), ...anmfChunks];
+  const bodySize = chunks.reduce((a, c) => a + c.length, 0);
+  const finalBuf = Buffer.alloc(12 + bodySize);
+  finalBuf.write("RIFF", 0, "ascii");
+  writeUint32LE(finalBuf, 4, 4 + bodySize);
+  finalBuf.write("WEBP", 8, "ascii");
+  let cursor = 12;
+  for (const c of chunks) { c.copy(finalBuf, cursor); cursor += c.length; }
+  return finalBuf;
+}
+
+const LANGUAGE_COLORS = {
+  TypeScript: "#3178C6", JavaScript: "#F1E05A", Python: "#3572A5", Rust: "#DEA584",
+  Go: "#00ADD8", Java: "#B07219", "C++": "#F34B7D", C: "#555555", "C#": "#178600",
+  PHP: "#4F5D95", Ruby: "#701516", Swift: "#F05138", Kotlin: "#A97BFF", Dart: "#00B4AB",
+  HTML: "#E34C26", CSS: "#563D7C", Shell: "#89E051", Vue: "#41B883", Svelte: "#FF3E00",
+};
+
+async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbackLangs) {
+  const token = process.env.PROFILE_PAT || process.env.GITHUB_TOKEN || "";
+  let commits = null;
+
+  // Tier 1: GitHub GraphQL (supports private contributions when PROFILE_PAT secret is configured)
+  if (process.env.PROFILE_PAT) {
+    try {
+      const now = new Date();
+      const fromDate =
+        windowMode === "annual"
+          ? new Date(Date.UTC(now.getUTCFullYear(), 0, 1)).toISOString()
+          : new Date(now.getTime() - 365 * 86400 * 1000).toISOString();
+      const query = \`query($login: String!, $from: DateTime!, $to: DateTime!) {
+        user(login: $login) { contributionsCollection(from: $from, to: $to) { contributionCalendar { totalContributions } } }
+      }\`;
+      const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: {
+          Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
+          "Content-Type": "application/json",
+          "User-Agent": "dynamic-readme-creature",
+        },
+        body: JSON.stringify({ query, variables: { login: username, from: fromDate, to: now.toISOString() } }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const total = json?.data?.user?.contributionsCollection?.contributionCalendar?.totalContributions;
+        if (typeof total === "number") commits = total;
+      }
+    } catch { /* fall through to public API */ }
+  }
+
+  // Tier 2: Public GitHub Contributions Calendar API (works with ZERO custom secrets!)
+  if (commits === null) {
+    try {
+      const currentYear = String(new Date().getUTCFullYear());
+      const url = windowMode === "rolling"
+        ? \`https://github-contributions-api.jogruber.de/v4/\${encodeURIComponent(username)}?y=last\`
+        : \`https://github-contributions-api.jogruber.de/v4/\${encodeURIComponent(username)}\`;
+      const res = await fetch(url, { headers: { "User-Agent": "dynamic-readme-creature" } });
+      if (res.ok) {
+        const data = await res.json();
+        if (windowMode === "rolling" && typeof data?.total?.lastYear === "number") {
+          commits = data.total.lastYear;
+        } else if (typeof data?.total?.[currentYear] === "number") {
+          commits = data.total[currentYear];
+        }
+      }
+    } catch { /* fall through to HTML fallback */ }
+  }
+
+  // Tier 3: Direct GitHub public contributions HTML summary fallback
+  if (commits === null) {
+    try {
+      const res = await fetch(\`https://github.com/users/\${encodeURIComponent(username)}/contributions\`, {
+        headers: { "User-Agent": "dynamic-readme-creature" },
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const match = html.match(/([\\d,]+)\\s+contributions?\\s+in/i);
+        if (match?.[1]) commits = parseInt(match[1].replace(/,/g, ""), 10);
+      }
+    } catch { /* keep previous commits if offline */ }
+  }
+
+  // Fetch Top 3 languages from public GitHub REST API
+  let topLanguages = fallbackLangs || [];
+  try {
+    const headers = { Accept: "application/vnd.github+json", "User-Agent": "dynamic-readme-creature" };
+    if (token) headers.Authorization = \`Bearer \${token}\`;
+    const reposRes = await fetch(
+      \`https://api.github.com/users/\${encodeURIComponent(username)}/repos?per_page=100&sort=updated\`,
+      { headers }
+    );
+    if (reposRes.ok) {
+      const repos = await reposRes.json();
+      const counts = new Map();
+      for (const r of repos || []) {
+        if (!r?.language) continue;
+        const w = r.fork ? 1 : Math.max(2, Math.min(20, Math.round((r.size || 10) / 100) + 2));
+        counts.set(r.language, (counts.get(r.language) || 0) + w);
+      }
+      if (counts.size > 0) {
+        topLanguages = Array.from(counts.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([name]) => ({ name, color: LANGUAGE_COLORS[name] || "#8B949E" }));
+      }
+    }
+  } catch { /* keep existing languages */ }
+
+  return {
+    commits: typeof commits === "number" && Number.isFinite(commits) ? commits : fallbackCommits,
+    topLanguages,
+  };
+}
+
+function resolveTokens(template, config, username, stage, rank, commits, topLanguages) {
+  const viewText = config.creature === "jellyfish" ? "PELAGIC" : (config.view === "top" ? "TOP" : "SIDE");
+  const langsText = (topLanguages || []).map((l) => l.name).join(" · ");
+  return String(template || "")
+    .replaceAll("{{USERNAME}}", username)
+    .replaceAll("{{CREATURE}}", CREATURE_DISPLAY_NAME)
+    .replaceAll("{{STAGE}}", String(stage))
+    .replaceAll("{{RANK}}", rank)
+    .replaceAll("{{COMMITS}}", commits.toLocaleString("en-US"))
+    .replaceAll("{{VIEW}}", viewText)
+    .replaceAll("{{LANGUAGES}}", langsText);
+}
+
+function updateReadmeFiles(config, username, stage, rank, commits, topLanguages) {
+  const readmePath = path.resolve("README.md");
+  if (!fs.existsSync(readmePath)) return;
+
+  let raw = fs.readFileSync(readmePath, "utf8");
+  const rm = config.readme || {};
+  const align = rm.align === "left" ? "left" : "center";
+  const width = Number(rm.imageWidth) || 760;
+  const imgSrc = rm.useOutputBranchUrl
+    ? \`https://raw.githubusercontent.com/\${username}/\${username}/output/creature.webp\`
+    : "./creature.webp";
+
+  const startMarker = "<!-- CYBER-CREATURE:START -->";
+  const endMarker = "<!-- CYBER-CREATURE:END -->";
+  const sIdx = raw.indexOf(startMarker);
+  const eIdx = raw.indexOf(endMarker);
+
+  if (sIdx !== -1 && eIdx !== -1 && eIdx > sIdx) {
+    const captionLine = rm.includeTelemetryCaption !== false
+      ? \`\\n<p align="\${align}"><sub>\${resolveTokens(rm.telemetryCaptionTemplate || "Live {{CREATURE}} for @{{USERNAME}} — Stage {{STAGE}}: {{RANK}} · {{COMMITS}} commits · View: {{VIEW}}", config, username, stage, rank, commits, topLanguages)}</sub></p>\`
       : "";
-  const updatedDate = new Date().toISOString().slice(0, 10);
+    const block = [
+      startMarker,
+      \`<p align="\${align}">\`,
+      \`  <a href="https://github.com/\${username}/\${username}">\`,
+      \`    <img src="\${imgSrc}" width="\${width}" alt="\${CREATURE_DISPLAY_NAME} - Stage \${stage} \${rank}" />\`,
+      \`  </a>\`,
+      \`</p>\${captionLine}\`,
+      endMarker,
+    ].join("\\n");
+    raw = raw.slice(0, sIdx) + block + raw.slice(eIdx + endMarker.length);
+  }
 
-  const replacement = [
-    startMarker,
-    \`<p align="center">\`,
-    \`  <a href="https://github.com/\${username}/\${username}">\`,
-    \`    <img src="./creature.svg" width="760" alt="\${CREATURE_DISPLAY} - Stage \${stage} \${rank}" />\`,
-    \`  </a>\`,
-    \`</p>\`,
-    \`\`,
-    \`<p align="center"><sub>Live <code>dynamic-readme-creature</code> for <strong>@\${username}</strong> — <strong>Stage \${stage}: \${rank} \${CREATURE_DISPLAY}</strong> · <code>\${formattedCommits} commits</code> · View: <code>\${VIEW_MODE}</code>\${langsSummary} · Synced \${updatedDate}</sub></p>\`,
-    endMarker,
-  ].join("\\n");
+  const statsStart = "<!-- CYBER-CREATURE-STATS:START -->";
+  const statsEnd = "<!-- CYBER-CREATURE-STATS:END -->";
+  const ssIdx = raw.indexOf(statsStart);
+  const seIdx = raw.indexOf(statsEnd);
 
-  const updated =
-    raw.slice(0, startIdx) + replacement + raw.slice(endIdx + endMarker.length);
-  fs.writeFileSync(README_PATH, updated, "utf8");
+  if (ssIdx !== -1 && seIdx !== -1 && seIdx > ssIdx) {
+    const viewLabel = config.creature === "jellyfish" ? "PELAGIC" : (config.view === "top" ? "TOP" : "SIDE");
+    const langList = (topLanguages || []).map((l) => \`\\\`\${l.name}\\\`\`).join(" · ");
+    const tableTitle = resolveTokens(rm.statsTableTitle || "Cybernetic Telemetry", config, username, stage, rank, commits, topLanguages);
+    const statsBlock = [
+      statsStart,
+      \`### \${tableTitle}\`,
+      "",
+      "| Metric | Active Value |",
+      "| --- | --- |",
+      \`| **Guardian Chassis** | \${CREATURE_DISPLAY_NAME} (\\\`\${CREATURE_DESIGNATION}\\\`) |\`,
+      \`| **Evolution Stage** | Stage \${stage} / 5 — **\${rank}** |\`,
+      \`| **Contributions (\${config.windowMode})** | \\\`\${commits.toLocaleString("en-US")}\\\` commits |\`,
+      \`| **Camera Angle** | \\\`\${viewLabel}\\\` |\`,
+      \`| **Top Languages** | \${langList} |\`,
+      statsEnd,
+    ].join("\\n");
+    raw = raw.slice(0, ssIdx) + statsBlock + raw.slice(seIdx + statsEnd.length);
+  }
+
+  fs.writeFileSync(readmePath, raw, "utf8");
 }
 
 async function main() {
-  if (!fs.existsSync(SVG_PATH)) {
-    throw new Error("creature.svg not found in repository root.");
-  }
+  const sharp = await loadSharp();
+  const config = loadConfig();
+  const username =
+    process.env.GITHUB_USERNAME ||
+    process.env.GITHUB_ACTOR ||
+    config.username ||
+    "your-username";
+  const windowMode = process.env.CREATURE_WINDOW || config.windowMode || "annual";
 
-  const { commits, topLanguages } = await fetchProfileTelemetry(
-    USERNAME,
-    TOKEN,
-    WINDOW_MODE
-  );
-  const { stage, rank } = getEvolutionStage(commits);
-  const title = CUSTOM_TITLE
-    ? CUSTOM_TITLE.toUpperCase()
-    : \`\${rank} \${CREATURE_NAME}\`;
-  const hudLabel = \`STAGE \${stage}: \${title} // COMMITS: \${commits.toLocaleString("en-US")}\`;
-
-  let svg = fs.readFileSync(SVG_PATH, "utf8");
-
-  svg = svg.replace(
-    /(<text id="cc-hud-label"[^>]*>)([\\s\\S]*?)(<\\/text>)/,
-    \`$1\${escapeXml(hudLabel)}$3\`
+  const telemetry = await fetchLiveTelemetry(
+    username,
+    windowMode,
+    config.commits,
+    config.languages
   );
 
-  for (let i = 1; i <= 5; i++) {
-    const fill = i === stage ? ENERGY_COLOR : i < stage ? "#C9D1D9" : "#484F58";
-    const weight = i === stage ? "700" : "500";
-    const railRegex = new RegExp(
-      \`(<text id="cc-stage-pip-\${i}"[^>]*fill=")[^"]*("[^>]*font-weight=")[^"]*(")\`
+  const nextConfig = {
+    ...config,
+    username,
+    windowMode,
+    commits: telemetry.commits,
+    languages: telemetry.topLanguages.length > 0 ? telemetry.topLanguages : config.languages,
+  };
+
+  let spriteBuffer;
+  const localSpritePath = path.resolve("assets/creature-sprite.png");
+  if (fs.existsSync(localSpritePath)) {
+    spriteBuffer = fs.readFileSync(localSpritePath);
+  } else {
+    const spriteRes = await fetch(
+      \`https://pathumsandeepa.github.io/dynamic-readme-creature/sprites/\${DEFAULT_SPRITE_KEY}.png\`
     );
-    svg = svg.replace(railRegex, \`$1\${fill}$2\${weight}$3\`);
+    if (!spriteRes.ok) throw new Error("Missing assets/creature-sprite.png and unable to download fallback sprite.");
+    spriteBuffer = Buffer.from(await spriteRes.arrayBuffer());
   }
 
-  fs.writeFileSync(SVG_PATH, svg, "utf8");
-  updateReadmeMarkers(USERNAME, stage, rank, commits, topLanguages);
+  const { data: rawData, info } = await sharp(spriteBuffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const sprite = { width: info.width, height: info.height, data: new Uint8ClampedArray(rawData) };
+  const recolored = recolorSprite(sprite, nextConfig);
+
+  const speed = clamp(Number(nextConfig.animationSpeed) || 1.0, 0.4, 2.5);
+  const loopMs = Math.round(BASE_LOOP_DURATION_MS / speed);
+  const frameDelayMs = Math.max(20, Math.round(loopMs / FRAME_COUNT));
+
+  const parsedFrames = [];
+  for (let i = 0; i < FRAME_COUNT; i++) {
+    const logical = renderFrameRgba(recolored, nextConfig, i / FRAME_COUNT);
+    const upscaled = upscaleRgba2x(logical);
+    const singleWebP = await sharp(upscaled, {
+      raw: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT, channels: 4 },
+    })
+      .webp({ quality: 92 })
+      .toBuffer();
+    parsedFrames.push(extractSingleWebPFrame(singleWebP));
+  }
+
+  const animatedWebP = assembleAnimatedWebP(CANVAS_WIDTH, CANVAS_HEIGHT, parsedFrames, frameDelayMs);
+  fs.writeFileSync(path.resolve("creature.webp"), animatedWebP);
+
+  const { stage, rank } = getEvolutionStage(nextConfig.commits);
+  updateReadmeFiles(nextConfig, username, stage, rank, nextConfig.commits, nextConfig.languages);
+
+  const cfgPath = path.resolve("creature-config.json");
+  if (fs.existsSync(cfgPath)) {
+    fs.writeFileSync(cfgPath, JSON.stringify(nextConfig, null, 2), "utf8");
+  }
+
+  console.log(\`Synced @\${username}: Stage \${stage} (\${rank}) · \${nextConfig.commits} commits -> creature.webp (\${animatedWebP.length} bytes)\`);
 }
 
-main().catch((error) => {
-  console.error(error);
+main().catch((err) => {
+  console.error(err);
   process.exit(1);
 });
 `;
