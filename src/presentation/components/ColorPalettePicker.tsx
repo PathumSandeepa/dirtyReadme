@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "cn";
 import {
   ColorPicker,
   ColorService,
@@ -81,10 +82,13 @@ export function ColorPalettePopoverButton({
         onClick={() => setOpen(true)}
         aria-label={label}
         title={`${label} (${safeHex})`}
-        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1.5 text-xs font-mono text-foreground transition hover:border-primary/70 hover:bg-muted/50 ${className}`}
+        className={cn(
+          "inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 font-mono text-xs text-foreground transition hover:bg-muted",
+          className
+        )}
       >
         <span
-          className="size-4 shrink-0 rounded border border-border/80"
+          className="size-4 shrink-0 rounded"
           style={{ backgroundColor: safeHex }}
         />
         {!compact && (

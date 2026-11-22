@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { cn } from "cn";
 import { Ban, Globe, Search, X } from "lucide-react";
 import {
   DEFAULT_PLATFORM_ICON,
@@ -78,7 +79,10 @@ export function PlatformIconPickerButton({
         type="button"
         onClick={() => setOpen(true)}
         title={`Choose CTA platform icon (${resolved ? resolved.label : "No Icon"})`}
-        className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-foreground transition hover:border-primary/70 hover:bg-muted/50 ${className}`}
+        className={cn(
+          "inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5 text-xs text-foreground transition hover:bg-muted",
+          className
+        )}
       >
         <PlatformIconGlyph iconId={value} className="size-3.5 shrink-0" />
         {!compact && (
@@ -130,11 +134,10 @@ export function PlatformIconPickerButton({
               <button
                 type="button"
                 onClick={() => setCategory("all")}
-                className={`rounded-lg px-2 py-1 text-[11px] font-medium transition ${
-                  category === "all"
+                className={`rounded-lg px-2 py-1 text-[11px] font-medium transition ${category === "all"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
+                  }`}
               >
                 All ({PLATFORM_ICON_CATALOG.length})
               </button>
@@ -143,11 +146,10 @@ export function PlatformIconPickerButton({
                   key={cat}
                   type="button"
                   onClick={() => setCategory(cat)}
-                  className={`rounded-lg px-2 py-1 text-[11px] font-medium transition ${
-                    category === cat
+                  className={`rounded-lg px-2 py-1 text-[11px] font-medium transition ${category === cat
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:bg-accent"
-                  }`}
+                    }`}
                 >
                   {PLATFORM_CATEGORY_LABELS[cat]}
                 </button>
@@ -161,11 +163,10 @@ export function PlatformIconPickerButton({
                   onChange(DEFAULT_PLATFORM_ICON_ID);
                   setOpen(false);
                 }}
-                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition ${
-                  resolved?.id === DEFAULT_PLATFORM_ICON_ID && value !== "none"
+                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition ${resolved?.id === DEFAULT_PLATFORM_ICON_ID && value !== "none"
                     ? "border-primary bg-primary/10 font-semibold"
                     : "border-border bg-muted/30 hover:bg-muted"
-                }`}
+                  }`}
               >
                 <PlatformIconGlyph iconId={DEFAULT_PLATFORM_ICON_ID} />
                 <span className="truncate">Default Website Icon</span>
@@ -176,11 +177,10 @@ export function PlatformIconPickerButton({
                   onChange("none");
                   setOpen(false);
                 }}
-                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition ${
-                  value === "none"
+                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition ${value === "none"
                     ? "border-primary bg-primary/10 font-semibold"
                     : "border-border bg-muted/30 hover:bg-muted"
-                }`}
+                  }`}
               >
                 <Ban className="size-3.5 text-muted-foreground" />
                 <span>No Icon</span>
@@ -204,11 +204,10 @@ export function PlatformIconPickerButton({
                         onChange(item.id);
                         setOpen(false);
                       }}
-                      className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition ${
-                        selected
+                      className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition ${selected
                           ? "border-primary bg-primary/15 font-semibold text-foreground"
                           : "border-border bg-card text-card-foreground hover:border-primary/60 hover:bg-accent/50"
-                      }`}
+                        }`}
                     >
                       <span
                         className="flex size-5 shrink-0 items-center justify-center rounded text-white"

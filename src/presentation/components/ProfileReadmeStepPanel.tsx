@@ -13,13 +13,12 @@ import {
   GripVertical,
   Layers,
   LayoutGrid,
-  Link2,
   Plus,
   RefreshCw,
-  Tag,
   Trash2,
   Undo2,
 } from "lucide-react";
+import { cn } from "cn";
 import type { CreatureConfig } from "@/domain/creature/entities";
 import {
   CTA_QUICK_TEMPLATES,
@@ -42,6 +41,18 @@ import {
 } from "@/domain/profile/readmeService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { ColorPalettePopoverButton } from "./ColorPalettePicker";
 import { PlatformIconPickerButton } from "./PlatformIconPickerButton";
 
@@ -315,24 +326,21 @@ export function ProfileReadmeStepPanel({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Drag & Drop Multi-Card Tech Stack Builder */}
-      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <Tag className="h-5 w-5 text-foreground/85" />
-            <div>
-              <h2 className="text-base font-semibold text-foreground">
-                Drag &amp; Drop Tech Stack Builder
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                3 default cards ready. Drag skills across cards, reorder chips, or
-                click from {readmeConfig.badges.length}+ techs &amp; skills below.
-              </p>
-            </div>
+    <div className="flex flex-col gap-7 rounded-xl border bg-card p-5 text-card-foreground sm:p-6">
+      {/* Section 1: Drag & Drop Multi-Card Tech Stack Builder */}
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-0.5">
+            <h2 className="font-mono text-sm font-semibold text-foreground">
+              Tech Stack Cards
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Drag badges between cards, reorder chips, or pick from{" "}
+              {readmeConfig.badges.length}+ skills below.
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
             {readmeConfig.savedOrganizedCards !== null && (
               <Button
                 type="button"
@@ -341,13 +349,13 @@ export function ProfileReadmeStepPanel({
                 onClick={onUndoCombineStackCards}
               >
                 <Undo2 data-icon="inline-start" />
-                Undo Combine ({readmeConfig.savedOrganizedCards.length} Cards)
+                Undo Combine ({readmeConfig.savedOrganizedCards.length})
               </Button>
             )}
             {readmeConfig.stackCards.length > 1 && (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={onCombineStackCards}
               >
@@ -357,7 +365,7 @@ export function ProfileReadmeStepPanel({
             )}
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => {
                 const id = onAddStackCard(
@@ -372,7 +380,7 @@ export function ProfileReadmeStepPanel({
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {readmeConfig.stackCards.map((card, cardIdx) => {
             const isSelected = card.id === activeCardId;
             const isDropping = dropCardId === card.id;
@@ -392,13 +400,14 @@ export function ProfileReadmeStepPanel({
                   if (dropCardId === card.id) setDropCardId(null);
                 }}
                 onDrop={(e) => handleDropOnCard(e, card.id)}
-                className={`rounded-xl border-2 p-3.5 transition ${
+                className={cn(
+                  "rounded-xl p-3.5 transition",
                   isDropping
-                    ? "border-dashed border-primary bg-accent/70"
+                    ? "bg-accent/70 ring-2 ring-dashed ring-primary"
                     : isSelected
-                      ? "border-primary/75 bg-muted/40 ring-1 ring-primary/25"
-                      : "border-border bg-muted/25 hover:border-foreground/30"
-                }`}
+                      ? "bg-muted/50 ring-1 ring-primary/70"
+                      : "bg-muted/30 hover:bg-muted/45"
+                )}
               >
                 <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -418,7 +427,7 @@ export function ProfileReadmeStepPanel({
                           ? "Combined Tech Stack (no heading)"
                           : "Card heading..."
                       }
-                      className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground focus:border-border focus:bg-background focus:outline-none"
+                      className="min-w-0 flex-1 rounded-md bg-transparent px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground focus:bg-background focus:outline-none"
                     />
                     <Badge variant="secondary" className="font-mono text-[10px]">
                       {resolvedBadges.length}
@@ -428,48 +437,52 @@ export function ProfileReadmeStepPanel({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
+                  <div className="flex items-center gap-0.5">
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       disabled={cardIdx === 0}
                       onClick={(e) => {
                         e.stopPropagation();
                         onReorderStackCards(cardIdx, cardIdx - 1);
                       }}
                       aria-label="Move card up"
-                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
-                      <ArrowUp className="size-3.5" />
-                    </button>
-                    <button
+                      <ArrowUp />
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       disabled={cardIdx === readmeConfig.stackCards.length - 1}
                       onClick={(e) => {
                         e.stopPropagation();
                         onReorderStackCards(cardIdx, cardIdx + 1);
                       }}
                       aria-label="Move card down"
-                      className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
-                      <ArrowDown className="size-3.5" />
-                    </button>
-                    <button
+                      <ArrowDown />
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       disabled={readmeConfig.stackCards.length <= 1}
                       onClick={(e) => {
                         e.stopPropagation();
                         onDeleteStackCard(card.id);
                       }}
                       aria-label="Delete card"
-                      className="rounded p-1 text-muted-foreground hover:bg-destructive/15 hover:text-destructive disabled:opacity-30"
+                      className="hover:text-destructive"
                     >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                      <Trash2 />
+                    </Button>
                   </div>
                 </div>
 
                 {resolvedBadges.length === 0 ? (
-                  <p className="rounded-lg border border-dashed py-3 text-center text-xs text-muted-foreground">
+                  <p className="py-3 text-center text-xs text-muted-foreground">
                     Drop skills here or click any badge below to add to this card.
                   </p>
                 ) : (
@@ -501,20 +514,20 @@ export function ProfileReadmeStepPanel({
                           setDragOverChip({ cardId: card.id, badgeId: badge.id });
                         }}
                         onDrop={(e) => handleDropOnChip(e, card.id, badge.id)}
-                        className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-card px-2 py-1 text-xs font-medium text-card-foreground shadow-xs transition active:cursor-grabbing ${
+                        className={cn(
+                          "inline-flex cursor-grab items-center gap-1.5 rounded-md bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs transition active:cursor-grabbing",
                           dragOverChip?.cardId === card.id &&
-                          dragOverChip?.badgeId === badge.id
-                            ? "border-primary ring-2 ring-primary/30"
-                            : "border-border"
-                        }`}
+                            dragOverChip?.badgeId === badge.id &&
+                            "ring-2 ring-primary"
+                        )}
                       >
-                        <GripVertical className="h-3 w-3 text-muted-foreground" />
+                        <GripVertical className="size-3 text-muted-foreground" />
                         <span
-                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          className="size-2 shrink-0 rounded-full"
                           style={{ backgroundColor: `#${badge.color}` }}
                         />
                         <span>{badge.label}</span>
-                        <div className="ml-0.5 flex items-center gap-0.5 border-l border-border pl-1">
+                        <div className="ml-0.5 flex items-center gap-0.5 pl-1">
                           <button
                             type="button"
                             disabled={idx === 0}
@@ -530,7 +543,7 @@ export function ProfileReadmeStepPanel({
                             aria-label={`Move ${badge.label} left`}
                             className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                           >
-                            <ChevronLeft className="h-3 w-3" />
+                            <ChevronLeft className="size-3" />
                           </button>
                           <button
                             type="button"
@@ -550,7 +563,7 @@ export function ProfileReadmeStepPanel({
                             aria-label={`Move ${badge.label} right`}
                             className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                           >
-                            <ChevronRight className="h-3 w-3" />
+                            <ChevronRight className="size-3" />
                           </button>
                           <button
                             type="button"
@@ -559,7 +572,7 @@ export function ProfileReadmeStepPanel({
                               onRemoveBadgeFromCard(card.id, badge.id);
                             }}
                             aria-label={`Remove ${badge.label}`}
-                            className="rounded p-0.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                            className="rounded px-0.5 text-muted-foreground hover:text-destructive"
                           >
                             ×
                           </button>
@@ -573,30 +586,31 @@ export function ProfileReadmeStepPanel({
           })}
         </div>
 
-        {/* Massive Searchable Skills & Tech Library */}
-        <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4">
+        {/* Searchable Skills & Tech Library */}
+        <div className="flex flex-col gap-3 pt-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-mono text-xs font-medium text-foreground">
-              Tech Stack &amp; Skills Library ({filteredBadges.length} shown)
+              Skills Library ({filteredBadges.length} shown)
             </span>
-            <input
+            <Input
               type="text"
               value={badgeSearch}
               onChange={(e) => setBadgeSearch(e.target.value)}
-              placeholder="Search React, Rust, Docker, System Design..."
-              className="w-full rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:w-64"
+              placeholder="Search React, Rust, Docker..."
+              className="h-8 w-full text-xs sm:w-56"
             />
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex gap-1 overflow-x-auto pb-1">
             <button
               type="button"
               onClick={() => setBadgeCategory("all")}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+              className={cn(
+                "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition",
                 badgeCategory === "all"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              }`}
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+              )}
             >
               All ({categoryCounts.all ?? 0})
             </button>
@@ -605,21 +619,22 @@ export function ProfileReadmeStepPanel({
                 key={cat}
                 type="button"
                 onClick={() => setBadgeCategory(cat)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                className={cn(
+                  "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition",
                   badgeCategory === cat
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                )}
               >
                 {TECH_CATEGORY_LABELS[cat]} ({categoryCounts[cat] ?? 0})
               </button>
             ))}
           </div>
 
-          <div className="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-border bg-muted/40 p-3">
+          <div className="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto rounded-xl bg-muted/25 p-3">
             {filteredBadges.length === 0 ? (
               <p className="w-full py-4 text-center text-xs text-muted-foreground">
-                No matching skills found. Create a custom badge below!
+                No matching skills found. Create a custom badge below.
               </p>
             ) : (
               filteredBadges.map((badge) => {
@@ -652,19 +667,20 @@ export function ProfileReadmeStepPanel({
                         onAddBadgeToCard(activeCardId, badge.id);
                       }
                     }}
-                    className={`inline-flex cursor-grab items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition active:cursor-grabbing ${
+                    className={cn(
+                      "inline-flex cursor-grab items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition active:cursor-grabbing",
                       inActiveCard
-                        ? "border-primary bg-primary/15 text-foreground"
-                        : "border-border bg-card text-card-foreground hover:border-primary/60 hover:bg-accent/50"
-                    }`}
+                        ? "bg-primary/15 text-foreground ring-1 ring-primary/50"
+                        : "bg-background/80 text-foreground hover:bg-background"
+                    )}
                   >
                     {inActiveCard ? (
-                      <Check className="h-3 w-3 text-primary" />
+                      <Check className="size-3 text-primary" />
                     ) : (
-                      <Plus className="h-3 w-3 text-muted-foreground" />
+                      <Plus className="size-3 text-muted-foreground" />
                     )}
                     <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      className="size-2 shrink-0 rounded-full"
                       style={{ backgroundColor: `#${badge.color}` }}
                     />
                     <span>{badge.label}</span>
@@ -678,370 +694,376 @@ export function ProfileReadmeStepPanel({
             onSubmit={handleAddCustomBadge}
             className="grid grid-cols-1 gap-2 sm:grid-cols-12"
           >
-            <input
+            <Input
               type="text"
               value={newBadgeLabel}
               onChange={(e) => setNewBadgeLabel(e.target.value)}
-              placeholder="Custom badge label (e.g. Zig, WebGPU)"
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:col-span-5"
+              placeholder="Custom badge (e.g. Zig, WebGPU)"
+              className="h-8 text-xs sm:col-span-5"
             />
-            <input
+            <Input
               type="text"
               value={newBadgeLogo}
               onChange={(e) => setNewBadgeLogo(e.target.value)}
-              placeholder="Optional icon slug (e.g. python)"
-              className="rounded-xl border bg-muted/50 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none sm:col-span-4"
+              placeholder="Icon slug (e.g. python)"
+              className="h-8 font-mono text-xs sm:col-span-4"
             />
-            <div className="flex gap-1.5 sm:col-span-3">
+            <div className="flex items-center gap-1.5 sm:col-span-3">
               <ColorPalettePopoverButton
                 value={newBadgeColor}
                 onChange={setNewBadgeColor}
                 label="Custom Badge Color"
                 compact
-                className="h-9 rounded-xl px-2.5"
+                className="h-8 px-2"
               />
-              <button
-                type="submit"
-                className="flex-1 rounded-xl border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50"
-              >
+              <Button type="submit" variant="secondary" size="sm" className="flex-1">
                 Add
-              </button>
+              </Button>
             </div>
           </form>
         </div>
-      </div>
+      </section>
 
-      {/* CTA Buttons & Layout Options */}
-      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="mb-4 flex items-center gap-2.5">
-          <Link2 className="h-5 w-5 text-foreground/85" />
-          <div>
-            <h2 className="text-base font-semibold text-foreground">
-              CTA Buttons &amp; Layout Options
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Configure clickable profile buttons, banner alignment, sizing, and README
-              sections.
-            </p>
-          </div>
+      <Separator />
+
+      {/* Section 2: CTA Links & Quick Presets */}
+      <section className="flex flex-col gap-4">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="font-mono text-sm font-semibold text-foreground">
+            CTA Buttons &amp; Links
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Add clickable social, portfolio, or blog links. Platform icons update
+            automatically from URLs.
+          </p>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            {readmeConfig.actionLinks.map((link, idx) => (
-              <div
-                key={link.id}
-                className="flex flex-col gap-2 rounded-xl border bg-muted/40 p-3"
-              >
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
-                  <div className="flex items-center gap-2 sm:col-span-3">
-                    <input
-                      type="checkbox"
-                      checked={link.enabled}
-                      onChange={(e) => {
-                        const updated = [...readmeConfig.actionLinks];
-                        updated[idx] = { ...link, enabled: e.target.checked };
-                        onUpdateField("actionLinks", updated);
-                      }}
-                      aria-label={`Toggle ${link.label}`}
-                      className="size-4 accent-primary"
-                    />
-                    <input
-                      type="text"
-                      value={link.label}
-                      onChange={(e) => {
-                        const updated = [...readmeConfig.actionLinks];
-                        updated[idx] = { ...link, label: e.target.value };
-                        onUpdateField("actionLinks", updated);
-                      }}
-                      placeholder="Label"
-                      className="w-full rounded-lg border bg-card px-2.5 py-1.5 text-xs font-semibold text-foreground"
-                    />
-                  </div>
-                  <input
-                    type="text"
-                    value={link.valueText}
-                    onChange={(e) => {
+        <div className="flex flex-col divide-y divide-border/70">
+          {readmeConfig.actionLinks.map((link, idx) => (
+            <div key={link.id} className="flex flex-col gap-2.5 py-3 first:pt-0">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
+                <div className="flex items-center gap-2 sm:col-span-3">
+                  <Checkbox
+                    checked={link.enabled}
+                    onCheckedChange={(checked) => {
                       const updated = [...readmeConfig.actionLinks];
-                      updated[idx] = { ...link, valueText: e.target.value };
+                      updated[idx] = { ...link, enabled: Boolean(checked) };
                       onUpdateField("actionLinks", updated);
                     }}
-                    placeholder="Text"
-                    className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground sm:col-span-3"
+                    aria-label={`Toggle ${link.label}`}
                   />
-                  <input
+                  <Input
                     type="text"
-                    value={link.url}
+                    value={link.label}
                     onChange={(e) => {
-                      const nextUrl = e.target.value;
-                      const detected = detectPlatformFromUrl(nextUrl);
+                      const updated = [...readmeConfig.actionLinks];
+                      updated[idx] = { ...link, label: e.target.value };
+                      onUpdateField("actionLinks", updated);
+                    }}
+                    placeholder="Label"
+                    className="h-8 text-xs font-semibold"
+                  />
+                </div>
+                <Input
+                  type="text"
+                  value={link.valueText}
+                  onChange={(e) => {
+                    const updated = [...readmeConfig.actionLinks];
+                    updated[idx] = { ...link, valueText: e.target.value };
+                    onUpdateField("actionLinks", updated);
+                  }}
+                  placeholder="Button text"
+                  className="h-8 text-xs sm:col-span-3"
+                />
+                <Input
+                  type="text"
+                  value={link.url}
+                  onChange={(e) => {
+                    const nextUrl = e.target.value;
+                    const detected = detectPlatformFromUrl(nextUrl);
+                    const updated = [...readmeConfig.actionLinks];
+                    updated[idx] = {
+                      ...link,
+                      url: nextUrl,
+                      logo: detected.id,
+                    };
+                    onUpdateField("actionLinks", updated);
+                  }}
+                  placeholder="https://medium.com/@... or link"
+                  className="h-8 text-xs sm:col-span-6"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pl-6">
+                <div className="flex items-center gap-1.5">
+                  <PlatformIconPickerButton
+                    value={link.logo ?? DEFAULT_PLATFORM_ICON_ID}
+                    onChange={(iconId) => {
+                      const updated = [...readmeConfig.actionLinks];
+                      updated[idx] = { ...link, logo: iconId };
+                      onUpdateField("actionLinks", updated);
+                    }}
+                  />
+                  <ColorPalettePopoverButton
+                    value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
+                    onChange={(hex) => {
                       const updated = [...readmeConfig.actionLinks];
                       updated[idx] = {
                         ...link,
-                        url: nextUrl,
-                        logo: detected.id,
+                        color: hex.replace("#", "").toUpperCase(),
                       };
                       onUpdateField("actionLinks", updated);
                     }}
-                    placeholder="https://medium.com/@... or any link"
-                    className="rounded-lg border bg-card px-2.5 py-1.5 text-xs text-foreground/85 sm:col-span-6"
+                    label={`Color for ${link.label || "CTA"}`}
                   />
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <PlatformIconPickerButton
-                      value={link.logo ?? DEFAULT_PLATFORM_ICON_ID}
-                      onChange={(iconId) => {
-                        const updated = [...readmeConfig.actionLinks];
-                        updated[idx] = {
-                          ...link,
-                          logo: iconId,
-                        };
-                        onUpdateField("actionLinks", updated);
-                      }}
-                    />
-                    <ColorPalettePopoverButton
-                      value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
-                      onChange={(hex) => {
-                        const updated = [...readmeConfig.actionLinks];
-                        updated[idx] = {
-                          ...link,
-                          color: hex.replace("#", "").toUpperCase(),
-                        };
-                        onUpdateField("actionLinks", updated);
-                      }}
-                      label={`Color for ${link.label || "CTA"}`}
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      disabled={idx === 0}
-                      onClick={() =>
-                        onUpdateField(
-                          "actionLinks",
-                          reorderItems(readmeConfig.actionLinks, idx, idx - 1)
-                        )
-                      }
-                      aria-label="Move CTA button up"
-                      className="rounded border bg-card p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={idx === readmeConfig.actionLinks.length - 1}
-                      onClick={() =>
-                        onUpdateField(
-                          "actionLinks",
-                          reorderItems(readmeConfig.actionLinks, idx, idx + 1)
-                        )
-                      }
-                      aria-label="Move CTA button down"
-                      className="rounded border bg-card p-1 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onUpdateField(
-                          "actionLinks",
-                          readmeConfig.actionLinks.filter((l) => l.id !== link.id)
-                        )
-                      }
-                      aria-label="Delete link"
-                      className="rounded border bg-card p-1 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                <div className="flex items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={idx === 0}
+                    onClick={() =>
+                      onUpdateField(
+                        "actionLinks",
+                        reorderItems(readmeConfig.actionLinks, idx, idx - 1)
+                      )
+                    }
+                    aria-label="Move CTA button up"
+                  >
+                    <ArrowUp />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    disabled={idx === readmeConfig.actionLinks.length - 1}
+                    onClick={() =>
+                      onUpdateField(
+                        "actionLinks",
+                        reorderItems(readmeConfig.actionLinks, idx, idx + 1)
+                      )
+                    }
+                    aria-label="Move CTA button down"
+                  >
+                    <ArrowDown />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() =>
+                      onUpdateField(
+                        "actionLinks",
+                        readmeConfig.actionLinks.filter((l) => l.id !== link.id)
+                      )
+                    }
+                    aria-label="Delete link"
+                    className="hover:text-destructive"
+                  >
+                    <Trash2 />
+                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          {/* Quick-Add CTA Presets */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-[11px] text-muted-foreground">
-              Quick add:
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="mr-1 font-mono text-[11px] text-muted-foreground">
+            Quick add:
+          </span>
+          {CTA_QUICK_TEMPLATES.map((tpl) => (
+            <Button
+              key={tpl.label}
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={() => handleQuickAddCta(tpl)}
+              className="font-mono"
+            >
+              <Plus data-icon="inline-start" />
+              {tpl.label}
+            </Button>
+          ))}
+        </div>
+
+        <form
+          onSubmit={handleAddActionLink}
+          className="grid grid-cols-1 gap-2 rounded-xl bg-muted/30 p-3 sm:grid-cols-12"
+        >
+          <Input
+            type="text"
+            value={newLinkLabel}
+            onChange={(e) => setNewLinkLabel(e.target.value)}
+            placeholder="Label (PORTFOLIO)"
+            className="h-8 text-xs sm:col-span-3"
+          />
+          <Input
+            type="text"
+            value={newLinkText}
+            onChange={(e) => setNewLinkText(e.target.value)}
+            placeholder="Text (VISIT)"
+            className="h-8 text-xs sm:col-span-3"
+          />
+          <Input
+            type="text"
+            value={newLinkUrl}
+            onChange={(e) => {
+              const nextUrl = e.target.value;
+              setNewLinkUrl(nextUrl);
+              const detected = detectPlatformFromUrl(nextUrl);
+              if (!manualNewLinkLogo) {
+                setNewLinkLogo(detected.id);
+              }
+              if (!manualNewLinkColor) {
+                setNewLinkColor(`#${detected.hex}`);
+              }
+            }}
+            placeholder="https://medium.com/@... or domain.com"
+            className="h-8 text-xs sm:col-span-6"
+          />
+          <div className="flex items-center gap-1.5 sm:col-span-6">
+            <PlatformIconPickerButton
+              value={newLinkLogo}
+              onChange={(iconId) => {
+                setManualNewLinkLogo(true);
+                setNewLinkLogo(iconId);
+              }}
+              className="h-8 flex-1 justify-between px-3"
+            />
+          </div>
+          <div className="flex items-center gap-1.5 sm:col-span-6">
+            <ColorPalettePopoverButton
+              value={newLinkColor}
+              onChange={(hex) => {
+                setManualNewLinkColor(true);
+                setNewLinkColor(hex);
+              }}
+              label="New CTA Badge Color"
+              compact
+              className="h-8 px-2"
+            />
+            <Button type="submit" variant="secondary" size="sm" className="flex-1">
+              Add CTA Button
+            </Button>
+          </div>
+        </form>
+      </section>
+
+      <Separator />
+
+      {/* Section 3: Layout, Templates & Sections */}
+      <section className="flex flex-col gap-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <span className="font-mono text-xs font-medium text-foreground">
+              Badges &amp; CTA Alignment
             </span>
-            {CTA_QUICK_TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.label}
-                type="button"
-                onClick={() => handleQuickAddCta(tpl)}
-                className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-1 font-mono text-[11px] text-foreground transition hover:bg-muted"
-              >
-                <Plus className="size-3" />
-                {tpl.label}
-              </button>
-            ))}
+            <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
+              {(["left", "center"] as const).map((alignVal) => {
+                const active = readmeConfig.align === alignVal;
+                return (
+                  <button
+                    key={alignVal}
+                    type="button"
+                    onClick={() => onUpdateField("align", alignVal)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 font-mono text-xs font-medium capitalize transition",
+                      active
+                        ? "bg-background text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {alignVal}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <form
-            onSubmit={handleAddActionLink}
-            className="grid grid-cols-1 gap-2 sm:grid-cols-12"
-          >
-            <input
-              type="text"
-              value={newLinkLabel}
-              onChange={(e) => setNewLinkLabel(e.target.value)}
-              placeholder="Label (PORTFOLIO)"
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-3"
-            />
-            <input
-              type="text"
-              value={newLinkText}
-              onChange={(e) => setNewLinkText(e.target.value)}
-              placeholder="Text (VISIT)"
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-3"
-            />
-            <input
-              type="text"
-              value={newLinkUrl}
-              onChange={(e) => {
-                const nextUrl = e.target.value;
-                setNewLinkUrl(nextUrl);
-                const detected = detectPlatformFromUrl(nextUrl);
-                if (!manualNewLinkLogo) {
-                  setNewLinkLogo(detected.id);
-                }
-                if (!manualNewLinkColor) {
-                  setNewLinkColor(`#${detected.hex}`);
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between font-mono text-xs">
+              <span className="font-medium text-foreground">
+                Creature Banner Width
+              </span>
+              <span className="font-semibold text-foreground">
+                {readmeConfig.imageWidth}px
+              </span>
+            </div>
+            <Slider
+              aria-label="Creature Banner Width"
+              min={320}
+              max={920}
+              step={20}
+              value={[readmeConfig.imageWidth]}
+              onValueChange={(val) => {
+                const next = Array.isArray(val) ? val[0] : val;
+                if (typeof next === "number" && Number.isFinite(next)) {
+                  onUpdateField("imageWidth", next);
                 }
               }}
-              placeholder="https://medium.com/@... or domain.com"
-              className="rounded-xl border bg-muted/50 px-3 py-2 text-xs text-foreground sm:col-span-6"
             />
-            <div className="flex items-center gap-1.5 sm:col-span-6">
-              <PlatformIconPickerButton
-                value={newLinkLogo}
-                onChange={(iconId) => {
-                  setManualNewLinkLogo(true);
-                  setNewLinkLogo(iconId);
-                }}
-                className="h-9 flex-1 justify-between rounded-xl px-3"
-              />
-            </div>
-            <div className="flex gap-1.5 sm:col-span-6">
-              <ColorPalettePopoverButton
-                value={newLinkColor}
-                onChange={(hex) => {
-                  setManualNewLinkColor(true);
-                  setNewLinkColor(hex);
-                }}
-                label="New CTA Badge Color"
-                compact
-                className="h-9 rounded-lg px-2.5"
-              />
-              <button
-                type="submit"
-                className="flex-1 rounded-xl border bg-card px-3 text-xs font-medium text-foreground hover:bg-muted/50"
-              >
-                Add CTA Button
-              </button>
-            </div>
-          </form>
-
-          {/* Layout Options: Alignment & Banner Width */}
-          <div className="grid grid-cols-1 gap-4 border-t border-border pt-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-xs font-medium text-foreground">
-                Content Alignment
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {(["left", "center"] as const).map((alignVal) => {
-                  const active = readmeConfig.align === alignVal;
-                  return (
-                    <button
-                      key={alignVal}
-                      type="button"
-                      onClick={() => onUpdateField("align", alignVal)}
-                      className={`rounded-lg border px-3 py-2 font-mono text-xs font-semibold capitalize transition ${
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "bg-muted/40 text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {alignVal}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between font-mono text-xs">
-                <span className="font-medium text-foreground">
-                  Creature Banner Width
-                </span>
-                <span className="font-semibold text-foreground">
-                  {readmeConfig.imageWidth}px
-                </span>
-              </div>
-              <input
-                type="range"
-                aria-label="Creature Banner Width"
-                min={320}
-                max={920}
-                step={20}
-                value={readmeConfig.imageWidth}
-                onChange={(e) => {
-                  const next = parseInt(e.target.value, 10);
-                  if (Number.isFinite(next)) {
-                    onUpdateField("imageWidth", next);
-                  }
-                }}
-                className="h-2 w-full cursor-pointer accent-primary"
-              />
-              <div className="grid grid-cols-4 gap-1.5">
-                {[480, 640, 760, 920].map((presetW) => {
-                  const active = readmeConfig.imageWidth === presetW;
-                  return (
-                    <button
-                      key={presetW}
-                      type="button"
-                      onClick={() => onUpdateField("imageWidth", presetW)}
-                      className={`rounded-md border py-1 font-mono text-[11px] transition ${
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "bg-muted/40 text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {presetW}px
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="grid grid-cols-4 rounded-lg bg-muted/70 p-0.5">
+              {[480, 640, 760, 920].map((presetW) => {
+                const active = readmeConfig.imageWidth === presetW;
+                return (
+                  <button
+                    key={presetW}
+                    type="button"
+                    onClick={() => onUpdateField("imageWidth", presetW)}
+                    className={cn(
+                      "rounded-md py-1 font-mono text-[11px] font-medium transition",
+                      active
+                        ? "bg-background text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {presetW}px
+                  </button>
+                );
+              })}
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2.5 border-t border-border pt-4">
-            {README_TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.id}
-                type="button"
-                onClick={() => onSelectTemplate(tpl.id)}
-                className={`rounded-xl border p-3 text-left transition ${
-                  readmeConfig.templateId === tpl.id
-                    ? "border-primary bg-accent/60 ring-1 ring-primary"
-                    : "border-border bg-card hover:bg-muted/50"
-                }`}
-              >
-                <div className="text-xs font-semibold text-foreground">
-                  {tpl.name}
-                </div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">
-                  {tpl.description}
-                </div>
-              </button>
-            ))}
+        <div className="flex flex-col gap-2">
+          <span className="font-mono text-xs font-medium text-foreground">
+            README Structure Preset
+          </span>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {README_TEMPLATES.map((tpl) => {
+              const active = readmeConfig.templateId === tpl.id;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => onSelectTemplate(tpl.id)}
+                  className={cn(
+                    "rounded-xl p-3 text-left transition",
+                    active
+                      ? "bg-accent ring-1 ring-primary"
+                      : "bg-muted/40 hover:bg-muted/70"
+                  )}
+                >
+                  <div className="text-xs font-semibold text-foreground">
+                    {tpl.name}
+                  </div>
+                  <div className="mt-0.5 text-[11px] text-muted-foreground">
+                    {tpl.description}
+                  </div>
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 gap-2.5 text-xs sm:grid-cols-3">
+        <FieldSet>
+          <FieldLegend variant="label" className="font-mono text-xs">
+            Optional README Sections
+          </FieldLegend>
+          <FieldGroup className="flex-row flex-wrap gap-x-6 gap-y-2.5">
             {(
               [
                 { key: "includeMarkers", label: "Auto Update Markers" },
@@ -1049,105 +1071,107 @@ export function ProfileReadmeStepPanel({
                 { key: "includeShareCard", label: "1280x640 Share Card" },
               ] as const
             ).map((opt) => (
-              <label
-                key={opt.key}
-                className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2.5 text-foreground"
-              >
-                <input
-                  type="checkbox"
+              <Field key={opt.key} orientation="horizontal" className="w-auto">
+                <Checkbox
+                  id={`opt-${opt.key}`}
                   checked={readmeConfig[opt.key]}
-                  onChange={(e) => onUpdateField(opt.key, e.target.checked)}
-                  className="accent-primary"
+                  onCheckedChange={(checked) =>
+                    onUpdateField(opt.key, Boolean(checked))
+                  }
                 />
-                <span>{opt.label}</span>
-              </label>
+                <FieldLabel
+                  htmlFor={`opt-${opt.key}`}
+                  className="text-xs font-normal"
+                >
+                  {opt.label}
+                </FieldLabel>
+              </Field>
             ))}
-          </div>
+          </FieldGroup>
+        </FieldSet>
 
-          {readmeConfig.includeStatsTable && (
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Telemetry Table Title
-              </label>
-              <input
-                type="text"
-                value={readmeConfig.statsTableTitle}
-                onChange={(e) =>
-                  onUpdateField("statsTableTitle", e.target.value)
-                }
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
+        {readmeConfig.includeStatsTable && (
+          <Field>
+            <FieldLabel
+              htmlFor="telemetry-title-input"
+              className="font-mono text-xs"
+            >
+              Telemetry Table Title
+            </FieldLabel>
+            <Input
+              id="telemetry-title-input"
+              type="text"
+              value={readmeConfig.statsTableTitle}
+              onChange={(e) =>
+                onUpdateField("statsTableTitle", e.target.value)
+              }
+            />
+          </Field>
+        )}
+
+        <div className="flex flex-col gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowRawEditor((v) => !v)}
+            className="w-fit px-0 font-mono text-xs text-muted-foreground hover:bg-transparent hover:text-foreground"
+          >
+            <FileText data-icon="inline-start" />
+            {showRawEditor
+              ? "Hide Full Raw README Override"
+              : "Inspect / Override Full Raw README.md"}
+          </Button>
+
+          {showRawEditor && (
+            <div className="overflow-hidden rounded-xl border border-slate-300 bg-white text-slate-900 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {DYNAMIC_TOKENS.map((t) => (
+                    <button
+                      key={t.token}
+                      type="button"
+                      onClick={() => insertToken(t.token)}
+                      className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-800 hover:bg-slate-100"
+                    >
+                      {t.token}
+                    </button>
+                  ))}
+                </div>
+                {readmeConfig.rawOverride !== null && (
+                  <button
+                    type="button"
+                    onClick={() => onChangeRawMarkdown(null)}
+                    className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] text-slate-800 hover:bg-slate-100"
+                  >
+                    <RefreshCw className="size-3" />
+                    Resync Editor
+                  </button>
+                )}
+              </div>
+              <Textarea
+                rows={10}
+                value={currentRawText}
+                onChange={(e) => onChangeRawMarkdown(e.target.value)}
+                spellCheck={false}
+                className="w-full rounded-none border-0 bg-white p-3.5 font-mono text-xs leading-relaxed text-slate-900 focus-visible:ring-0"
               />
             </div>
           )}
-
-          <div className="border-t border-border pt-3">
-            <button
-              type="button"
-              onClick={() => setShowRawEditor((v) => !v)}
-              className="inline-flex items-center gap-2 text-xs font-semibold text-foreground/85 underline underline-offset-4 hover:text-foreground"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              {showRawEditor
-                ? "Hide Advanced Raw Markdown Editor"
-                : "Open Advanced Raw Markdown Editor"}
-            </button>
-
-            {showRawEditor && (
-              <div className="mt-3 overflow-hidden rounded-xl border border-slate-300 bg-white text-slate-900 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    {DYNAMIC_TOKENS.map((t) => (
-                      <button
-                        key={t.token}
-                        type="button"
-                        onClick={() => insertToken(t.token)}
-                        className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-800 hover:bg-slate-100"
-                      >
-                        {t.token}
-                      </button>
-                    ))}
-                  </div>
-                  {readmeConfig.rawOverride !== null && (
-                    <button
-                      type="button"
-                      onClick={() => onChangeRawMarkdown(null)}
-                      className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] text-slate-800 hover:bg-slate-100"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      Resync Form
-                    </button>
-                  )}
-                </div>
-                <textarea
-                  rows={10}
-                  value={currentRawText}
-                  onChange={(e) => onChangeRawMarkdown(e.target.value)}
-                  spellCheck={false}
-                  className="w-full bg-white p-3.5 font-mono text-xs leading-relaxed text-slate-900 placeholder:text-slate-400 focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onPrevStep}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border bg-card px-5 py-3.5 text-sm font-semibold text-foreground/85 transition hover:bg-muted/50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={onNextStep}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
-        >
+      <Separator />
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button type="button" variant="ghost" onClick={onPrevStep}>
+          <ArrowLeft data-icon="inline-start" />
+          Creature &amp; Style
+        </Button>
+        <Button type="button" onClick={onNextStep}>
           Next: Enter Token &amp; Push
-          <ArrowRight className="h-4 w-4" />
-        </button>
+          <ArrowRight data-icon="inline-end" />
+        </Button>
       </div>
     </div>
   );

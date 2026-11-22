@@ -9,7 +9,9 @@ import {
   RotateCcw,
   Sun,
 } from "lucide-react";
+import { cn } from "cn";
 import { useStudioController } from "@/application/useStudioController";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AutoEvolveDialog } from "./components/AutoEvolveDialog";
@@ -46,16 +48,28 @@ export function StudioApp() {
     setScreen("showcase");
   };
 
+  const containerWidthClass =
+    screen === "customize"
+      ? "max-w-[1600px]"
+      : screen === "showcase"
+        ? "max-w-6xl"
+        : "max-w-5xl";
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-3 sm:px-8">
+      <header className="sticky top-0 z-30 border-b bg-card/85 backdrop-blur">
+        <div
+          className={cn(
+            "mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6",
+            containerWidthClass
+          )}
+        >
           <button
             type="button"
             onClick={() => setScreen("showcase")}
             className="flex items-center gap-2.5 text-left"
           >
-            <div className="flex size-8 items-center justify-center rounded-md border bg-muted text-foreground">
+            <div className="flex size-8 items-center justify-center rounded-md bg-muted text-foreground">
               <Cpu className="size-4" />
             </div>
             <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
@@ -65,14 +79,17 @@ export function StudioApp() {
 
           <div className="flex items-center gap-2">
             {screen !== "showcase" && (
-              <span className="hidden rounded-md border bg-muted px-2.5 py-1 font-mono text-xs text-muted-foreground sm:inline-block">
+              <Badge
+                variant="secondary"
+                className="hidden font-mono text-xs sm:inline-flex"
+              >
                 @{controller.creatureConfig.username}
-              </span>
+              </Badge>
             )}
 
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => setIsDark((prev) => !prev)}
             >
@@ -96,7 +113,7 @@ export function StudioApp() {
             ) : (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={handleReset}
               >
@@ -108,7 +125,12 @@ export function StudioApp() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1440px] flex-1 px-5 py-6 sm:px-8">
+      <main
+        className={cn(
+          "mx-auto w-full flex-1 px-4 py-6 sm:px-6",
+          containerWidthClass
+        )}
+      >
         {screen === "showcase" && (
           <ShowcaseGalleryView
             creatureConfig={controller.creatureConfig}
@@ -200,22 +222,29 @@ export function StudioApp() {
 
       <Separator />
 
-      <footer className="bg-card/60">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
+      <footer className="bg-card/50">
+        <div
+          className={cn(
+            "mx-auto flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6",
+            containerWidthClass
+          )}
+        >
           <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
             <Cpu className="size-3.5 text-foreground" />
             <span>
               <strong className="font-semibold text-foreground">
                 dynamic-creature
               </strong>{" "}
-              by PathumSandeepa · S-curve Animated WebP &amp; GIF GitHub profile builder.
+              by PathumSandeepa · S-curve Animated WebP &amp; GIF GitHub profile
+              builder.
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              nativeButton={false}
               render={
                 <a
                   href="https://github.com/PathumSandeepa/dynamic-readme-creature"
@@ -228,8 +257,9 @@ export function StudioApp() {
               repository
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
+              nativeButton={false}
               render={
                 <a
                   href="https://github.com/PathumSandeepa"

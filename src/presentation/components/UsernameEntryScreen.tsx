@@ -1,17 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Cpu, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw, ShieldCheck } from "lucide-react";
 import { parseGitHubUsername } from "@/infrastructure/github/githubClient";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -19,6 +12,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 
 interface UsernameEntryScreenProps {
   initialInput: string;
@@ -53,84 +47,86 @@ export function UsernameEntryScreen({
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-170px)] items-center justify-center px-4 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-md">
-        <Card>
-          <CardHeader className="items-center text-center">
-            <div className="mb-1 flex size-10 items-center justify-center rounded-lg border bg-muted text-foreground">
-              <Cpu className="size-5" />
-            </div>
-            <CardTitle className="font-mono text-lg">
-              Add GitHub Username or URL
-            </CardTitle>
-            <CardDescription>
-              Loads public language stats and commit activity into a fresh template.
-            </CardDescription>
-          </CardHeader>
+    <div className="mx-auto flex min-h-[calc(100vh-185px)] w-full max-w-md flex-col justify-center py-8 sm:py-12">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Badge variant="secondary" className="w-fit font-mono text-[10px]">
+            STEP 1 OF 4 · SYNC PROFILE
+          </Badge>
+          <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground">
+            Connect Your GitHub Profile
+          </h1>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Loads public language weights, annual/all-time commit counts, and any
+            existing Dynamic Creature setup from your profile repo.
+          </p>
+        </div>
 
-          <CardContent>
-            <FieldGroup>
-              <Field data-invalid={validationError ? true : undefined}>
-                <FieldLabel htmlFor="github-username-input" className="font-mono text-xs">
-                  GitHub Username or Profile URL
-                </FieldLabel>
-                <Input
-                  id="github-username-input"
-                  autoFocus
-                  value={inputValue}
-                  aria-invalid={Boolean(validationError)}
-                  onChange={(e) => {
-                    setInputValue(e.target.value);
-                    if (validationError) setValidationError(null);
-                  }}
-                  placeholder="octocat or https://github.com/octocat"
-                  className="text-center font-mono"
-                />
-                {parsedPreview && !validationError && (
-                  <FieldDescription className="text-center font-mono text-xs">
-                    Target repo: {parsedPreview}/{parsedPreview}
-                  </FieldDescription>
-                )}
-                {validationError && (
-                  <FieldDescription className="text-center text-xs text-destructive">
-                    {validationError}
-                  </FieldDescription>
-                )}
-              </Field>
-            </FieldGroup>
-          </CardContent>
-
-          <CardFooter className="flex items-center justify-between gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onBack}
-              disabled={loading}
+        <FieldGroup>
+          <Field data-invalid={validationError ? true : undefined}>
+            <FieldLabel
+              htmlFor="github-username-input"
+              className="font-mono text-xs"
             >
-              <ArrowLeft data-icon="inline-start" />
-              Back
-            </Button>
+              GitHub Username or Profile URL
+            </FieldLabel>
+            <Input
+              id="github-username-input"
+              autoFocus
+              value={inputValue}
+              aria-invalid={Boolean(validationError)}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                if (validationError) setValidationError(null);
+              }}
+              placeholder="octocat or https://github.com/octocat"
+              className="h-10 font-mono"
+            />
+            {parsedPreview && !validationError && (
+              <FieldDescription className="font-mono text-xs">
+                Target repository: {parsedPreview}/{parsedPreview}
+              </FieldDescription>
+            )}
+            {validationError && (
+              <FieldDescription className="text-xs text-destructive">
+                {validationError}
+              </FieldDescription>
+            )}
+          </Field>
+        </FieldGroup>
 
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <RefreshCw data-icon="inline-start" className="animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  Next
-                  <ArrowRight data-icon="inline-end" />
-                </>
-              )}
-            </Button>
-          </CardFooter>
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onBack}
+            disabled={loading}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            Back
+          </Button>
 
-          <div className="flex items-center justify-center gap-1.5 border-t px-4 py-3 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-emerald-500" />
-            <span>100% browser-side. Read-only lookup via public GitHub API.</span>
-          </div>
-        </Card>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <>
+                <RefreshCw data-icon="inline-start" className="animate-spin" />
+                Loading...
+              </>
+            ) : (
+              <>
+                Continue
+                <ArrowRight data-icon="inline-end" />
+              </>
+            )}
+          </Button>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck className="size-4 shrink-0 text-primary" />
+          <span>100% browser-side. Read-only lookup via public GitHub API.</span>
+        </div>
       </form>
     </div>
   );

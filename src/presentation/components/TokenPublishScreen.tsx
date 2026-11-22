@@ -16,6 +16,7 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
+import { cn } from "cn";
 import {
   generateCreatureConfigJson,
   generateEvolveScriptMjs,
@@ -55,7 +56,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { TokenGuideDialog } from "./TokenGuideDialog";
 
 interface TokenPublishScreenProps {
@@ -282,196 +283,141 @@ export function TokenPublishScreen({
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-170px)] items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl">
-        <Card>
-          <CardHeader className="items-center text-center">
-            <Badge variant="secondary" className="font-mono text-[10px]">
-              STEP 4 · SECURE PUSH
-            </Badge>
-            <CardTitle className="font-mono text-xl">
-              Enter Personal Access Token
-            </CardTitle>
-            <CardDescription>
-              Publishing to{" "}
-              <code className="font-mono font-semibold text-foreground">
-                {username}/{username}
-              </code>
-            </CardDescription>
-            <div className="pt-1.5">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-4 sm:py-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <Badge variant="secondary" className="w-fit font-mono text-[10px]">
+            STEP 4 OF 4 · PUBLISH
+          </Badge>
+          <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Publish to {username}/{username}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Commit your animated WebP creature and README directly from browser
+            memory using a temporary GitHub token.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setTokenGuideOpen(true)}
+        >
+          <BookOpen data-icon="inline-start" />
+          How to Create Classic Token &amp; Permissions
+        </Button>
+      </div>
+
+      {repoCheckState !== "exists" ? (
+        <div className="flex flex-col gap-6 rounded-xl bg-muted/35 p-6">
+          <div className="flex items-start gap-3">
+            {repoCheckState === "checking" ? (
+              <RefreshCw className="mt-0.5 size-5 shrink-0 animate-spin text-primary" />
+            ) : (
+              <FolderGit2 className="mt-0.5 size-5 shrink-0 text-destructive" />
+            )}
+            <div className="flex flex-col gap-1.5">
+              <h2 className="font-mono text-sm font-semibold text-foreground">
+                {repoCheckState === "checking"
+                  ? `Checking ${username}/${username} on GitHub...`
+                  : `Profile Repository ${username}/${username} Not Found`}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {repoCheckState === "checking"
+                  ? "Verifying that your public GitHub profile repository exists before requesting a Personal Access Token."
+                  : `Create a public repository named ${username}/${username} on GitHub first. Token entry stays hidden until it is detected.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button type="button" variant="ghost" onClick={onBack}>
+              <ArrowLeft data-icon="inline-start" />
+              Back to Studio
+            </Button>
+
+            {repoCheckState === "missing" && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleRecheckRepo}
+                >
+                  <RefreshCw data-icon="inline-start" />
+                  Re-check Repository
+                </Button>
+                <Button
+                  nativeButton={false}
+                  render={
+                    <a
+                      href="https://github.com/new"
+                      target="_blank"
+                      rel="noreferrer"
+                    />
+                  }
+                >
+                  Create {username}/{username}
+                  <ExternalLink data-icon="inline-end" />
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>Or export files locally instead:</span>
+            <div className="flex flex-wrap items-center gap-1">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() => setTokenGuideOpen(true)}
+                disabled={webpBusy}
+                onClick={handleDownloadWebP}
               >
-                <BookOpen data-icon="inline-start" />
-                How to Create Classic Token &amp; Permissions
+                <Download data-icon="inline-start" />
+                {webpBusy ? "Encoding..." : "creature.webp"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={gifBusy}
+                onClick={handleDownloadGif}
+              >
+                <Download data-icon="inline-start" />
+                {gifBusy ? "Encoding..." : "creature.gif"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  downloadTextFile("README.md", readmeMarkdown, "text/markdown")
+                }
+              >
+                <Download data-icon="inline-start" />
+                README.md
               </Button>
             </div>
-          </CardHeader>
+          </div>
+        </div>
+      ) : (
+        <div className="grid items-start gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <Card>
+              <CardHeader className="border-b">
+                <CardTitle className="font-mono text-base">
+                  Enter Personal Access Token
+                </CardTitle>
+                <CardDescription>
+                  Target branch: <code>{resolvedBranch}</code> · Copy, cut, and
+                  context-menu actions are blocked on the token field.
+                </CardDescription>
+              </CardHeader>
 
-          <CardContent className="flex flex-col gap-5">
-            {repoCheckState !== "exists" ? (
-              <div className="flex flex-col gap-4">
-                <Alert variant={repoCheckState === "missing" ? "destructive" : "default"}>
-                  {repoCheckState === "checking" ? (
-                    <RefreshCw className="animate-spin" />
-                  ) : (
-                    <FolderGit2 />
-                  )}
-                  <AlertTitle className="font-mono text-xs font-semibold">
-                    {repoCheckState === "checking"
-                      ? `Checking ${username}/${username} on GitHub...`
-                      : `Profile Repository ${username}/${username} Not Found`}
-                  </AlertTitle>
-                  <AlertDescription className="flex flex-col gap-2 text-xs">
-                    {repoCheckState === "checking" ? (
-                      <p>
-                        Verifying that your public GitHub profile repository exists
-                        before requesting a Personal Access Token.
-                      </p>
-                    ) : (
-                      <>
-                        <p>
-                          A public repository named{" "}
-                          <code>
-                            {username}/{username}
-                          </code>{" "}
-                          must exist on GitHub before pushing. Token entry is hidden
-                          until the repository is detected.
-                        </p>
-                        <div className="mt-1 flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            render={
-                              <a
-                                href="https://github.com/new"
-                                target="_blank"
-                                rel="noreferrer"
-                              />
-                            }
-                          >
-                            Create {username}/{username}
-                            <ExternalLink data-icon="inline-end" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={handleRecheckRepo}
-                          >
-                            <RefreshCw data-icon="inline-start" />
-                            Re-check Repository
-                          </Button>
-                        </div>
-                      </>
-                    )}
-                  </AlertDescription>
-                </Alert>
-
-                <div className="flex justify-start">
-                  <Button type="button" variant="outline" onClick={onBack}>
-                    <ArrowLeft data-icon="inline-start" />
-                    Back
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Alert>
-                  <ShieldCheck />
-                  <AlertTitle className="font-mono text-xs font-semibold">
-                    In-Memory Token Security Guarantee
-                  </AlertTitle>
-                  <AlertDescription className="flex flex-col gap-2 text-xs">
-                    <p>
-                      This static app never stores tokens in cookies, localStorage, or
-                      any server. Your PAT exists strictly in memory during the GitHub API
-                      push and clears automatically afterward. Copy and context-menu
-                      actions are disabled on the input field.
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      <a
-                        href="https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=repo,workflow"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 font-medium text-primary underline"
-                      >
-                        Create Classic Token (repo)
-                        <ExternalLink className="size-3" />
-                      </a>
-                      <a
-                        href="https://github.com/settings/personal-access-tokens/new"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 font-medium text-primary underline"
-                      >
-                        Create Fine-Grained PAT (Contents: R/W)
-                        <ExternalLink className="size-3" />
-                      </a>
-                      <a
-                        href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 font-medium text-muted-foreground underline"
-                      >
-                        GitHub Privacy Statement
-                        <ExternalLink className="size-3" />
-                      </a>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-
-                <div className="flex flex-col gap-2 rounded-lg border bg-muted/40 p-3.5 text-xs">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-mono font-semibold text-foreground">
-                      Required Token Permissions
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setTokenGuideOpen(true)}
-                      className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-primary underline underline-offset-4 hover:opacity-80"
-                    >
-                      <BookOpen className="size-3" />
-                      View Step-by-Step Classic Token Guide
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
-                    <span className="font-mono text-[11px] text-foreground">
-                      Classic (<code>ghp_...</code>):
-                    </span>
-                    <Badge variant="secondary" className="font-mono text-[10px]">
-                      repo
-                    </Badge>
-                    {includeWorkflowFiles ? (
-                      <Badge className="font-mono text-[10px]">
-                        + workflow
-                      </Badge>
-                    ) : (
-                      <span className="font-mono text-[10px]">
-                        (+ <code>workflow</code> if enabling 12:00 AM Action)
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
-                    <span className="font-mono text-[11px] text-foreground">
-                      Fine-Grained (<code>github_pat_...</code>):
-                    </span>
-                    <Badge variant="secondary" className="font-mono text-[10px]">
-                      Contents: Read &amp; write
-                    </Badge>
-                    {includeWorkflowFiles && (
-                      <Badge className="font-mono text-[10px]">
-                        + Workflows: Read &amp; write
-                      </Badge>
-                    )}
-                    <span className="font-mono text-[10px]">
-                      on <code>{username}/{username}</code>
-                    </span>
-                  </div>
-                </div>
-
+              <CardContent className="pt-4">
                 <form onSubmit={handlePush} className="flex flex-col gap-5">
                   <FieldGroup>
                     <Field data-invalid={pushError ? true : undefined}>
@@ -485,7 +431,7 @@ export function TokenPublishScreen({
                         </FieldLabel>
                         <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
                           <Lock className="size-3" />
-                          Copy blocked
+                          Ephemeral RAM only
                         </span>
                       </div>
 
@@ -496,6 +442,7 @@ export function TokenPublishScreen({
                           autoComplete="off"
                           spellCheck={false}
                           value={tokenInput}
+                          aria-invalid={Boolean(pushError)}
                           onChange={(e) => {
                             setTokenInput(e.target.value);
                             if (pushError) setPushError(null);
@@ -505,12 +452,12 @@ export function TokenPublishScreen({
                           onDragStart={(e) => e.preventDefault()}
                           onContextMenu={(e) => e.preventDefault()}
                           placeholder="github_pat_... or ghp_..."
-                          className="select-none font-mono"
+                          className="h-10 flex-1 select-none font-mono"
                         />
                         {tokenInput && (
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
                             onClick={() => setTokenInput("")}
                             title="Clear token from memory"
@@ -520,78 +467,75 @@ export function TokenPublishScreen({
                         )}
                       </div>
                     </Field>
+                  </FieldGroup>
 
-                    <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3.5">
-                      <Field orientation="horizontal">
-                        <Checkbox
-                          id="auto-evolve-check"
-                          checked={includeWorkflowFiles}
-                          onCheckedChange={(val) =>
-                            setIncludeWorkflowFiles(Boolean(val))
-                          }
-                        />
-                        <div className="flex flex-col gap-1">
-                          <FieldLabel
-                            htmlFor="auto-evolve-check"
-                            className="font-mono text-xs font-semibold"
-                          >
-                            Include 12:00 AM Daily Auto-Evolve GitHub Action
-                          </FieldLabel>
-                          <FieldDescription className="text-xs">
-                            Requires <code>workflow</code> scope on your PAT.
-                            Automatically re-renders <code>creature.webp</code> &amp;
-                            updates <code>README.md</code> every midnight.
-                          </FieldDescription>
-                        </div>
-                      </Field>
+                  <Separator />
 
-                      {includeWorkflowFiles && (
-                        <div className="grid grid-cols-2 gap-2 pl-6">
-                          <button
-                            type="button"
-                            onClick={() => setTimezoneMode("local")}
-                            className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
-                              timezoneMode === "local"
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "bg-card text-foreground hover:bg-muted"
-                            }`}
-                          >
-                            12:00 AM Local ({localCron})
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setTimezoneMode("utc")}
-                            className={`rounded-lg border px-2.5 py-1.5 font-mono text-[11px] transition ${
-                              timezoneMode === "utc"
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "bg-card text-foreground hover:bg-muted"
-                            }`}
-                          >
-                            12:00 AM UTC (0 0 * * *)
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                  <div className="flex flex-col gap-3">
+                    <Field orientation="horizontal">
+                      <Switch
+                        id="auto-evolve-check"
+                        checked={includeWorkflowFiles}
+                        onCheckedChange={(val) =>
+                          setIncludeWorkflowFiles(Boolean(val))
+                        }
+                      />
+                      <div className="flex flex-col gap-0.5">
+                        <FieldLabel
+                          htmlFor="auto-evolve-check"
+                          className="font-mono text-xs font-semibold"
+                        >
+                          Include 12:00 AM Daily Auto-Evolve GitHub Action
+                        </FieldLabel>
+                        <FieldDescription className="text-xs">
+                          Requires <code>workflow</code> permission. Updates{" "}
+                          <code>creature.webp</code> &amp; <code>README.md</code>{" "}
+                          every midnight.
+                        </FieldDescription>
+                      </div>
+                    </Field>
+
+                    {includeWorkflowFiles && (
+                      <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
+                        <button
+                          type="button"
+                          onClick={() => setTimezoneMode("local")}
+                          className={cn(
+                            "rounded-md px-2.5 py-1.5 font-mono text-[11px] font-medium transition",
+                            timezoneMode === "local"
+                              ? "bg-background text-foreground shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          12:00 AM Local ({localCron})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTimezoneMode("utc")}
+                          className={cn(
+                            "rounded-md px-2.5 py-1.5 font-mono text-[11px] font-medium transition",
+                            timezoneMode === "utc"
+                              ? "bg-background text-foreground shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          12:00 AM UTC (0 0 * * *)
+                        </button>
+                      </div>
+                    )}
 
                     {hasLegacyWorkflow && !includeWorkflowFiles && (
-                      <Alert>
-                        <AlertCircle />
-                        <AlertTitle className="font-mono text-xs font-semibold">
-                          Outdated GitHub Action Workflow Detected
-                        </AlertTitle>
-                        <AlertDescription className="text-xs">
-                          Your repository <code>{username}/{username}</code> has an
-                          earlier <code>evolve-creature.yml</code> workflow targeting{" "}
-                          <code>creature.svg</code>. Check{" "}
-                          <strong>
-                            Include 12:00 AM Daily Auto-Evolve GitHub Action
-                          </strong>{" "}
-                          above (with <code>Workflows: Read and write</code> PAT
-                          permission) to upgrade it to the new Animated WebP workflow.
-                        </AlertDescription>
-                      </Alert>
+                      <p className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                        <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                        <span>
+                          Earlier <code>evolve-creature.yml</code> detected in{" "}
+                          <code>{username}/{username}</code>. Enable the switch
+                          above (with <code>workflow</code> scope) to upgrade it
+                          to Animated WebP.
+                        </span>
+                      </p>
                     )}
-                  </FieldGroup>
+                  </div>
 
                   {pushError && (
                     <Alert variant="destructive">
@@ -614,6 +558,7 @@ export function TokenPublishScreen({
                       <AlertDescription className="mt-2 flex flex-wrap gap-2">
                         <Button
                           size="sm"
+                          nativeButton={false}
                           render={
                             <a
                               href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
@@ -626,8 +571,9 @@ export function TokenPublishScreen({
                           <ExternalLink data-icon="inline-end" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
+                          nativeButton={false}
                           render={
                             <a
                               href={publishResult.repoUrl}
@@ -643,10 +589,10 @@ export function TokenPublishScreen({
                     </Alert>
                   )}
 
-                  <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       onClick={onBack}
                       disabled={pushLoading}
                     >
@@ -675,50 +621,145 @@ export function TokenPublishScreen({
                     </Button>
                   </div>
                 </form>
-              </>
-            )}
-          </CardContent>
+              </CardContent>
 
-          <Separator />
+              <CardFooter className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>Manual downloads:</span>
+                <div className="flex flex-wrap gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={webpBusy}
+                    onClick={handleDownloadWebP}
+                  >
+                    <Download data-icon="inline-start" />
+                    {webpBusy ? "Encoding..." : "creature.webp"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={gifBusy}
+                    onClick={handleDownloadGif}
+                  >
+                    <Download data-icon="inline-start" />
+                    {gifBusy ? "Encoding..." : "creature.gif"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      downloadTextFile(
+                        "README.md",
+                        readmeMarkdown,
+                        "text/markdown"
+                      )
+                    }
+                  >
+                    <Download data-icon="inline-start" />
+                    README.md
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
 
-          <CardFooter className="flex flex-wrap items-center justify-between gap-2 pt-3 text-xs text-muted-foreground">
-            <span>Manual downloads:</span>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={webpBusy}
-                onClick={handleDownloadWebP}
-              >
-                <Download data-icon="inline-start" />
-                {webpBusy ? "Encoding..." : "creature.webp"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={gifBusy}
-                onClick={handleDownloadGif}
-              >
-                <Download data-icon="inline-start" />
-                {gifBusy ? "Encoding..." : "creature.gif"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  downloadTextFile("README.md", readmeMarkdown, "text/markdown")
-                }
-              >
-                <Download data-icon="inline-start" />
-                README.md
-              </Button>
+          <aside className="flex flex-col gap-6 lg:col-span-5 lg:pt-1">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="font-mono text-sm font-semibold text-foreground">
+                  Required Token Permissions
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setTokenGuideOpen(true)}
+                  className="font-mono text-xs text-primary underline underline-offset-4 hover:opacity-80"
+                >
+                  Full Step Guide
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2.5 text-xs text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-mono text-foreground">
+                    Classic (<code>ghp_...</code>):
+                  </span>
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    repo
+                  </Badge>
+                  {includeWorkflowFiles ? (
+                    <Badge className="font-mono text-[10px]">+ workflow</Badge>
+                  ) : (
+                    <span>
+                      (+ <code>workflow</code> if 12:00 AM Action enabled)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-mono text-foreground">
+                    Fine-Grained (<code>github_pat_...</code>):
+                  </span>
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    Contents: Read &amp; write
+                  </Badge>
+                  {includeWorkflowFiles && (
+                    <Badge className="font-mono text-[10px]">
+                      + Workflows: R/W
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3 pt-1 text-xs">
+                <a
+                  href="https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=repo,workflow"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4"
+                >
+                  Create Classic Token
+                  <ExternalLink className="size-3" />
+                </a>
+                <a
+                  href="https://github.com/settings/personal-access-tokens/new"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4"
+                >
+                  Create Fine-Grained PAT
+                  <ExternalLink className="size-3" />
+                </a>
+              </div>
             </div>
-          </CardFooter>
-        </Card>
-      </div>
+
+            <Separator />
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2 font-mono text-sm font-semibold text-foreground">
+                <ShieldCheck className="size-4 text-primary" />
+                In-Memory Security Guarantee
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                This static app never stores tokens in cookies, localStorage, or
+                any server. Your token stays strictly inside React memory during
+                the push and is cleared automatically afterward.
+              </p>
+              <a
+                href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              >
+                GitHub Privacy Statement
+                <ExternalLink className="size-3" />
+              </a>
+            </div>
+          </aside>
+        </div>
+      )}
 
       <TokenGuideDialog
         open={tokenGuideOpen}
