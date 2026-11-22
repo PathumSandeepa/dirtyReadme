@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_CREATURE_CONFIG,
   DEFAULT_LANGUAGES,
@@ -52,6 +52,15 @@ import {
   parseGitHubUsername,
 } from "@/infrastructure/github/githubClient";
 
+const STUDIO_STORAGE_KEY = "dynamic-creature-studio-v1";
+
+interface PersistedStudioState {
+  creatureConfig?: CreatureConfig;
+  readmeConfig?: ReadmeConfig;
+  customBgHex?: string;
+  snapshot?: GitHubProfileSnapshot | null;
+}
+
 export function useStudioController() {
   const [creatureConfig, setCreatureConfig] = useState<CreatureConfig>(
     DEFAULT_CREATURE_CONFIG
@@ -64,6 +73,72 @@ export function useStudioController() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
+  const storageReadyRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      try {
+        const raw = window.sessionStorage.getItem(STUDIO_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as PersistedStudioState;
+          if (
+            parsed.creatureConfig &&
+            typeof parsed.creatureConfig === "object"
+          ) {
+            setCreatureConfig((prev) => ({
+              ...prev,
+              ...parsed.creatureConfig,
+            }));
+          }
+          if (parsed.readmeConfig && typeof parsed.readmeConfig === "object") {
+            setReadmeConfig((prev) => ({
+              ...prev,
+              ...parsed.readmeConfig,
+              badges: Array.isArray(parsed.readmeConfig?.badges)
+                ? parsed.readmeConfig.badges
+                : prev.badges,
+              stackCards: Array.isArray(parsed.readmeConfig?.stackCards)
+                ? parsed.readmeConfig.stackCards
+                : prev.stackCards,
+              actionLinks: Array.isArray(parsed.readmeConfig?.actionLinks)
+                ? parsed.readmeConfig.actionLinks
+                : prev.actionLinks,
+            }));
+          }
+          if (typeof parsed.customBgHex === "string" && parsed.customBgHex) {
+            setCustomBgHex(parsed.customBgHex);
+          }
+          if (parsed.snapshot && typeof parsed.snapshot === "object") {
+            setSnapshot(parsed.snapshot);
+          }
+        }
+      } catch {
+        // Ignore malformed or restricted sessionStorage
+      } finally {
+        storageReadyRef.current = true;
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!storageReadyRef.current) return;
+    try {
+      const payload: PersistedStudioState = {
+        creatureConfig,
+        readmeConfig,
+        customBgHex,
+        snapshot,
+      };
+      window.sessionStorage.setItem(STUDIO_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore quota or privacy mode errors
+    }
+  }, [creatureConfig, readmeConfig, customBgHex, snapshot]);
 
   const markerBlock = useMemo(
     () => buildMarkerSection(creatureConfig, readmeConfig),
@@ -311,9 +386,22 @@ export function useStudioController() {
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
-      stackCards: [...prev.stackCards, { id: newId, title, badgeIds: [] }],
+      stackCards: [
+        ...prev.stackCards,
+        { id: newId, title, badgeIds: [], visible: true },
+      ],
     }));
     return newId;
+  }
+
+  function toggleStackCardVisibility(cardId: string, visible: boolean) {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: prev.stackCards.map((c) =>
+        c.id === cardId ? { ...c, visible } : c
+      ),
+    }));
   }
 
   function renameStackCard(cardId: string, title: string) {
@@ -450,9 +538,9 @@ export function useStudioController() {
           (parsed.readmeConfig.templateId === "auto-evolve-block"
             ? ""
             : buildStructuredProfileMarkdown(
-                mergedCreatureSnapshot,
-                parsed.readmeConfig
-              ));
+              mergedCreatureSnapshot,
+              parsed.readmeConfig
+            ));
         setCreatureConfig((prev) => {
           const mergedCreature: CreatureConfig = {
             ...prev,
@@ -512,10 +600,10 @@ export function useStudioController() {
         const nextCards =
           newLangIds.length > 0 && prev.stackCards.length > 0
             ? prev.stackCards.map((card, idx) =>
-                idx === 0
-                  ? { ...card, badgeIds: [...newLangIds, ...card.badgeIds] }
-                  : card
-              )
+              idx === 0
+                ? { ...card, badgeIds: [...newLangIds, ...card.badgeIds] }
+                : card
+            )
             : prev.stackCards;
 
         const nextLinks = [
@@ -530,32 +618,32 @@ export function useStudioController() {
           },
           ...(snap.website
             ? [
-                {
-                  id: "website",
-                  label: "WEBSITE",
-                  valueText: snap.website
-                    .replace(/^https?:\/\//i, "")
-                    .replace(/\/$/, "")
-                    .toUpperCase(),
-                  url: snap.website,
-                  color: "4F46E5",
-                  logo: detectPlatformFromUrl(snap.website).id,
-                  enabled: true,
-                },
-              ]
+              {
+                id: "website",
+                label: "WEBSITE",
+                valueText: snap.website
+                  .replace(/^https?:\/\//i, "")
+                  .replace(/\/$/, "")
+                  .toUpperCase(),
+                url: snap.website,
+                color: "4F46E5",
+                logo: detectPlatformFromUrl(snap.website).id,
+                enabled: true,
+              },
+            ]
             : []),
           ...(snap.twitterUsername
             ? [
-                {
-                  id: "x",
-                  label: "X",
-                  valueText: `@${snap.twitterUsername}`,
-                  url: `https://x.com/${snap.twitterUsername}`,
-                  color: "09090B",
-                  logo: "x",
-                  enabled: true,
-                },
-              ]
+              {
+                id: "x",
+                label: "X",
+                valueText: `@${snap.twitterUsername}`,
+                url: `https://x.com/${snap.twitterUsername}`,
+                color: "09090B",
+                logo: "x",
+                enabled: true,
+              },
+            ]
             : []),
         ];
 
@@ -591,9 +679,13 @@ export function useStudioController() {
       });
       return snap;
     } catch (err) {
-      setSyncError(
-        err instanceof Error ? err.message : "Failed to load GitHub data."
-      );
+      const msg =
+        err instanceof TypeError
+          ? "Network error while contacting GitHub. Check your connection and try again."
+          : err instanceof Error
+            ? err.message
+            : "Failed to load GitHub data.";
+      setSyncError(msg);
       return null;
     } finally {
       setSyncLoading(false);
@@ -607,6 +699,11 @@ export function useStudioController() {
     setSnapshot(null);
     setSyncError(null);
     setRestoredNotice(null);
+    try {
+      window.sessionStorage.removeItem(STUDIO_STORAGE_KEY);
+    } catch {
+      // Ignore storage access errors
+    }
   }
 
   return {
@@ -618,6 +715,7 @@ export function useStudioController() {
     snapshot,
     syncLoading,
     syncError,
+    clearSyncError: () => setSyncError(null),
     restoredNotice,
     dismissRestoredNotice: () => setRestoredNotice(null),
     markerBlock,
@@ -641,6 +739,7 @@ export function useStudioController() {
     moveBadgeAcrossCards,
     addStackCard,
     renameStackCard,
+    toggleStackCardVisibility,
     deleteStackCard,
     reorderCards,
     combineStackCards,

@@ -3,20 +3,19 @@
 import { useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
-  ArrowLeft,
-  ArrowRight,
   ArrowUp,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  FileText,
   GripVertical,
-  Layers,
   LayoutGrid,
   Plus,
   RefreshCw,
+  Search,
   Trash2,
   Undo2,
+  X,
 } from "lucide-react";
 import { cn } from "cn";
 import type { CreatureConfig } from "@/domain/creature/entities";
@@ -36,29 +35,41 @@ import {
   detectPlatformFromUrl,
 } from "@/domain/profile/platformIcons";
 import {
+  buildActionLinkBadgeUrl,
   buildGeneratedReadmeMarkdown,
+  buildShieldBadgeUrl,
   reorderItems,
 } from "@/domain/profile/readmeService";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioColorSwatch } from "../studio/ui/StudioColorSwatch";
 import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { Textarea } from "@/components/ui/textarea";
-import { ColorPalettePopoverButton } from "./ColorPalettePicker";
-import { PlatformIconPickerButton } from "./PlatformIconPickerButton";
+  StudioField,
+  StudioInput,
+  StudioSelect,
+} from "../studio/ui/StudioInput";
+import { type ReadmeZoomMode } from "../studio/ui/ScaledReadmeViewport";
+import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
+import { StudioSliderField } from "../studio/ui/StudioSliderField";
+import { StudioSwitchRow } from "../studio/ui/StudioSwitchRow";
+import { AdvancedMarkdownEditor } from "./AdvancedMarkdownEditor";
+import {
+  PlatformIconGlyph,
+  PlatformIconPickerButton,
+} from "./PlatformIconPickerButton";
+import type { PreviewRegion } from "./PreviewWorkspace";
+
+export type ReadmeAccordionSection = 1 | 2 | 3 | 4 | 5;
 
 interface ProfileReadmeStepPanelProps {
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
+  githubTheme: "light" | "dark";
+  zoomMode: ReadmeZoomMode;
+  sharedFitZoom?: number;
+  onMeasureFitZoom?: (zoom: number) => void;
+  onSectionFocus: (region: PreviewRegion) => void;
+  onFieldEdited: (region: PreviewRegion) => void;
   onUpdateField: <K extends keyof ReadmeConfig>(
     key: K,
     value: ReadmeConfig[K]
@@ -79,6 +90,7 @@ interface ProfileReadmeStepPanelProps {
   ) => void;
   onAddStackCard: (title?: string) => string;
   onRenameStackCard: (cardId: string, title: string) => void;
+  onToggleStackCardVisibility: (cardId: string, visible: boolean) => void;
   onDeleteStackCard: (cardId: string) => void;
   onReorderStackCards: (fromIdx: number, toIdx: number) => void;
   onCombineStackCards: () => void;
@@ -87,8 +99,6 @@ interface ProfileReadmeStepPanelProps {
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
   ) => void;
-  onPrevStep: () => void;
-  onNextStep: () => void;
 }
 
 type CategoryFilter = "all" | TechCategory;
@@ -97,6 +107,23 @@ interface DragPayload {
   badgeId: string;
   fromCardId: string | null;
 }
+
+const QUICK_ADD_PLATFORMS: {
+  label: string;
+  template: (typeof CTA_QUICK_TEMPLATES)[number];
+}[] = [
+  { label: "Medium", template: CTA_QUICK_TEMPLATES[0] },
+  { label: "Hashnode", template: CTA_QUICK_TEMPLATES[1] },
+  { label: "Substack", template: CTA_QUICK_TEMPLATES[2] },
+  { label: "Dev.to", template: CTA_QUICK_TEMPLATES[3] },
+  { label: "LinkedIn", template: CTA_QUICK_TEMPLATES[4] },
+  { label: "X", template: CTA_QUICK_TEMPLATES[5] },
+  { label: "YouTube", template: CTA_QUICK_TEMPLATES[6] },
+  { label: "Discord", template: CTA_QUICK_TEMPLATES[7] },
+  { label: "Email", template: CTA_QUICK_TEMPLATES[8] },
+  { label: "Portfolio", template: CTA_QUICK_TEMPLATES[9] },
+  { label: "Sponsor", template: CTA_QUICK_TEMPLATES[10] },
+];
 
 function normalizeActionUrl(raw: string): string {
   const trimmed = raw.trim();
@@ -112,9 +139,89 @@ function normalizeActionUrl(raw: string): string {
   return `https://${trimmed}`;
 }
 
+function validateLinkUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "URL is required.";
+  if (/^mailto:/i.test(trimmed)) {
+    const addr = trimmed.slice(7);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)
+      ? null
+      : "Enter a valid mailto email (for example mailto:you@domain.com).";
+  }
+  if (trimmed.startsWith("#") || trimmed.startsWith("/")) return null;
+  if (/^javascript:/i.test(trimmed) || /^data:/i.test(trimmed)) {
+    return "Use an https:// or mailto: URL.";
+  }
+  try {
+    const candidate = /^https?:\/\//i.test(trimmed)
+      ? trimmed
+      : `https://${trimmed}`;
+    const u = new URL(candidate);
+    if (!u.hostname || (!u.hostname.includes(".") && !trimmed.includes("{{"))) {
+      return "Enter a valid web address (for example https://github.com/user).";
+    }
+    return null;
+  } catch {
+    return "Enter a valid URL starting with https:// or mailto:.";
+  }
+}
+
+function StructurePresetWireframe({ id }: { id: ReadmeTemplateId }) {
+  if (id === "minimal-header") {
+    return (
+      <div className="flex h-16 w-24 shrink-0 flex-col justify-center gap-1.5 rounded-[4px] border border-[var(--border)] bg-[var(--surface-2)] p-2">
+        <div className="h-2 w-12 rounded-[2px] bg-[var(--border-strong)]" />
+        <div className="h-1.5 w-full rounded-[2px] bg-[var(--border)]" />
+        <div className="mt-1 h-5 w-full rounded-[2px] bg-[var(--accent-soft)] border border-[var(--accent)]/40" />
+      </div>
+    );
+  }
+  if (id === "auto-evolve-block") {
+    return (
+      <div className="flex h-16 w-24 shrink-0 flex-col items-center justify-center gap-1.5 rounded-[4px] border border-[var(--border)] bg-[var(--surface-2)] p-2">
+        <div className="h-1 w-14 rounded-[2px] bg-[var(--border)]" />
+        <div className="h-7 w-full rounded-[2px] border border-[var(--accent)]/40 bg-[var(--accent-soft)]" />
+        <div className="h-1 w-14 rounded-[2px] bg-[var(--border)]" />
+      </div>
+    );
+  }
+  if (id === "telemetry-stats") {
+    return (
+      <div className="flex h-16 w-24 shrink-0 flex-col justify-between rounded-[4px] border border-[var(--border)] bg-[var(--surface-2)] p-1.5">
+        <div className="h-1.5 w-10 rounded-[2px] bg-[var(--border-strong)]" />
+        <div className="h-4 w-full rounded-[2px] border border-[var(--accent)]/40 bg-[var(--accent-soft)]" />
+        <div className="grid grid-cols-2 gap-1">
+          <div className="h-3 rounded-[2px] bg-[var(--border)]" />
+          <div className="h-3 rounded-[2px] bg-[var(--border)]" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex h-16 w-24 shrink-0 flex-col justify-between rounded-[4px] border border-[var(--border)] bg-[var(--surface-2)] p-1.5">
+      <div className="flex flex-col gap-0.5">
+        <div className="h-1.5 w-11 rounded-[2px] bg-[var(--border-strong)]" />
+        <div className="h-1 w-full rounded-[2px] bg-[var(--border)]" />
+      </div>
+      <div className="flex gap-1">
+        <div className="h-1.5 w-4 rounded-[2px] bg-[var(--border-strong)]" />
+        <div className="h-1.5 w-4 rounded-[2px] bg-[var(--border-strong)]" />
+        <div className="h-1.5 w-4 rounded-[2px] bg-[var(--border-strong)]" />
+      </div>
+      <div className="h-4 w-full rounded-[2px] border border-[var(--accent)]/40 bg-[var(--accent-soft)]" />
+    </div>
+  );
+}
+
 export function ProfileReadmeStepPanel({
   creatureConfig,
   readmeConfig,
+  githubTheme,
+  zoomMode,
+  sharedFitZoom,
+  onMeasureFitZoom,
+  onSectionFocus,
+  onFieldEdited,
   onUpdateField,
   onSelectTemplate,
   onChangeRawMarkdown,
@@ -123,15 +230,19 @@ export function ProfileReadmeStepPanel({
   onMoveBadgeAcrossCards,
   onAddStackCard,
   onRenameStackCard,
+  onToggleStackCardVisibility,
   onDeleteStackCard,
   onReorderStackCards,
   onCombineStackCards,
   onUndoCombineStackCards,
   onAddCustomBadgeToCard,
-  onPrevStep,
-  onNextStep,
 }: ProfileReadmeStepPanelProps) {
   const nextIdRef = useRef(1);
+  const customLinkInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [openSection, setOpenSection] = useState<ReadmeAccordionSection>(1);
+
+  // Section 2 state
   const [badgeCategory, setBadgeCategory] = useState<CategoryFilter>("all");
   const [badgeSearch, setBadgeSearch] = useState("");
   const [selectedCardId, setSelectedCardId] = useState<string>(
@@ -146,16 +257,21 @@ export function ProfileReadmeStepPanel({
 
   const [newBadgeLabel, setNewBadgeLabel] = useState("");
   const [newBadgeLogo, setNewBadgeLogo] = useState("");
-  const [newBadgeColor, setNewBadgeColor] = useState("#2563EB");
+  const [newBadgeColor, setNewBadgeColor] = useState("#0F766E");
+  const [newBadgeError, setNewBadgeError] = useState<string | null>(null);
 
+  // Section 3 state
   const [newLinkLabel, setNewLinkLabel] = useState("");
   const [newLinkText, setNewLinkText] = useState("");
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [newLinkLogo, setNewLinkLogo] = useState(DEFAULT_PLATFORM_ICON_ID);
-  const [newLinkColor, setNewLinkColor] = useState("#4F46E5");
+  const [newLinkColor, setNewLinkColor] = useState("#0F766E");
   const [manualNewLinkLogo, setManualNewLinkLogo] = useState(false);
   const [manualNewLinkColor, setManualNewLinkColor] = useState(false);
-  const [showRawEditor, setShowRawEditor] = useState(false);
+  const [newLinkError, setNewLinkError] = useState<string | null>(null);
+
+  // Section 5 state
+  const [rawWrapLines, setRawWrapLines] = useState(true);
 
   const activeCardId = readmeConfig.stackCards.some(
     (c) => c.id === selectedCardId
@@ -206,6 +322,30 @@ export function ProfileReadmeStepPanel({
     readmeConfig.rawOverride !== null
       ? readmeConfig.rawOverride
       : generatedMarkdown;
+  const rawLines = currentRawText.split(/\r?\n/);
+
+  const introWordCount = useMemo(() => {
+    const trimmed = readmeConfig.advancedProfileMarkdown.trim();
+    return trimmed ? trimmed.split(/\s+/).length : 0;
+  }, [readmeConfig.advancedProfileMarkdown]);
+
+  const totalBadgeCount = useMemo(
+    () =>
+      readmeConfig.stackCards.reduce((sum, c) => sum + c.badgeIds.length, 0),
+    [readmeConfig.stackCards]
+  );
+
+  const activeTemplateName =
+    README_TEMPLATES.find((t) => t.id === readmeConfig.templateId)?.name ??
+    "Full Developer Profile";
+
+  const handleOpenSection = (
+    num: ReadmeAccordionSection,
+    region: PreviewRegion
+  ) => {
+    setOpenSection(num);
+    onSectionFocus(region);
+  };
 
   function readPayloadFromEvent(e: React.DragEvent): DragPayload | null {
     const raw = e.dataTransfer?.getData("application/json");
@@ -232,6 +372,7 @@ export function ProfileReadmeStepPanel({
     setDragPayload(null);
     setDropCardId(null);
     setDragOverChip(null);
+    onFieldEdited("stack");
   }
 
   function handleDropOnChip(
@@ -257,12 +398,17 @@ export function ProfileReadmeStepPanel({
     setDragPayload(null);
     setDropCardId(null);
     setDragOverChip(null);
+    onFieldEdited("stack");
   }
 
   function handleAddCustomBadge(e: React.FormEvent) {
     e.preventDefault();
     const label = newBadgeLabel.trim();
-    if (!label || !activeCardId) return;
+    if (!label) {
+      setNewBadgeError("Enter a badge name (for example Zig or WebGPU).");
+      return;
+    }
+    if (!activeCardId) return;
     const logoSlug = newBadgeLogo.trim().toLowerCase().replace(/\s+/g, "");
     const seq = nextIdRef.current++;
     onAddCustomBadgeToCard(activeCardId, {
@@ -274,12 +420,22 @@ export function ProfileReadmeStepPanel({
     });
     setNewBadgeLabel("");
     setNewBadgeLogo("");
+    setNewBadgeError(null);
+    onFieldEdited("stack");
   }
 
   function handleAddActionLink(e: React.FormEvent) {
     e.preventDefault();
+    if (!newLinkLabel.trim()) {
+      setNewLinkError("Enter a label (for example PORTFOLIO or BLOG).");
+      return;
+    }
+    const urlValidation = validateLinkUrl(newLinkUrl);
+    if (urlValidation) {
+      setNewLinkError(urlValidation);
+      return;
+    }
     const normalizedUrl = normalizeActionUrl(newLinkUrl);
-    if (!newLinkLabel.trim() || !normalizedUrl) return;
     const seq = nextIdRef.current++;
     const resolvedLogo = manualNewLinkLogo
       ? newLinkLogo
@@ -300,9 +456,11 @@ export function ProfileReadmeStepPanel({
     setNewLinkText("");
     setNewLinkUrl("");
     setNewLinkLogo(DEFAULT_PLATFORM_ICON_ID);
-    setNewLinkColor("#4F46E5");
+    setNewLinkColor("#0F766E");
     setManualNewLinkLogo(false);
     setManualNewLinkColor(false);
+    setNewLinkError(null);
+    onFieldEdited("links");
   }
 
   function handleQuickAddCta(tpl: (typeof CTA_QUICK_TEMPLATES)[number]) {
@@ -315,864 +473,1426 @@ export function ProfileReadmeStepPanel({
         enabled: true,
       },
     ]);
+    onFieldEdited("links");
   }
 
-  function insertToken(token: string) {
+  function insertRawToken(token: string) {
     const base =
       readmeConfig.rawOverride !== null
         ? readmeConfig.rawOverride
         : generatedMarkdown;
     onChangeRawMarkdown(`${base}\n${token}`);
+    onFieldEdited("raw");
   }
 
+  const customBadgePreview: ReadmeBadge = {
+    id: "preview",
+    label: newBadgeLabel.trim() || "Custom",
+    color: newBadgeColor.replace("#", "") || "0F766E",
+    logo: newBadgeLogo.trim().toLowerCase().replace(/\s+/g, "") || undefined,
+    logoColor: "white",
+    enabled: true,
+  };
+
+  const customLinkPreview = {
+    id: "preview",
+    label: (newLinkLabel.trim() || "PORTFOLIO").toUpperCase(),
+    valueText: (newLinkText.trim() || "VISIT").toUpperCase(),
+    url: newLinkUrl.trim() || "https://example.com",
+    color: newLinkColor.replace("#", "") || "0F766E",
+    logo: newLinkLogo || DEFAULT_PLATFORM_ICON_ID,
+    enabled: true,
+  };
+
+  const sections: {
+    num: ReadmeAccordionSection;
+    title: string;
+    description: string;
+    summary: string;
+    region: PreviewRegion;
+  }[] = [
+    {
+      num: 1,
+      title: "Header and intro",
+      description: "Edit your profile title, bio, lists, and dynamic tokens.",
+      summary: `${introWordCount} words`,
+      region: "header",
+    },
+    {
+      num: 2,
+      title: "Tech stack",
+      description: "Group technology badges into cards and pick from 202 skills.",
+      summary: `${totalBadgeCount} badges`,
+      region: "stack",
+    },
+    {
+      num: 3,
+      title: "Links and buttons",
+      description: "Add social, blog, and portfolio badges under your stack.",
+      summary: `${readmeConfig.actionLinks.length} links`,
+      region: "links",
+    },
+    {
+      num: 4,
+      title: "Layout and structure",
+      description: "Choose a README preset, optional sections, and banner width.",
+      summary: activeTemplateName,
+      region: "creature",
+    },
+    {
+      num: 5,
+      title: "Advanced",
+      description: "Inspect or override the full generated README.md source.",
+      summary:
+        readmeConfig.rawOverride !== null ? "Overridden" : "Generated",
+      region: readmeConfig.rawOverride !== null ? "raw" : "header",
+    },
+  ];
+
   return (
-    <div className="flex flex-col gap-7 rounded-xl border bg-card p-5 text-card-foreground sm:p-6">
-      {/* Section 1: Drag & Drop Multi-Card Tech Stack Builder */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
-            <h2 className="font-mono text-sm font-semibold text-foreground">
-              Tech Stack Cards
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Drag badges between cards, reorder chips, or pick from{" "}
-              {readmeConfig.badges.length}+ skills below.
-            </p>
-          </div>
+    <div className="flex flex-col gap-4">
+      {sections.map((sec) => {
+        const isOpen = openSection === sec.num;
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {readmeConfig.savedOrganizedCards !== null && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onUndoCombineStackCards}
-              >
-                <Undo2 data-icon="inline-start" />
-                Undo Combine ({readmeConfig.savedOrganizedCards.length})
-              </Button>
+        return (
+          <div
+            key={sec.num}
+            className={cn(
+              "overflow-hidden rounded-[8px] border bg-[var(--surface)] transition-colors duration-150",
+              isOpen
+                ? "border-[var(--border-strong)]"
+                : "border-[var(--border)]"
             )}
-            {readmeConfig.stackCards.length > 1 && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onCombineStackCards}
-              >
-                <LayoutGrid data-icon="inline-start" />
-                Combine All
-              </Button>
-            )}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                const id = onAddStackCard(
-                  `Stack Group ${readmeConfig.stackCards.length + 1}`
-                );
-                setSelectedCardId(id);
-              }}
-            >
-              <Plus data-icon="inline-start" />
-              Add Card
-            </Button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {readmeConfig.stackCards.map((card, cardIdx) => {
-            const isSelected = card.id === activeCardId;
-            const isDropping = dropCardId === card.id;
-            const resolvedBadges = card.badgeIds
-              .map((id) => badgeById.get(id))
-              .filter((b): b is ReadmeBadge => Boolean(b));
-
-            return (
-              <div
-                key={card.id}
-                onClick={() => setSelectedCardId(card.id)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDropCardId(card.id);
-                }}
-                onDragLeave={() => {
-                  if (dropCardId === card.id) setDropCardId(null);
-                }}
-                onDrop={(e) => handleDropOnCard(e, card.id)}
-                className={cn(
-                  "rounded-xl p-3.5 transition",
-                  isDropping
-                    ? "bg-accent/70 ring-2 ring-dashed ring-primary"
-                    : isSelected
-                      ? "bg-muted/50 ring-1 ring-primary/70"
-                      : "bg-muted/30 hover:bg-muted/45"
-                )}
-              >
-                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <Layers className="size-3.5 shrink-0 text-primary" />
-                    <input
-                      type="text"
-                      value={card.title}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCardId(card.id);
-                      }}
-                      onChange={(e) =>
-                        onRenameStackCard(card.id, e.target.value)
-                      }
-                      placeholder={
-                        readmeConfig.stackCards.length === 1 && !card.title
-                          ? "Combined Tech Stack (no heading)"
-                          : "Card heading..."
-                      }
-                      className="min-w-0 flex-1 rounded-md bg-transparent px-1.5 py-0.5 font-mono text-xs font-semibold text-foreground focus:bg-background focus:outline-none"
-                    />
-                    <Badge variant="secondary" className="font-mono text-[10px]">
-                      {resolvedBadges.length}
-                    </Badge>
-                    {isSelected && (
-                      <Badge className="font-mono text-[10px]">Active</Badge>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-0.5">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      disabled={cardIdx === 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onReorderStackCards(cardIdx, cardIdx - 1);
-                      }}
-                      aria-label="Move card up"
-                    >
-                      <ArrowUp />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      disabled={cardIdx === readmeConfig.stackCards.length - 1}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onReorderStackCards(cardIdx, cardIdx + 1);
-                      }}
-                      aria-label="Move card down"
-                    >
-                      <ArrowDown />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      disabled={readmeConfig.stackCards.length <= 1}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteStackCard(card.id);
-                      }}
-                      aria-label="Delete card"
-                      className="hover:text-destructive"
-                    >
-                      <Trash2 />
-                    </Button>
-                  </div>
-                </div>
-
-                {resolvedBadges.length === 0 ? (
-                  <p className="py-3 text-center text-xs text-muted-foreground">
-                    Drop skills here or click any badge below to add to this card.
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {resolvedBadges.map((badge, idx) => (
-                      <div
-                        key={`${card.id}-${badge.id}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.stopPropagation();
-                          const payload: DragPayload = {
-                            badgeId: badge.id,
-                            fromCardId: card.id,
-                          };
-                          setDragPayload(payload);
-                          e.dataTransfer.setData(
-                            "application/json",
-                            JSON.stringify(payload)
-                          );
-                        }}
-                        onDragEnd={() => {
-                          setDragPayload(null);
-                          setDropCardId(null);
-                          setDragOverChip(null);
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setDragOverChip({ cardId: card.id, badgeId: badge.id });
-                        }}
-                        onDrop={(e) => handleDropOnChip(e, card.id, badge.id)}
-                        className={cn(
-                          "inline-flex cursor-grab items-center gap-1.5 rounded-md bg-background px-2 py-1 text-xs font-medium text-foreground shadow-xs transition active:cursor-grabbing",
-                          dragOverChip?.cardId === card.id &&
-                            dragOverChip?.badgeId === badge.id &&
-                            "ring-2 ring-primary"
-                        )}
-                      >
-                        <GripVertical className="size-3 text-muted-foreground" />
-                        <span
-                          className="size-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: `#${badge.color}` }}
-                        />
-                        <span>{badge.label}</span>
-                        <div className="ml-0.5 flex items-center gap-0.5 pl-1">
-                          <button
-                            type="button"
-                            disabled={idx === 0}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onMoveBadgeAcrossCards(
-                                badge.id,
-                                card.id,
-                                card.id,
-                                resolvedBadges[idx - 1]?.id
-                              );
-                            }}
-                            aria-label={`Move ${badge.label} left`}
-                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-                          >
-                            <ChevronLeft className="size-3" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={idx === resolvedBadges.length - 1}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const nextItem = resolvedBadges[idx + 1];
-                              if (nextItem) {
-                                onMoveBadgeAcrossCards(
-                                  nextItem.id,
-                                  card.id,
-                                  card.id,
-                                  badge.id
-                                );
-                              }
-                            }}
-                            aria-label={`Move ${badge.label} right`}
-                            className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-                          >
-                            <ChevronRight className="size-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRemoveBadgeFromCard(card.id, badge.id);
-                            }}
-                            aria-label={`Remove ${badge.label}`}
-                            className="rounded px-0.5 text-muted-foreground hover:text-destructive"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Searchable Skills & Tech Library */}
-        <div className="flex flex-col gap-3 pt-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-mono text-xs font-medium text-foreground">
-              Skills Library ({filteredBadges.length} shown)
-            </span>
-            <Input
-              type="text"
-              value={badgeSearch}
-              onChange={(e) => setBadgeSearch(e.target.value)}
-              placeholder="Search React, Rust, Docker..."
-              className="h-8 w-full text-xs sm:w-56"
-            />
-          </div>
-
-          <div className="flex gap-1 overflow-x-auto pb-1">
+          >
             <button
               type="button"
-              onClick={() => setBadgeCategory("all")}
-              className={cn(
-                "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition",
-                badgeCategory === "all"
-                  ? "bg-secondary text-secondary-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              )}
+              aria-expanded={isOpen}
+              onClick={() => handleOpenSection(sec.num, sec.region)}
+              className="flex w-full cursor-pointer items-center justify-between gap-4 px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--surface-2)]"
             >
-              All ({categoryCounts.all ?? 0})
-            </button>
-            {TECH_CATEGORIES_ORDER.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setBadgeCategory(cat)}
-                className={cn(
-                  "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium transition",
-                  badgeCategory === cat
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                )}
-              >
-                {TECH_CATEGORY_LABELS[cat]} ({categoryCounts[cat] ?? 0})
-              </button>
-            ))}
-          </div>
-
-          <div className="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto rounded-xl bg-muted/25 p-3">
-            {filteredBadges.length === 0 ? (
-              <p className="w-full py-4 text-center text-xs text-muted-foreground">
-                No matching skills found. Create a custom badge below.
-              </p>
-            ) : (
-              filteredBadges.map((badge) => {
-                const inActiveCard = activeCardBadgeSet.has(badge.id);
-                return (
-                  <button
-                    key={badge.id}
-                    type="button"
-                    draggable
-                    onDragStart={(e) => {
-                      const payload: DragPayload = {
-                        badgeId: badge.id,
-                        fromCardId: null,
-                      };
-                      setDragPayload(payload);
-                      e.dataTransfer.setData(
-                        "application/json",
-                        JSON.stringify(payload)
-                      );
-                    }}
-                    onDragEnd={() => {
-                      setDragPayload(null);
-                      setDropCardId(null);
-                    }}
-                    onClick={() => {
-                      if (!activeCardId) return;
-                      if (inActiveCard) {
-                        onRemoveBadgeFromCard(activeCardId, badge.id);
-                      } else {
-                        onAddBadgeToCard(activeCardId, badge.id);
-                      }
-                    }}
-                    className={cn(
-                      "inline-flex cursor-grab items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition active:cursor-grabbing",
-                      inActiveCard
-                        ? "bg-primary/15 text-foreground ring-1 ring-primary/50"
-                        : "bg-background/80 text-foreground hover:bg-background"
-                    )}
-                  >
-                    {inActiveCard ? (
-                      <Check className="size-3 text-primary" />
-                    ) : (
-                      <Plus className="size-3 text-muted-foreground" />
-                    )}
-                    <span
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: `#${badge.color}` }}
-                    />
-                    <span>{badge.label}</span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          <form
-            onSubmit={handleAddCustomBadge}
-            className="grid grid-cols-1 gap-2 sm:grid-cols-12"
-          >
-            <Input
-              type="text"
-              value={newBadgeLabel}
-              onChange={(e) => setNewBadgeLabel(e.target.value)}
-              placeholder="Custom badge (e.g. Zig, WebGPU)"
-              className="h-8 text-xs sm:col-span-5"
-            />
-            <Input
-              type="text"
-              value={newBadgeLogo}
-              onChange={(e) => setNewBadgeLogo(e.target.value)}
-              placeholder="Icon slug (e.g. python)"
-              className="h-8 font-mono text-xs sm:col-span-4"
-            />
-            <div className="flex items-center gap-1.5 sm:col-span-3">
-              <ColorPalettePopoverButton
-                value={newBadgeColor}
-                onChange={setNewBadgeColor}
-                label="Custom Badge Color"
-                compact
-                className="h-8 px-2"
-              />
-              <Button type="submit" variant="secondary" size="sm" className="flex-1">
-                Add
-              </Button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Section 2: CTA Links & Quick Presets */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="font-mono text-sm font-semibold text-foreground">
-            CTA Buttons &amp; Links
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Add clickable social, portfolio, or blog links. Platform icons update
-            automatically from URLs.
-          </p>
-        </div>
-
-        <div className="flex flex-col divide-y divide-border/70">
-          {readmeConfig.actionLinks.map((link, idx) => (
-            <div key={link.id} className="flex flex-col gap-2.5 py-3 first:pt-0">
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-12">
-                <div className="flex items-center gap-2 sm:col-span-3">
-                  <Checkbox
-                    checked={link.enabled}
-                    onCheckedChange={(checked) => {
-                      const updated = [...readmeConfig.actionLinks];
-                      updated[idx] = { ...link, enabled: Boolean(checked) };
-                      onUpdateField("actionLinks", updated);
-                    }}
-                    aria-label={`Toggle ${link.label}`}
-                  />
-                  <Input
-                    type="text"
-                    value={link.label}
-                    onChange={(e) => {
-                      const updated = [...readmeConfig.actionLinks];
-                      updated[idx] = { ...link, label: e.target.value };
-                      onUpdateField("actionLinks", updated);
-                    }}
-                    placeholder="Label"
-                    className="h-8 text-xs font-semibold"
-                  />
-                </div>
-                <Input
-                  type="text"
-                  value={link.valueText}
-                  onChange={(e) => {
-                    const updated = [...readmeConfig.actionLinks];
-                    updated[idx] = { ...link, valueText: e.target.value };
-                    onUpdateField("actionLinks", updated);
-                  }}
-                  placeholder="Button text"
-                  className="h-8 text-xs sm:col-span-3"
-                />
-                <Input
-                  type="text"
-                  value={link.url}
-                  onChange={(e) => {
-                    const nextUrl = e.target.value;
-                    const detected = detectPlatformFromUrl(nextUrl);
-                    const updated = [...readmeConfig.actionLinks];
-                    updated[idx] = {
-                      ...link,
-                      url: nextUrl,
-                      logo: detected.id,
-                    };
-                    onUpdateField("actionLinks", updated);
-                  }}
-                  placeholder="https://medium.com/@... or link"
-                  className="h-8 text-xs sm:col-span-6"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pl-6">
-                <div className="flex items-center gap-1.5">
-                  <PlatformIconPickerButton
-                    value={link.logo ?? DEFAULT_PLATFORM_ICON_ID}
-                    onChange={(iconId) => {
-                      const updated = [...readmeConfig.actionLinks];
-                      updated[idx] = { ...link, logo: iconId };
-                      onUpdateField("actionLinks", updated);
-                    }}
-                  />
-                  <ColorPalettePopoverButton
-                    value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
-                    onChange={(hex) => {
-                      const updated = [...readmeConfig.actionLinks];
-                      updated[idx] = {
-                        ...link,
-                        color: hex.replace("#", "").toUpperCase(),
-                      };
-                      onUpdateField("actionLinks", updated);
-                    }}
-                    label={`Color for ${link.label || "CTA"}`}
-                  />
-                </div>
-
-                <div className="flex items-center gap-0.5">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={idx === 0}
-                    onClick={() =>
-                      onUpdateField(
-                        "actionLinks",
-                        reorderItems(readmeConfig.actionLinks, idx, idx - 1)
-                      )
-                    }
-                    aria-label="Move CTA button up"
-                  >
-                    <ArrowUp />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={idx === readmeConfig.actionLinks.length - 1}
-                    onClick={() =>
-                      onUpdateField(
-                        "actionLinks",
-                        reorderItems(readmeConfig.actionLinks, idx, idx + 1)
-                      )
-                    }
-                    aria-label="Move CTA button down"
-                  >
-                    <ArrowDown />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() =>
-                      onUpdateField(
-                        "actionLinks",
-                        readmeConfig.actionLinks.filter((l) => l.id !== link.id)
-                      )
-                    }
-                    aria-label="Delete link"
-                    className="hover:text-destructive"
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1">
-          <span className="mr-1 font-mono text-[11px] text-muted-foreground">
-            Quick add:
-          </span>
-          {CTA_QUICK_TEMPLATES.map((tpl) => (
-            <Button
-              key={tpl.label}
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={() => handleQuickAddCta(tpl)}
-              className="font-mono"
-            >
-              <Plus data-icon="inline-start" />
-              {tpl.label}
-            </Button>
-          ))}
-        </div>
-
-        <form
-          onSubmit={handleAddActionLink}
-          className="grid grid-cols-1 gap-2 rounded-xl bg-muted/30 p-3 sm:grid-cols-12"
-        >
-          <Input
-            type="text"
-            value={newLinkLabel}
-            onChange={(e) => setNewLinkLabel(e.target.value)}
-            placeholder="Label (PORTFOLIO)"
-            className="h-8 text-xs sm:col-span-3"
-          />
-          <Input
-            type="text"
-            value={newLinkText}
-            onChange={(e) => setNewLinkText(e.target.value)}
-            placeholder="Text (VISIT)"
-            className="h-8 text-xs sm:col-span-3"
-          />
-          <Input
-            type="text"
-            value={newLinkUrl}
-            onChange={(e) => {
-              const nextUrl = e.target.value;
-              setNewLinkUrl(nextUrl);
-              const detected = detectPlatformFromUrl(nextUrl);
-              if (!manualNewLinkLogo) {
-                setNewLinkLogo(detected.id);
-              }
-              if (!manualNewLinkColor) {
-                setNewLinkColor(`#${detected.hex}`);
-              }
-            }}
-            placeholder="https://medium.com/@... or domain.com"
-            className="h-8 text-xs sm:col-span-6"
-          />
-          <div className="flex items-center gap-1.5 sm:col-span-6">
-            <PlatformIconPickerButton
-              value={newLinkLogo}
-              onChange={(iconId) => {
-                setManualNewLinkLogo(true);
-                setNewLinkLogo(iconId);
-              }}
-              className="h-8 flex-1 justify-between px-3"
-            />
-          </div>
-          <div className="flex items-center gap-1.5 sm:col-span-6">
-            <ColorPalettePopoverButton
-              value={newLinkColor}
-              onChange={(hex) => {
-                setManualNewLinkColor(true);
-                setNewLinkColor(hex);
-              }}
-              label="New CTA Badge Color"
-              compact
-              className="h-8 px-2"
-            />
-            <Button type="submit" variant="secondary" size="sm" className="flex-1">
-              Add CTA Button
-            </Button>
-          </div>
-        </form>
-      </section>
-
-      <Separator />
-
-      {/* Section 3: Layout, Templates & Sections */}
-      <section className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <span className="font-mono text-xs font-medium text-foreground">
-              Badges &amp; CTA Alignment
-            </span>
-            <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
-              {(["left", "center"] as const).map((alignVal) => {
-                const active = readmeConfig.align === alignVal;
-                return (
-                  <button
-                    key={alignVal}
-                    type="button"
-                    onClick={() => onUpdateField("align", alignVal)}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 font-mono text-xs font-medium capitalize transition",
-                      active
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {alignVal}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between font-mono text-xs">
-              <span className="font-medium text-foreground">
-                Creature Banner Width
-              </span>
-              <span className="font-semibold text-foreground">
-                {readmeConfig.imageWidth}px
-              </span>
-            </div>
-            <Slider
-              aria-label="Creature Banner Width"
-              min={320}
-              max={920}
-              step={20}
-              value={[readmeConfig.imageWidth]}
-              onValueChange={(val) => {
-                const next = Array.isArray(val) ? val[0] : val;
-                if (typeof next === "number" && Number.isFinite(next)) {
-                  onUpdateField("imageWidth", next);
-                }
-              }}
-            />
-            <div className="grid grid-cols-4 rounded-lg bg-muted/70 p-0.5">
-              {[480, 640, 760, 920].map((presetW) => {
-                const active = readmeConfig.imageWidth === presetW;
-                return (
-                  <button
-                    key={presetW}
-                    type="button"
-                    onClick={() => onUpdateField("imageWidth", presetW)}
-                    className={cn(
-                      "rounded-md py-1 font-mono text-[11px] font-medium transition",
-                      active
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {presetW}px
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-xs font-medium text-foreground">
-            README Structure Preset
-          </span>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {README_TEMPLATES.map((tpl) => {
-              const active = readmeConfig.templateId === tpl.id;
-              return (
-                <button
-                  key={tpl.id}
-                  type="button"
-                  onClick={() => onSelectTemplate(tpl.id)}
+              <div className="flex min-w-0 items-start gap-3">
+                <span
                   className={cn(
-                    "rounded-xl p-3 text-left transition",
-                    active
-                      ? "bg-accent ring-1 ring-primary"
-                      : "bg-muted/40 hover:bg-muted/70"
+                    "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold",
+                    isOpen
+                      ? "bg-[var(--accent)] text-[var(--on-accent)]"
+                      : "border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-muted)]"
                   )}
                 >
-                  <div className="text-xs font-semibold text-foreground">
-                    {tpl.name}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {tpl.description}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <FieldSet>
-          <FieldLegend variant="label" className="font-mono text-xs">
-            Optional README Sections
-          </FieldLegend>
-          <FieldGroup className="flex-row flex-wrap gap-x-6 gap-y-2.5">
-            {(
-              [
-                { key: "includeMarkers", label: "Auto Update Markers" },
-                { key: "includeStatsTable", label: "Telemetry Table" },
-                { key: "includeShareCard", label: "1280x640 Share Card" },
-              ] as const
-            ).map((opt) => (
-              <Field key={opt.key} orientation="horizontal" className="w-auto">
-                <Checkbox
-                  id={`opt-${opt.key}`}
-                  checked={readmeConfig[opt.key]}
-                  onCheckedChange={(checked) =>
-                    onUpdateField(opt.key, Boolean(checked))
-                  }
-                />
-                <FieldLabel
-                  htmlFor={`opt-${opt.key}`}
-                  className="text-xs font-normal"
-                >
-                  {opt.label}
-                </FieldLabel>
-              </Field>
-            ))}
-          </FieldGroup>
-        </FieldSet>
-
-        {readmeConfig.includeStatsTable && (
-          <Field>
-            <FieldLabel
-              htmlFor="telemetry-title-input"
-              className="font-mono text-xs"
-            >
-              Telemetry Table Title
-            </FieldLabel>
-            <Input
-              id="telemetry-title-input"
-              type="text"
-              value={readmeConfig.statsTableTitle}
-              onChange={(e) =>
-                onUpdateField("statsTableTitle", e.target.value)
-              }
-            />
-          </Field>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowRawEditor((v) => !v)}
-            className="w-fit px-0 font-mono text-xs text-muted-foreground hover:bg-transparent hover:text-foreground"
-          >
-            <FileText data-icon="inline-start" />
-            {showRawEditor
-              ? "Hide Full Raw README Override"
-              : "Inspect / Override Full Raw README.md"}
-          </Button>
-
-          {showRawEditor && (
-            <div className="overflow-hidden rounded-xl border border-slate-300 bg-white text-slate-900 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {DYNAMIC_TOKENS.map((t) => (
-                    <button
-                      key={t.token}
-                      type="button"
-                      onClick={() => insertToken(t.token)}
-                      className="rounded border border-slate-200 bg-white px-2 py-0.5 font-mono text-[10px] text-slate-800 hover:bg-slate-100"
-                    >
-                      {t.token}
-                    </button>
-                  ))}
+                  {sec.num}
+                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[16px] leading-6 font-semibold text-[var(--text)]">
+                    {sec.title}
+                  </span>
+                  <span className="text-[13px] leading-5 text-[var(--text-muted)]">
+                    {sec.description}
+                  </span>
                 </div>
-                {readmeConfig.rawOverride !== null && (
-                  <button
-                    type="button"
-                    onClick={() => onChangeRawMarkdown(null)}
-                    className="inline-flex items-center gap-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-[10px] text-slate-800 hover:bg-slate-100"
-                  >
-                    <RefreshCw className="size-3" />
-                    Resync Editor
-                  </button>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-0.5 text-[12px] font-medium text-[var(--text-muted)]">
+                  {sec.summary}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    "size-4 text-[var(--text-muted)] transition-transform duration-150",
+                    isOpen && "rotate-180 text-[var(--text)]"
+                  )}
+                />
+              </div>
+            </button>
+
+            {isOpen && (
+              <div className="border-t border-[var(--border)]">
+                {/* SECTION 1: Header and intro */}
+                {sec.num === 1 && (
+                  <div className="pt-5 min-[1800px]:pb-0 pb-5">
+                    <AdvancedMarkdownEditor
+                      value={readmeConfig.advancedProfileMarkdown}
+                      onChange={(next) =>
+                        onUpdateField("advancedProfileMarkdown", next)
+                      }
+                      creatureConfig={creatureConfig}
+                      onSyncFromForm={() => {
+                        onUpdateField(
+                          "advancedProfileMarkdown",
+                          buildGeneratedIntroFallback(
+                            creatureConfig,
+                            readmeConfig
+                          )
+                        );
+                        onFieldEdited("header");
+                      }}
+                      githubTheme={githubTheme}
+                      zoomMode={zoomMode}
+                      sharedFitZoom={sharedFitZoom}
+                      onMeasureFitZoom={onMeasureFitZoom}
+                      onUserEdit={() => onFieldEdited("header")}
+                    />
+                  </div>
+                )}
+
+                {/* SECTION 2: Tech stack */}
+                {sec.num === 2 && (
+                  <div className="flex flex-col gap-6 p-5 sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+                        Each card is a group of badges in your README. Drag
+                        badges between cards or use the arrows.
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {readmeConfig.savedOrganizedCards !== null && (
+                          <StudioButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              onUndoCombineStackCards();
+                              onFieldEdited("stack");
+                            }}
+                          >
+                            <Undo2 />
+                            <span>
+                              Undo combine (
+                              {readmeConfig.savedOrganizedCards.length})
+                            </span>
+                          </StudioButton>
+                        )}
+                        {readmeConfig.stackCards.length > 1 && (
+                          <StudioButton
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              onCombineStackCards();
+                              onFieldEdited("stack");
+                            }}
+                          >
+                            <LayoutGrid />
+                            <span>Combine all</span>
+                          </StudioButton>
+                        )}
+                        <StudioButton
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            const id = onAddStackCard(
+                              `Stack group ${readmeConfig.stackCards.length + 1}`
+                            );
+                            setSelectedCardId(id);
+                            onFieldEdited("stack");
+                          }}
+                        >
+                          <Plus />
+                          <span>Add card</span>
+                        </StudioButton>
+                      </div>
+                    </div>
+
+                    {/* Cards List */}
+                    <div className="flex flex-col gap-4">
+                      {readmeConfig.stackCards.map((card, cardIdx) => {
+                        const isSelected = card.id === activeCardId;
+                        const isDropping = dropCardId === card.id;
+                        const isVisible = card.visible !== false;
+                        const resolvedBadges = card.badgeIds
+                          .map((id) => badgeById.get(id))
+                          .filter((b): b is ReadmeBadge => Boolean(b));
+
+                        return (
+                          <div
+                            key={card.id}
+                            onClick={() => setSelectedCardId(card.id)}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setDropCardId(card.id);
+                            }}
+                            onDragLeave={() => {
+                              if (dropCardId === card.id) setDropCardId(null);
+                            }}
+                            onDrop={(e) => handleDropOnCard(e, card.id)}
+                            className={cn(
+                              "flex flex-col gap-4 rounded-[8px] border p-4 transition-colors duration-150",
+                              isDropping
+                                ? "border-dashed border-[var(--accent)] bg-[var(--accent-soft)]"
+                                : isSelected
+                                  ? "border-[var(--accent)] bg-[var(--surface)]"
+                                  : "border-[var(--border)] bg-[var(--surface-2)]",
+                              !isVisible && "opacity-75"
+                            )}
+                          >
+                            <div className="flex flex-wrap items-end justify-between gap-3">
+                              <div
+                                className="min-w-[200px] flex-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <StudioField
+                                  label="Heading (optional)"
+                                  htmlFor={`card-heading-${card.id}`}
+                                >
+                                  <StudioInput
+                                    id={`card-heading-${card.id}`}
+                                    value={card.title}
+                                    onFocus={() => setSelectedCardId(card.id)}
+                                    onChange={(e) => {
+                                      onRenameStackCard(
+                                        card.id,
+                                        e.target.value
+                                      );
+                                      onFieldEdited("stack");
+                                    }}
+                                    placeholder={
+                                      readmeConfig.stackCards.length === 1 &&
+                                      !card.title
+                                        ? "Combined tech stack (no heading)"
+                                        : "e.g. Languages & Frontend"
+                                    }
+                                  />
+                                </StudioField>
+                              </div>
+
+                              <div
+                                className="flex flex-wrap items-center gap-3"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Switch
+                                    id={`card-visible-${card.id}`}
+                                    size="sm"
+                                    checked={isVisible}
+                                    onCheckedChange={(checked) => {
+                                      onToggleStackCardVisibility(
+                                        card.id,
+                                        Boolean(checked)
+                                      );
+                                      onFieldEdited("stack");
+                                    }}
+                                  />
+                                  <label
+                                    htmlFor={`card-visible-${card.id}`}
+                                    className="cursor-pointer text-[13px] font-medium text-[var(--text)]"
+                                  >
+                                    Show in README
+                                  </label>
+                                </div>
+
+                                <span className="studio-mono inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-[12px] font-medium text-[var(--text-muted)]">
+                                  {resolvedBadges.length}
+                                </span>
+
+                                <div className="flex items-center gap-1">
+                                  <StudioButton
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={cardIdx === 0}
+                                    onClick={() => {
+                                      onReorderStackCards(
+                                        cardIdx,
+                                        cardIdx - 1
+                                      );
+                                      onFieldEdited("stack");
+                                    }}
+                                    aria-label="Move card up"
+                                    title="Move card up"
+                                  >
+                                    <ArrowUp />
+                                  </StudioButton>
+                                  <StudioButton
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={
+                                      cardIdx ===
+                                      readmeConfig.stackCards.length - 1
+                                    }
+                                    onClick={() => {
+                                      onReorderStackCards(
+                                        cardIdx,
+                                        cardIdx + 1
+                                      );
+                                      onFieldEdited("stack");
+                                    }}
+                                    aria-label="Move card down"
+                                    title="Move card down"
+                                  >
+                                    <ArrowDown />
+                                  </StudioButton>
+                                  <StudioButton
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={
+                                      readmeConfig.stackCards.length <= 1
+                                    }
+                                    onClick={() => {
+                                      onDeleteStackCard(card.id);
+                                      onFieldEdited("stack");
+                                    }}
+                                    aria-label="Delete card"
+                                    title="Delete card"
+                                    className="hover:text-[var(--danger)]"
+                                  >
+                                    <Trash2 />
+                                  </StudioButton>
+                                </div>
+                              </div>
+                            </div>
+
+                            {resolvedBadges.length === 0 ? (
+                              <p className="rounded-[6px] border border-dashed border-[var(--border)] py-4 text-center text-[13px] text-[var(--text-muted)]">
+                                Drag badges here or select skills from the
+                                library below.
+                              </p>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {resolvedBadges.map((badge, idx) => (
+                                  <div
+                                    key={`${card.id}-${badge.id}`}
+                                    draggable
+                                    onDragStart={(e) => {
+                                      e.stopPropagation();
+                                      const payload: DragPayload = {
+                                        badgeId: badge.id,
+                                        fromCardId: card.id,
+                                      };
+                                      setDragPayload(payload);
+                                      e.dataTransfer.setData(
+                                        "application/json",
+                                        JSON.stringify(payload)
+                                      );
+                                    }}
+                                    onDragEnd={() => {
+                                      setDragPayload(null);
+                                      setDropCardId(null);
+                                      setDragOverChip(null);
+                                    }}
+                                    onDragOver={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDragOverChip({
+                                        cardId: card.id,
+                                        badgeId: badge.id,
+                                      });
+                                    }}
+                                    onDrop={(e) =>
+                                      handleDropOnChip(e, card.id, badge.id)
+                                    }
+                                    className={cn(
+                                      "inline-flex min-h-[34px] cursor-grab items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2 py-1 text-[13px] font-medium text-[var(--text)] active:cursor-grabbing",
+                                      dragOverChip?.cardId === card.id &&
+                                        dragOverChip?.badgeId === badge.id &&
+                                        "border-[var(--accent)] ring-1 ring-[var(--accent)]"
+                                    )}
+                                  >
+                                    <GripVertical className="size-3.5 shrink-0 text-[var(--text-faint)]" />
+                                    <span
+                                      className="size-2.5 shrink-0 rounded-full border border-black/15"
+                                      style={{
+                                        backgroundColor: `#${badge.color}`,
+                                      }}
+                                    />
+                                    <span>{badge.label}</span>
+
+                                    <div className="ml-1 flex items-center gap-0.5 border-l border-[var(--border)] pl-1">
+                                      <button
+                                        type="button"
+                                        disabled={idx === 0}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onMoveBadgeAcrossCards(
+                                            badge.id,
+                                            card.id,
+                                            card.id,
+                                            resolvedBadges[idx - 1]?.id
+                                          );
+                                          onFieldEdited("stack");
+                                        }}
+                                        aria-label={`Move ${badge.label} left`}
+                                        title="Move left"
+                                        className="flex size-6 cursor-pointer items-center justify-center rounded-[4px] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-30"
+                                      >
+                                        <ChevronLeft className="size-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={
+                                          idx === resolvedBadges.length - 1
+                                        }
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const nextItem =
+                                            resolvedBadges[idx + 1];
+                                          if (nextItem) {
+                                            onMoveBadgeAcrossCards(
+                                              nextItem.id,
+                                              card.id,
+                                              card.id,
+                                              badge.id
+                                            );
+                                            onFieldEdited("stack");
+                                          }
+                                        }}
+                                        aria-label={`Move ${badge.label} right`}
+                                        title="Move right"
+                                        className="flex size-6 cursor-pointer items-center justify-center rounded-[4px] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] disabled:cursor-not-allowed disabled:opacity-30"
+                                      >
+                                        <ChevronRight className="size-3.5" />
+                                      </button>
+
+                                      {readmeConfig.stackCards.length > 1 && (
+                                        <select
+                                          aria-label={`Move ${badge.label} to another card`}
+                                          title="Move to card"
+                                          value={card.id}
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => {
+                                            const targetId = e.target.value;
+                                            if (targetId && targetId !== card.id) {
+                                              onMoveBadgeAcrossCards(
+                                                badge.id,
+                                                card.id,
+                                                targetId
+                                              );
+                                              onFieldEdited("stack");
+                                            }
+                                          }}
+                                          className="h-6 max-w-[78px] cursor-pointer rounded-[4px] border border-[var(--border)] bg-[var(--surface-2)] px-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--text)]"
+                                        >
+                                          {readmeConfig.stackCards.map(
+                                            (opt, optIdx) => (
+                                              <option
+                                                key={opt.id}
+                                                value={opt.id}
+                                              >
+                                                {opt.title.trim() ||
+                                                  `Card ${optIdx + 1}`}
+                                              </option>
+                                            )
+                                          )}
+                                        </select>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onRemoveBadgeFromCard(
+                                            card.id,
+                                            badge.id
+                                          );
+                                          onFieldEdited("stack");
+                                        }}
+                                        aria-label={`Remove ${badge.label}`}
+                                        title="Remove badge"
+                                        className="flex size-6 cursor-pointer items-center justify-center rounded-[4px] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--danger)]"
+                                      >
+                                        <X className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Two-Column Skills Library */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-[14px] font-semibold text-[var(--text)]">
+                            Skills library
+                          </h3>
+                          <span className="studio-mono inline-flex items-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-2 py-0.5 text-[12px] text-[var(--text-muted)]">
+                            {readmeConfig.badges.length}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor="adding-to-card-select"
+                            className="text-[13px] font-medium whitespace-nowrap text-[var(--text-muted)]"
+                          >
+                            Adding to:
+                          </label>
+                          <StudioSelect
+                            id="adding-to-card-select"
+                            value={activeCardId}
+                            onChange={(e) => setSelectedCardId(e.target.value)}
+                            className="w-48"
+                          >
+                            {readmeConfig.stackCards.map((c, idx) => (
+                              <option key={c.id} value={c.id}>
+                                {c.title.trim() || `Card ${idx + 1}`}
+                              </option>
+                            ))}
+                          </StudioSelect>
+                        </div>
+                      </div>
+
+                      <div className="grid overflow-hidden rounded-[8px] border border-[var(--border)] bg-[var(--surface)] md:grid-cols-[200px_1fr]">
+                        {/* Left Category Column */}
+                        <div className="flex max-h-72 flex-row gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--surface-2)] p-2 md:flex-col md:overflow-y-auto md:border-r md:border-b-0">
+                          <button
+                            type="button"
+                            onClick={() => setBadgeCategory("all")}
+                            className={cn(
+                              "flex shrink-0 cursor-pointer items-center justify-between gap-2 rounded-[6px] border px-2.5 py-1.5 text-left text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+                              badgeCategory === "all"
+                                ? "border-[var(--accent)] bg-[var(--surface)] text-[var(--accent)]"
+                                : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+                            )}
+                          >
+                            <span>All</span>
+                            <span className="studio-mono text-[11px] opacity-80">
+                              {categoryCounts.all ?? 0}
+                            </span>
+                          </button>
+
+                          {TECH_CATEGORIES_ORDER.map((cat) => (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => setBadgeCategory(cat)}
+                              className={cn(
+                                "flex shrink-0 cursor-pointer items-center justify-between gap-2 rounded-[6px] border px-2.5 py-1.5 text-left text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+                                badgeCategory === cat
+                                  ? "border-[var(--accent)] bg-[var(--surface)] text-[var(--accent)]"
+                                  : "border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+                              )}
+                            >
+                              <span className="truncate">
+                                {TECH_CATEGORY_LABELS[cat]}
+                              </span>
+                              <span className="studio-mono text-[11px] opacity-80">
+                                {categoryCounts[cat] ?? 0}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Right Search + Selectable Chips */}
+                        <div className="flex flex-col gap-3 p-3">
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                            <StudioInput
+                              aria-label="Search skills"
+                              value={badgeSearch}
+                              onChange={(e) => setBadgeSearch(e.target.value)}
+                              placeholder="Search React, Rust, Docker..."
+                              className="pl-9"
+                            />
+                          </div>
+
+                          <div className="flex max-h-56 flex-wrap content-start gap-1.5 overflow-y-auto">
+                            {filteredBadges.length === 0 ? (
+                              <p className="w-full py-6 text-center text-[13px] text-[var(--text-muted)]">
+                                No matching skills found. Create a custom badge
+                                below.
+                              </p>
+                            ) : (
+                              filteredBadges.map((badge) => {
+                                const inActiveCard = activeCardBadgeSet.has(
+                                  badge.id
+                                );
+                                return (
+                                  <button
+                                    key={badge.id}
+                                    type="button"
+                                    draggable
+                                    onDragStart={(e) => {
+                                      const payload: DragPayload = {
+                                        badgeId: badge.id,
+                                        fromCardId: null,
+                                      };
+                                      setDragPayload(payload);
+                                      e.dataTransfer.setData(
+                                        "application/json",
+                                        JSON.stringify(payload)
+                                      );
+                                    }}
+                                    onDragEnd={() => {
+                                      setDragPayload(null);
+                                      setDropCardId(null);
+                                    }}
+                                    onClick={() => {
+                                      if (!activeCardId) return;
+                                      if (inActiveCard) {
+                                        onRemoveBadgeFromCard(
+                                          activeCardId,
+                                          badge.id
+                                        );
+                                      } else {
+                                        onAddBadgeToCard(
+                                          activeCardId,
+                                          badge.id
+                                        );
+                                      }
+                                      onFieldEdited("stack");
+                                    }}
+                                    className={cn(
+                                      "inline-flex min-h-[32px] cursor-pointer items-center gap-1.5 rounded-[6px] border px-2.5 py-1 text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+                                      inActiveCard
+                                        ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                                        : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] hover:border-[var(--border-strong)]"
+                                    )}
+                                  >
+                                    {inActiveCard ? (
+                                      <Check className="size-3.5 shrink-0" />
+                                    ) : (
+                                      <Plus className="size-3.5 shrink-0 text-[var(--text-muted)]" />
+                                    )}
+                                    <span
+                                      className="size-2.5 shrink-0 rounded-full border border-black/15"
+                                      style={{
+                                        backgroundColor: `#${badge.color}`,
+                                      }}
+                                    />
+                                    <span>{badge.label}</span>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Custom Badge Form */}
+                    <form
+                      onSubmit={handleAddCustomBadge}
+                      className="flex flex-col gap-4 rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[14px] font-semibold text-[var(--text)]">
+                          Create custom badge
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] text-[var(--text-muted)]">
+                            Preview:
+                          </span>
+                          <img
+                            src={buildShieldBadgeUrl(customBadgePreview)}
+                            alt={customBadgePreview.label}
+                            className="h-6 w-auto"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-12">
+                        <div className="sm:col-span-4">
+                          <StudioField
+                            label="Name"
+                            htmlFor="custom-badge-name"
+                            error={newBadgeError}
+                          >
+                            <StudioInput
+                              id="custom-badge-name"
+                              value={newBadgeLabel}
+                              invalid={Boolean(newBadgeError)}
+                              onChange={(e) => {
+                                setNewBadgeLabel(e.target.value);
+                                if (newBadgeError) setNewBadgeError(null);
+                              }}
+                              placeholder="Zig, WebGPU..."
+                            />
+                          </StudioField>
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <StudioField
+                            label="Icon slug"
+                            htmlFor="custom-badge-slug"
+                            helper="simple-icons slug, for example python"
+                          >
+                            <StudioInput
+                              id="custom-badge-slug"
+                              monospace
+                              value={newBadgeLogo}
+                              onChange={(e) => setNewBadgeLogo(e.target.value)}
+                              placeholder="python"
+                            />
+                          </StudioField>
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <StudioField label="Color">
+                            <div className="flex items-start gap-2">
+                              <StudioColorSwatch
+                                label="Badge color"
+                                value={newBadgeColor}
+                                onChange={setNewBadgeColor}
+                              />
+                              <StudioButton type="submit" variant="primary">
+                                Add
+                              </StudioButton>
+                            </div>
+                          </StudioField>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* SECTION 3: Links and buttons (CTA) */}
+                {sec.num === 3 && (
+                  <div className="flex flex-col gap-6 p-5 sm:p-6">
+                    {/* Quick Add Platform Row */}
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[14px] font-medium text-[var(--text)]">
+                        Add a link
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {QUICK_ADD_PLATFORMS.map(({ label, template }) => (
+                          <StudioButton
+                            key={label}
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleQuickAddCta(template)}
+                          >
+                            <PlatformIconGlyph
+                              iconId={template.logo}
+                              className="size-3.5"
+                            />
+                            <span>{label}</span>
+                          </StudioButton>
+                        ))}
+                        <StudioButton
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => customLinkInputRef.current?.focus()}
+                        >
+                          <Plus />
+                          <span>Custom link</span>
+                        </StudioButton>
+                      </div>
+                    </div>
+
+                    {/* Existing Link Row Cards */}
+                    <div className="flex flex-col gap-3">
+                      {readmeConfig.actionLinks.map((link, idx) => {
+                        const urlError = validateLinkUrl(link.url);
+                        return (
+                          <div
+                            key={link.id}
+                            className="flex flex-col gap-3 rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] p-4"
+                          >
+                            <div className="grid gap-3 sm:grid-cols-12">
+                              <div className="flex items-end gap-3 sm:col-span-3">
+                                <label className="flex h-9 cursor-pointer items-center gap-2 text-[13px] font-medium text-[var(--text)]">
+                                  <input
+                                    type="checkbox"
+                                    checked={link.enabled}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...readmeConfig.actionLinks,
+                                      ];
+                                      updated[idx] = {
+                                        ...link,
+                                        enabled: e.target.checked,
+                                      };
+                                      onUpdateField("actionLinks", updated);
+                                      onFieldEdited("links");
+                                    }}
+                                    className="size-4 rounded-[4px] border-[var(--border)] accent-[var(--accent)]"
+                                  />
+                                  <span>Show</span>
+                                </label>
+
+                                <div className="flex-1">
+                                  <StudioField label="Platform">
+                                    <PlatformIconPickerButton
+                                      value={
+                                        link.logo ?? DEFAULT_PLATFORM_ICON_ID
+                                      }
+                                      compact
+                                      onChange={(iconId) => {
+                                        const updated = [
+                                          ...readmeConfig.actionLinks,
+                                        ];
+                                        updated[idx] = {
+                                          ...link,
+                                          logo: iconId,
+                                        };
+                                        onUpdateField("actionLinks", updated);
+                                        onFieldEdited("links");
+                                      }}
+                                    />
+                                  </StudioField>
+                                </div>
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <StudioField
+                                  label="Label"
+                                  htmlFor={`cta-label-${link.id}`}
+                                >
+                                  <StudioInput
+                                    id={`cta-label-${link.id}`}
+                                    value={link.label}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...readmeConfig.actionLinks,
+                                      ];
+                                      updated[idx] = {
+                                        ...link,
+                                        label: e.target.value,
+                                      };
+                                      onUpdateField("actionLinks", updated);
+                                      onFieldEdited("links");
+                                    }}
+                                    placeholder="GITHUB"
+                                  />
+                                </StudioField>
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <StudioField
+                                  label="Text"
+                                  htmlFor={`cta-text-${link.id}`}
+                                >
+                                  <StudioInput
+                                    id={`cta-text-${link.id}`}
+                                    value={link.valueText}
+                                    onChange={(e) => {
+                                      const updated = [
+                                        ...readmeConfig.actionLinks,
+                                      ];
+                                      updated[idx] = {
+                                        ...link,
+                                        valueText: e.target.value,
+                                      };
+                                      onUpdateField("actionLinks", updated);
+                                      onFieldEdited("links");
+                                    }}
+                                    placeholder="@username"
+                                  />
+                                </StudioField>
+                              </div>
+
+                              <div className="sm:col-span-3">
+                                <StudioField label="Color">
+                                  <StudioColorSwatch
+                                    label={`Color for ${link.label || "link"}`}
+                                    value={`#${link.color.replace("#", "").padEnd(6, "0").slice(0, 6)}`}
+                                    hideInput
+                                    onChange={(hex) => {
+                                      const updated = [
+                                        ...readmeConfig.actionLinks,
+                                      ];
+                                      updated[idx] = {
+                                        ...link,
+                                        color: hex
+                                          .replace("#", "")
+                                          .toUpperCase(),
+                                      };
+                                      onUpdateField("actionLinks", updated);
+                                      onFieldEdited("links");
+                                    }}
+                                  />
+                                </StudioField>
+                              </div>
+
+                              <div className="sm:col-span-12">
+                                <StudioField
+                                  label="URL"
+                                  htmlFor={`cta-url-${link.id}`}
+                                  error={urlError}
+                                >
+                                  <StudioInput
+                                    id={`cta-url-${link.id}`}
+                                    value={link.url}
+                                    invalid={Boolean(urlError)}
+                                    onChange={(e) => {
+                                      const nextUrl = e.target.value;
+                                      const detected =
+                                        detectPlatformFromUrl(nextUrl);
+                                      const updated = [
+                                        ...readmeConfig.actionLinks,
+                                      ];
+                                      updated[idx] = {
+                                        ...link,
+                                        url: nextUrl,
+                                        logo: detected.id,
+                                      };
+                                      onUpdateField("actionLinks", updated);
+                                      onFieldEdited("links");
+                                    }}
+                                    placeholder="https://github.com/username or mailto:..."
+                                  />
+                                </StudioField>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)] pt-3">
+                              <img
+                                src={buildActionLinkBadgeUrl(
+                                  link,
+                                  creatureConfig
+                                )}
+                                alt={link.label || "Link preview"}
+                                className="h-6 w-auto"
+                              />
+
+                              <div className="flex items-center gap-1">
+                                <StudioButton
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={idx === 0}
+                                  onClick={() => {
+                                    onUpdateField(
+                                      "actionLinks",
+                                      reorderItems(
+                                        readmeConfig.actionLinks,
+                                        idx,
+                                        idx - 1
+                                      )
+                                    );
+                                    onFieldEdited("links");
+                                  }}
+                                  aria-label="Move link up"
+                                  title="Move up"
+                                >
+                                  <ArrowUp />
+                                </StudioButton>
+                                <StudioButton
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={
+                                    idx === readmeConfig.actionLinks.length - 1
+                                  }
+                                  onClick={() => {
+                                    onUpdateField(
+                                      "actionLinks",
+                                      reorderItems(
+                                        readmeConfig.actionLinks,
+                                        idx,
+                                        idx + 1
+                                      )
+                                    );
+                                    onFieldEdited("links");
+                                  }}
+                                  aria-label="Move link down"
+                                  title="Move down"
+                                >
+                                  <ArrowDown />
+                                </StudioButton>
+                                <StudioButton
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    onUpdateField(
+                                      "actionLinks",
+                                      readmeConfig.actionLinks.filter(
+                                        (l) => l.id !== link.id
+                                      )
+                                    );
+                                    onFieldEdited("links");
+                                  }}
+                                  aria-label="Delete link"
+                                  title="Delete link"
+                                  className="hover:text-[var(--danger)]"
+                                >
+                                  <Trash2 />
+                                </StudioButton>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Custom Link Form */}
+                    <form
+                      onSubmit={handleAddActionLink}
+                      className="flex flex-col gap-4 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-[14px] font-semibold text-[var(--text)]">
+                          Custom link
+                        </span>
+                        <img
+                          src={buildActionLinkBadgeUrl(
+                            customLinkPreview,
+                            creatureConfig
+                          )}
+                          alt="Custom link preview"
+                          className="h-6 w-auto"
+                        />
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-12">
+                        <div className="sm:col-span-4">
+                          <StudioField label="Label" htmlFor="new-link-label">
+                            <StudioInput
+                              ref={customLinkInputRef}
+                              id="new-link-label"
+                              value={newLinkLabel}
+                              onChange={(e) => {
+                                setNewLinkLabel(e.target.value);
+                                if (newLinkError) setNewLinkError(null);
+                              }}
+                              placeholder="PORTFOLIO"
+                            />
+                          </StudioField>
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <StudioField label="Text" htmlFor="new-link-text">
+                            <StudioInput
+                              id="new-link-text"
+                              value={newLinkText}
+                              onChange={(e) => setNewLinkText(e.target.value)}
+                              placeholder="VISIT SITE"
+                            />
+                          </StudioField>
+                        </div>
+
+                        <div className="sm:col-span-4">
+                          <StudioField label="Platform">
+                            <PlatformIconPickerButton
+                              value={newLinkLogo}
+                              onChange={(iconId) => {
+                                setManualNewLinkLogo(true);
+                                setNewLinkLogo(iconId);
+                              }}
+                              className="w-full justify-between"
+                            />
+                          </StudioField>
+                        </div>
+
+                        <div className="sm:col-span-7">
+                          <StudioField
+                            label="URL"
+                            htmlFor="new-link-url"
+                            error={newLinkError}
+                          >
+                            <StudioInput
+                              id="new-link-url"
+                              value={newLinkUrl}
+                              invalid={Boolean(newLinkError)}
+                              onChange={(e) => {
+                                const nextUrl = e.target.value;
+                                setNewLinkUrl(nextUrl);
+                                if (newLinkError) setNewLinkError(null);
+                                const detected = detectPlatformFromUrl(nextUrl);
+                                if (!manualNewLinkLogo) {
+                                  setNewLinkLogo(detected.id);
+                                }
+                                if (!manualNewLinkColor) {
+                                  setNewLinkColor(`#${detected.hex}`);
+                                }
+                              }}
+                              placeholder="https://example.com or mailto:you@example.com"
+                            />
+                          </StudioField>
+                        </div>
+
+                        <div className="sm:col-span-5">
+                          <StudioField label="Color">
+                            <div className="flex items-start gap-2">
+                              <StudioColorSwatch
+                                label="Link badge color"
+                                value={newLinkColor}
+                                hideInput
+                                onChange={(hex) => {
+                                  setManualNewLinkColor(true);
+                                  setNewLinkColor(hex);
+                                }}
+                              />
+                              <StudioButton
+                                type="submit"
+                                variant="primary"
+                                className="flex-1"
+                              >
+                                Add link
+                              </StudioButton>
+                            </div>
+                          </StudioField>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* SECTION 4: Layout and structure */}
+                {sec.num === 4 && (
+                  <div className="flex flex-col gap-6 p-5 sm:p-6">
+                    <div className="flex flex-col gap-3">
+                      <span className="text-[14px] font-medium text-[var(--text)]">
+                        README structure preset
+                      </span>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {README_TEMPLATES.map((tpl) => {
+                          const active = readmeConfig.templateId === tpl.id;
+                          return (
+                            <button
+                              key={tpl.id}
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => {
+                                onSelectTemplate(tpl.id);
+                                onFieldEdited("creature");
+                              }}
+                              className={cn(
+                                "flex cursor-pointer items-start gap-3 rounded-[8px] border p-3.5 text-left transition-[color,background-color,border-color] duration-150",
+                                active
+                                  ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                                  : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
+                              )}
+                            >
+                              <StructurePresetWireframe id={tpl.id} />
+                              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[14px] font-semibold text-[var(--text)]">
+                                    {tpl.name}
+                                  </span>
+                                  {active && (
+                                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--on-accent)]">
+                                      <Check className="size-3 stroke-[2.5]" />
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[12px] leading-4 text-[var(--text-muted)]">
+                                  {tpl.description}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      <span className="text-[14px] font-medium text-[var(--text)]">
+                        Optional sections
+                      </span>
+
+                      <StudioSwitchRow
+                        id="opt-includeMarkers"
+                        checked={readmeConfig.includeMarkers}
+                        onCheckedChange={(checked) => {
+                          onUpdateField("includeMarkers", checked);
+                          onFieldEdited("creature");
+                        }}
+                        label="Auto update markers"
+                        description="Adds START/END comment markers so the 12 AM action can update only the creature block."
+                      />
+
+                      <StudioSwitchRow
+                        id="opt-includeStatsTable"
+                        checked={readmeConfig.includeStatsTable}
+                        onCheckedChange={(checked) => {
+                          onUpdateField("includeStatsTable", checked);
+                          onFieldEdited(checked ? "telemetry" : "creature");
+                        }}
+                        label="Telemetry table"
+                        description="Appends a live stats table showing stage, commits, and top languages."
+                      />
+
+                      {readmeConfig.includeStatsTable && (
+                        <div className="pl-2">
+                          <StudioField
+                            label="Telemetry table title"
+                            htmlFor="telemetry-title-input"
+                          >
+                            <StudioInput
+                              id="telemetry-title-input"
+                              value={readmeConfig.statsTableTitle}
+                              onChange={(e) => {
+                                onUpdateField(
+                                  "statsTableTitle",
+                                  e.target.value
+                                );
+                                onFieldEdited("telemetry");
+                              }}
+                            />
+                          </StudioField>
+                        </div>
+                      )}
+
+                      <StudioSwitchRow
+                        id="opt-includeShareCard"
+                        checked={readmeConfig.includeShareCard}
+                        onCheckedChange={(checked) => {
+                          onUpdateField("includeShareCard", checked);
+                          onFieldEdited(checked ? "share-card" : "creature");
+                        }}
+                        label="1280×640 share card"
+                        description="Embeds a 1280×640 social preview image beneath your creature."
+                      />
+                    </div>
+
+                    <StudioField label="Badges and CTA alignment">
+                      <StudioSegmentedControl<"left" | "center">
+                        ariaLabel="Badges and CTA alignment"
+                        value={readmeConfig.align}
+                        onChange={(alignVal) => {
+                          onUpdateField("align", alignVal);
+                          onFieldEdited("stack");
+                        }}
+                        options={[
+                          { value: "left", label: "Left" },
+                          { value: "center", label: "Center" },
+                        ]}
+                      />
+                    </StudioField>
+
+                    <StudioSliderField
+                      label="Creature banner width"
+                      value={readmeConfig.imageWidth}
+                      min={320}
+                      max={920}
+                      step={20}
+                      unit="px"
+                      onChange={(next) => {
+                        onUpdateField("imageWidth", next);
+                        onFieldEdited("creature");
+                      }}
+                      presetSlot={
+                        <StudioSegmentedControl<string>
+                          ariaLabel="Creature banner width presets"
+                          size="sm"
+                          value={
+                            [480, 640, 760, 920].includes(
+                              readmeConfig.imageWidth
+                            )
+                              ? String(readmeConfig.imageWidth)
+                              : "custom"
+                          }
+                          onChange={(val) => {
+                            const n = Number(val);
+                            if (Number.isFinite(n)) {
+                              onUpdateField("imageWidth", n);
+                              onFieldEdited("creature");
+                            }
+                          }}
+                          options={[
+                            { value: "480", label: "480" },
+                            { value: "640", label: "640" },
+                            { value: "760", label: "760" },
+                            { value: "920", label: "920" },
+                          ]}
+                        />
+                      }
+                    />
+                  </div>
+                )}
+
+                {/* SECTION 5: Advanced */}
+                {sec.num === 5 && (
+                  <div className="flex flex-col gap-4 p-5 sm:p-6">
+                    <div className="flex flex-col gap-1">
+                      <h3 className="text-[14px] font-semibold text-[var(--text)]">
+                        Inspect / override full raw README.md
+                      </h3>
+                      <p className="rounded-[6px] border border-[var(--warning)]/40 bg-[var(--surface-2)] px-3.5 py-2.5 text-[13px] leading-5 text-[var(--text)]">
+                        Editing this raw source overrides the generated README
+                        (dynamic values such as{" "}
+                        <code className="studio-mono text-[12px]">
+                          {"{{USERNAME}}"}
+                        </code>{" "}
+                        still resolve in preview and export). Changing any
+                        visual control in Sections 1–4 clears this override and
+                        returns to the generated README.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {DYNAMIC_TOKENS.map((t) => (
+                          <button
+                            key={t.token}
+                            type="button"
+                            onClick={() => insertRawToken(t.token)}
+                            className="studio-mono h-7 cursor-pointer rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-2 text-[12px] text-[var(--text)] transition-colors duration-150 hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
+                          >
+                            {t.token}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id="raw-wrap-lines"
+                            size="sm"
+                            checked={rawWrapLines}
+                            onCheckedChange={(c) => setRawWrapLines(Boolean(c))}
+                          />
+                          <label
+                            htmlFor="raw-wrap-lines"
+                            className="cursor-pointer text-[13px] font-medium text-[var(--text)]"
+                          >
+                            Wrap lines
+                          </label>
+                        </div>
+
+                        <StudioButton
+                          variant="secondary"
+                          size="sm"
+                          disabled={readmeConfig.rawOverride === null}
+                          onClick={() => {
+                            onChangeRawMarkdown(null);
+                            onFieldEdited("header");
+                          }}
+                        >
+                          <RefreshCw />
+                          <span>Reset to generated</span>
+                        </StudioButton>
+                      </div>
+                    </div>
+
+                    <div className="flex max-h-[380px] overflow-auto rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)]">
+                      <div
+                        aria-hidden="true"
+                        className="studio-mono shrink-0 border-r border-[var(--border)] bg-[var(--surface)] px-3 py-3 text-right text-[12px] leading-6 text-[var(--text-faint)] select-none"
+                      >
+                        {rawLines.map((_, idx) => (
+                          <div key={idx}>{idx + 1}</div>
+                        ))}
+                      </div>
+                      <textarea
+                        aria-label="Full raw README.md source"
+                        rows={Math.max(12, Math.min(20, rawLines.length))}
+                        value={currentRawText}
+                        onChange={(e) => {
+                          onChangeRawMarkdown(e.target.value);
+                          onFieldEdited("raw");
+                        }}
+                        spellCheck={false}
+                        wrap={rawWrapLines ? "soft" : "off"}
+                        className={cn(
+                          "studio-mono min-h-[280px] w-full flex-1 resize-y border-0 bg-transparent p-3 text-[13px] leading-6 text-[var(--text)] focus:outline-none",
+                          rawWrapLines ? "whitespace-pre-wrap" : "whitespace-pre overflow-x-auto"
+                        )}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
-              <Textarea
-                rows={10}
-                value={currentRawText}
-                onChange={(e) => onChangeRawMarkdown(e.target.value)}
-                spellCheck={false}
-                className="w-full rounded-none border-0 bg-white p-3.5 font-mono text-xs leading-relaxed text-slate-900 focus-visible:ring-0"
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <Separator />
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button type="button" variant="ghost" onClick={onPrevStep}>
-          <ArrowLeft data-icon="inline-start" />
-          Creature &amp; Style
-        </Button>
-        <Button type="button" onClick={onNextStep}>
-          Next: Enter Token &amp; Push
-          <ArrowRight data-icon="inline-end" />
-        </Button>
-      </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
+}
+
+function buildGeneratedIntroFallback(
+  creature: CreatureConfig,
+  readme: ReadmeConfig
+): string {
+  const safeUser = creature.username.trim() || "your-username";
+  const headline = readme.headline.replaceAll("{{USERNAME}}", safeUser).trim();
+  const bio = readme.bio.replaceAll("{{USERNAME}}", safeUser).trim();
+  const parts: string[] = [];
+  if (headline) parts.push(`### ${headline}`);
+  if (readme.subtitleTags.length > 0) {
+    parts.push(`**${readme.subtitleTags.join(" | ")}**`);
+  }
+  if (bio) parts.push(bio);
+  if (readme.ctaLine.trim()) parts.push(readme.ctaLine.trim());
+  return parts.join("\n\n");
 }

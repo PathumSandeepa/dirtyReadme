@@ -1,133 +1,117 @@
 # dynamic-readme-creature
 
-An **open-source**, sprite-based, **S-curve animated marine creature** and full **GitHub Profile README Studio** that evolves automatically with your GitHub contributions (`0 → 2,500+`), exports smooth **Animated WebP** and **Animated GIF** graphics, syncs **3, 5, or 7 programming language colors** directly onto your creature, restores your existing customizations on return, and stays updated at **12:00 AM** every day.
+An open-source, browser-based studio for generating S-curve animated pixel creatures (Animated WebP and GIF) and customizable GitHub profile READMEs.
+
+[![Open Source](https://img.shields.io/badge/OPEN_SOURCE-WELCOME-0F766E?style=for-the-badge&logo=github&logoColor=white)](https://github.com/PathumSandeepa/dynamic-readme-creature)
+[![Live Demo](https://img.shields.io/badge/LIVE_DEMO-GITHUB_PAGES-1F2328?style=for-the-badge)](https://pathumsandeepa.github.io/dynamic-readme-creature/)
+
+> **This is an open source project. Contributions, issues and ideas are welcome.**
+
+---
+
+## Live Demo
+
+Try the studio directly in your browser with no installation or backend account required:
+
+- **Live Studio:** [pathumsandeepa.github.io/dynamic-readme-creature](https://pathumsandeepa.github.io/dynamic-readme-creature/)
 
 <p align="center">
   <a href="https://pathumsandeepa.github.io/dynamic-readme-creature/">
-    <img src="./public/showcase/hero-tulkun.webp" width="760" alt="dynamic-readme-creature Stage 4 Mature Pixel Tulkun" />
+    <img src="./public/showcase/hero-tulkun.webp" width="760" alt="dynamic-readme-creature Stage 4 Mature Pixel Tulkun animated preview" />
   </a>
 </p>
 
-<p align="center">
-  <a href="https://pathumsandeepa.github.io/dynamic-readme-creature/">
-    <img src="https://img.shields.io/badge/LAUNCH_STUDIO-OPEN_APP-4F46E5?style=for-the-badge&logo=github&logoColor=white" alt="Open Interactive Studio" />
-  </a>
-  <img src="https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 16" />
-  <img src="https://img.shields.io/badge/ANIMATION-WEBP_%26_GIF-0EA5E9?style=for-the-badge" alt="Animated WebP and GIF" />
-  <img src="https://img.shields.io/badge/AUTO_EVOLVE-12AM_ACTION-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="12AM GitHub Action" />
-  <img src="https://img.shields.io/badge/LICENSE-MIT-16A34A?style=for-the-badge" alt="MIT License" />
-</p>
+*(UI walkthrough screenshots will be added to `docs/screenshots/` once captured from a connected browser session.)*
 
 ---
 
 ## Features
 
-- **Real S-Curve Pixel Animation (WebP & GIF):** Smooth per-pixel spine undulation, pectoral fin sweeps, and anatomical jellyfish bell contractions rendered directly to `creature.webp` and `creature.gif` (no CSS animation dependencies).
-- **In Water, Without Water, or Clear Canvas:** Switch between an animated underwater ocean backdrop (light rays, drifting currents, rising pixel bubbles), ambient wake motes without water, or a completely clear canvas with zero moving dots.
-- **Original Colors or Discrete 3, 5, or 7 Language Zones:** Keep original creature pixel artwork with automatically matched HUD swatches, or map `3`, `5`, or `7` customizable language colors directly onto distinct anatomical zones of the creature (no gradient wash).
-- **Commit-Driven Growth & Customizable Pixel HUD:** Automatically evolves across 5 clearly scaled stages (`0.46x` to `1.05x`) using **Current Year** or **All Time** GitHub contributions, with full HUD customization (`Pixel`, `Mono`, `Sans`, `Serif`, weight, size, color palette, and `Left`/`Center`/`Right` alignment).
-- **Multi-Card Drag & Drop Tech Stack Builder:** Starts with 3 organized tech cards and **202+ verified skills & badges** across 11 categories, with one-click **Combine All**, single-click **Undo Combine**, and real-time live README preview.
-- **Form Fields & Advanced Markdown Editor + Auto-Detected CTA Platform Icons:** Write your profile bio with guided form inputs or switch seamlessly to the built-in Markdown toolbar editor, add CTA buttons with **77+ curated platform icons** (`Medium`, `Hashnode`, `Substack`, `DEV.to`, `LinkedIn`, `YouTube`, etc.) automatically detected from your URL (with a default Website icon fallback), and resize the creature banner width dynamically (`320px` to `920px`).
-- **Automatic Config Restoration & Atomic Safe Push:** Returning users syncing their username automatically reload saved settings from `creature-config.json` or parse their existing `dynamic-readme-creature` markers in `README.md`. Publishing verifies `{username}/{username}` exists before accepting an in-memory PAT, pushes cleanly in a single atomic commit, and keeps **12:00 AM daily Node 24 GitHub Actions** (`actions/checkout@v7`, `actions/setup-node@v7`) in sync.
+- **Animated Pixel Creatures:** Choose between **Pixel Tulkun** (Side view and Top view) and **Pixel Jellyfish** (Pelagic view), animated via per-pixel S-curve kinematics.
+- **Evolution Stages from Commits:** Creature scale (`0.46x` to `1.05x`) and bioluminescent wake density evolve across 5 stages (`Calf`, `Young`, `Sub-adult`, `Mature`, `Elder`) using either **Current Year** or **All Time** GitHub contributions.
+- **Languages HUD & Palette Mapping:** Keep the original creature artwork or map `3`, `5`, or `7` editable programming language colors directly onto creature zones, with customizable HUD font (`Pixel`, `Mono`, `Sans`, `Serif`), weight, size, alignment, and custom label.
+- **Water & Background Modes:** Switch between **In water** (animated glow, light rays, and bubbles), **No water** (subtle wake motes only), or **Clear** canvas, with **Transparent** or **Custom color** backgrounds.
+- **Animated WebP, Animated GIF & Social Share Card:** Encode and download `creature.webp`, `creature.gif`, and a `1280x640` `share-card.png` directly in your browser.
+- **Rich README Editor & Templates:** Write your profile intro in a live GitHub-width (`848px`) WYSIWYG markdown editor with 10 starter templates and dynamic tokens (`{{USERNAME}}`, `{{CREATURE}}`, `{{STAGE}}`, `{{RANK}}`, `{{COMMITS}}`, `{{VIEW}}`, `{{LANGUAGES}}`), plus a raw `README.md` override mode.
+- **Multi-Card Tech Stack & CTA Links:** Group `202` built-in tech badges across 11 categories (or create custom badges) into reorderable, drag-and-drop cards, and add clickable CTA link badges with auto-detected platform icons.
+- **12:00 AM Auto-Evolve GitHub Action:** Optionally generate `.github/workflows/evolve-creature.yml`, `scripts/evolve-creature.mjs`, and `creature-config.json` to regenerate `creature.webp` and update `README.md` markers every midnight.
 
 ---
 
-## Selectable Pixel Creatures
+## How It Works
 
-| Creature | View Angles | Live Preview | Motion & Kinematics |
-| --- | :---: | :---: | --- |
-| **Pixel Tulkun**<br/>*Armored Leviathan* | `Side View` &amp; `Top View` | <img src="./public/showcase/creature-tulkun.webp" width="340" alt="Pixel Tulkun" /> | Continuous S-curve body swimming, rowing pectoral fins, and forked tail propulsion across both lateral and dorsal perspectives. |
-| **Pixel Jellyfish**<br/>*Bioluminescent Medusa* | Pelagic View | <img src="./public/showcase/creature-jellyfish.webp" width="340" alt="Pixel Jellyfish" /> | Asymmetric pulsing bell dome, forward jet-propulsion surge, and fluid S-curve undulating oral arms and filaments. |
-
----
-
-## Tulkun Camera Perspectives (`side` & `top`)
-
-| Perspective | Live Preview | Description |
-| --- | :---: | --- |
-| **Side View** | <img src="./public/showcase/view-side.webp" width="320" alt="Tulkun Side View" /> | Lateral S-curve swim highlighting the copper brow crest, pleated jaw, pectoral stroke, and tail wave. |
-| **Top View** | <img src="./public/showcase/view-top.webp" width="320" alt="Tulkun Top View" /> | Dorsal S-curve swim highlighting full symmetrical wingspan and glowing dorsal patterns. |
+1. **Connect:** Enter a GitHub username or profile URL to load public language weights, commit counts, and any existing `dynamic-readme-creature` configuration from `username/username`.
+2. **Repository:** Verify (or follow the 3-step guide to create) your public `username/username` GitHub profile repository.
+3. **Customize:** Configure your creature, colors, evolution source, HUD overlay, README intro, tech stack cards, CTA links, layout preset, and live GitHub Light/Dark preview.
+4. **Publish:** Paste a temporary Classic (`ghp_...`) or Fine-grained (`github_pat_...`) Personal Access Token to push atomically to your profile repo, or download `creature.webp`, `creature.gif`, and `README.md` manually.
 
 ---
 
-## Evolution Stages (`0 → 2,500+` Contributions)
+## Privacy and Security
 
-| Stage | Contributions | Live Preview | Upgrades |
-| --- | :---: | :---: | --- |
-| **Stage 1: Calf** | `0 to 149` | <img src="./public/showcase/stage-1.webp" width="260" alt="Stage 1 Calf" /> | Compact `0.46x` starter scale with smooth baseline S-curve glide. |
-| **Stage 2: Young** | `150 to 499` | <img src="./public/showcase/stage-2.webp" width="260" alt="Stage 2 Young" /> | `0.60x` scale with starter bioluminescent wake motes. |
-| **Stage 3: Sub-Adult** | `500 to 1,199` | <img src="./public/showcase/stage-3.webp" width="260" alt="Stage 3 Sub-Adult" /> | `0.74x` span with richer ambient wake stream. |
-| **Stage 4: Mature** | `1,200 to 2,499` | <img src="./public/showcase/stage-4.webp" width="260" alt="Stage 4 Mature" /> | `0.89x` mature span with dense glowing particle trail. |
-| **Stage 5: Elder** | `2,500+` | <img src="./public/showcase/stage-5.webp" width="260" alt="Stage 5 Elder" /> | Maximum `1.05x` colossus span and overcharged wake stream. |
+- **100% Browser-Side Execution:** Profile lookups use read-only requests to the public GitHub REST API (plus public contribution calendar totals) directly from your browser.
+- **In-Memory Tokens Only:** Personal Access Tokens entered on the Publish step stay strictly in React component memory for that tab. This static application never writes tokens to cookies, `localStorage`, `sessionStorage`, or any third-party server, and clears the token from memory immediately after a successful push.
+- **Minimal Scopes:** Classic tokens require `repo` (plus `workflow` if installing the 12:00 AM GitHub Action). Fine-grained tokens scoped to `username/username` require `Contents: Read and write` (plus `Workflows: Read and write` if installing the 12:00 AM GitHub Action).
 
 ---
 
-## Social Share Card (`1280×640`)
+## Tech Stack
 
-<p align="center">
-  <img src="./public/showcase/share-card.png" width="760" alt="dynamic-readme-creature 1280x640 social telemetry share card" />
-</p>
+- **Framework:** Next.js `16.4.6` (App Router, static export via `output: "export"`), React `19.3.0`, TypeScript `5`
+- **Styling & UI Primitives:** Tailwind CSS `4.3.3`, shadcn / `@base-ui/react`, `lucide-react`, `react-color-palette`
+- **Rich Text & Markdown:** TipTap (`@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-table`, `@tiptap/extension-list`, `@tiptap/extension-image`, `@tiptap/extension-text-align`)
+- **Media & Icons:** Browser Canvas + custom WebP RIFF/VP8L encoder, `gifenc` (GIF export), `simple-icons` (icon catalog generation), `sharp` (showcase & GitHub Action scripts)
 
 ---
 
-## Open-Source Contributing (Clone & Improve)
+## Getting Started
 
-`dynamic-readme-creature` is a **100% open-source** MIT-licensed project. Contributions, new pixel creatures, animation refinements, platform icon presets, and UI improvements are always welcome!
-
-### 1. Clone the repository
+Prerequisites: **Node.js 22+** and **pnpm** (`pnpm@12.21.0`).
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/PathumSandeepa/dynamic-readme-creature.git
 cd dynamic-readme-creature
-```
 
-### 2. Install dependencies & start locally
-
-> Uses **Node.js 22+** and **pnpm** (`corepack enable` if `pnpm` is not already installed).
-
-```bash
+# 2. Install dependencies
 pnpm install
+
+# 3. Start the local development server
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to test changes live in your browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. Project Structure
-
-```text
-src/
-├── domain/
-│   ├── creature/       # Creature entities, S-curve RGBA animation engine, palette mapping
-│   ├── profile/        # Tech stack catalog (200+ items), 77+ platform icons, README builder & parser
-│   └── automation/     # 12:00 AM GitHub Action & standalone WebP evolution script generator
-├── application/        # Studio state controller & returning-user repo hydration
-├── infrastructure/     # Browser WebP/GIF encoders, sprite loader & atomic GitHub API client
-└── presentation/       # Next.js studio UI components & react-color-palette pickers
-scripts/
-├── extract-sprites.mjs        # Extracts transparent RGBA sprites from assets/source/
-├── generate-platform-icons.mjs # Generates typed platform icon catalog from simple-icons
-└── generate-showcase.mjs      # Generates animated WebP & share-card assets in public/showcase/
-```
-
-### 4. Verify before opening a Pull Request
+### Available Scripts
 
 ```bash
-# Optional: re-extract sprites or regenerate README showcase WebP files
-node scripts/extract-sprites.mjs
-node scripts/generate-showcase.mjs
-
-# Typecheck, lint, and verify static GitHub Pages build
+# Run TypeScript typecheck and ESLint
 pnpm exec tsc --noEmit
 pnpm lint
-pnpm build
-```
 
-1. Fork the repository and create a feature branch (`git checkout -b feat/your-improvement`).
-2. Commit your changes and push to your fork.
-3. Open a Pull Request against `main` with screenshots or sample output if modifying animations or UI.
+# Build static production output into out/
+pnpm build
+
+# Start production server (for non-static testing)
+pnpm start
+
+# Build and publish out/ to GitHub Pages (gh-pages)
+pnpm deploy
+```
 
 ---
 
-## License
+## Contributing
 
-MIT © [PathumSandeepa](https://github.com/PathumSandeepa)
+Contributions, bug reports, new creature sprites, and UI improvements are welcome:
+
+1. Fork the repository and create a branch (`git checkout -b feat/your-change`).
+2. Keep changes focused and preserve existing functionality.
+3. Verify `pnpm exec tsc --noEmit`, `pnpm lint`, and `pnpm build` pass with zero errors.
+4. Open a pull request describing your change (and include screenshots for UI changes) or open an issue to discuss ideas first.
+
+---
+
+## Credits
+
+Created and maintained by [@PathumSandeepa](https://github.com/PathumSandeepa). Powered by Next.js, TipTap, Lucide Icons, `gifenc`, and Shields.io badges.

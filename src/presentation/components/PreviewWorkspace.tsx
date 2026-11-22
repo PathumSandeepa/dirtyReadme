@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Building2,
   Check,
@@ -8,16 +8,16 @@ import {
   Copy,
   Download,
   Edit3,
-  Eye,
   Link2,
   MapPin,
+  Moon,
   PanelLeft,
-  Share2,
   Sun,
 } from "lucide-react";
 import { cn } from "cn";
 import type { CameraView, CreatureConfig } from "@/domain/creature/entities";
 import {
+  derivePalette,
   getCreatureMeta,
   getEvolutionStage,
   getSpriteKey,
@@ -42,16 +42,36 @@ import {
   exportShareCardPngBlob,
 } from "@/infrastructure/browser/webpEncoder";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { useDebouncedValue } from "../studio/hooks/useDebouncedValue";
+import {
+  ScaledReadmeViewport,
+  type ReadmeZoomMode,
+} from "../studio/ui/ScaledReadmeViewport";
+import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
 import { CreatureAnimatedView } from "./CreatureAnimatedView";
 import { EvolutionPanel } from "./EvolutionPanel";
 import { AdvancedMarkdownPreview } from "./MarkdownPreviewRenderer";
 import { ShareCardCanvasView } from "./ShareCardCanvasView";
 
-export type PreviewTab = "profile" | "share-card" | "stages";
+export type PreviewTab = "creature" | "profile" | "share-card" | "stages";
+export type PreviewRegion =
+  | "header"
+  | "stack"
+  | "links"
+  | "creature"
+  | "telemetry"
+  | "share-card"
+  | "raw";
+
 type CodeSubTab = "visual" | "markdown";
+
+export interface PreviewScrollRequest {
+  region: PreviewRegion;
+  seq: number;
+  forceScroll?: boolean;
+}
 
 interface PreviewWorkspaceProps {
   editorTab: "creature" | "readme";
@@ -61,6 +81,15 @@ interface PreviewWorkspaceProps {
   readmeConfig: ReadmeConfig;
   readmeMarkdown: string;
   snapshot: GitHubProfileSnapshot | null;
+  githubTheme: "light" | "dark";
+  onGithubThemeChange: (theme: "light" | "dark") => void;
+  zoomMode: ReadmeZoomMode;
+  onZoomModeChange: (mode: ReadmeZoomMode) => void;
+  sharedFitZoom?: number;
+  onMeasureFitZoom?: (zoom: number) => void;
+  followEdits?: boolean;
+  onFollowEditsChange?: (follow: boolean) => void;
+  scrollRequest?: PreviewScrollRequest | null;
   onEditReadme: () => void;
   onOpenAutoEvolve: () => void;
   onSelectView: (view: CameraView) => void;
@@ -74,20 +103,71 @@ export function PreviewWorkspace({
   readmeConfig,
   readmeMarkdown,
   snapshot,
+  githubTheme,
+  onGithubThemeChange,
+  zoomMode,
+  onZoomModeChange,
+  sharedFitZoom,
+  onMeasureFitZoom,
+  followEdits = true,
+  onFollowEditsChange,
+  scrollRequest,
   onEditReadme,
   onOpenAutoEvolve,
   onSelectView,
 }: PreviewWorkspaceProps) {
   const [codeSubTab, setCodeSubTab] = useState<CodeSubTab>("visual");
-  const [githubTheme, setGithubTheme] = useState<"dark" | "light">("dark");
-  const [sidebarOverride, setSidebarOverride] = useState<boolean | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [localFitZoom, setLocalFitZoom] = useState(1);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webpBusy, setWebpBusy] = useState(false);
   const [gifBusy, setGifBusy] = useState(false);
   const [shareBusy, setShareBusy] = useState(false);
+  const [flashedRegion, setFlashedRegion] = useState<PreviewRegion | null>(
+    null
+  );
 
-  const showSidebar =
-    sidebarOverride !== null ? sidebarOverride : editorTab === "creature";
+  const previewSurfaceRef = useRef<HTMLDivElement | null>(null);
+
+  const debouncedMarkdown = useDebouncedValue(readmeMarkdown, 100);
+  const debouncedIntroMarkdown = useDebouncedValue(
+    readmeConfig.advancedProfileMarkdown,
+    100
+  );
+  const debouncedRawOverride = useDebouncedValue(
+    readmeConfig.rawOverride,
+    100
+  );
+
+  const activePreviewTab: PreviewTab =
+    editorTab === "readme" ? "profile" : previewTab;
+
+  useEffect(() => {
+    if (!scrollRequest) return;
+    if (!scrollRequest.forceScroll && !followEdits) return;
+    const container = previewSurfaceRef.current;
+    if (!container) return;
+
+    const targetRegion: PreviewRegion =
+      container.querySelector<HTMLElement>(
+        `[data-preview-section="${scrollRequest.region}"]`
+      )
+        ? scrollRequest.region
+        : "creature";
+
+    const target = container.querySelector<HTMLElement>(
+      `[data-preview-section="${targetRegion}"]`
+    );
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    setFlashedRegion(targetRegion);
+    const timer = window.setTimeout(() => {
+      setFlashedRegion((curr) => (curr === targetRegion ? null : curr));
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, [scrollRequest, followEdits]);
 
   const stage = getEvolutionStage(creatureConfig.commits);
   const meta = getCreatureMeta(creatureConfig.creature);
@@ -95,13 +175,19 @@ export function PreviewWorkspace({
     creatureConfig.creature,
     creatureConfig.view
   );
+  const viewShort =
+    creatureConfig.creature === "jellyfish"
+      ? "Pelagic"
+      : creatureConfig.view === "top"
+        ? "Top"
+        : "Side";
   const waterMode = resolveWaterMode(creatureConfig);
   const waterStatusLabel =
     waterMode === "water"
-      ? "In Water"
+      ? "In water"
       : waterMode === "no-water"
-        ? "No Water"
-        : "Clear BG";
+        ? "No water"
+        : "Clear background";
   const visibleLanguages = getVisibleLanguages(creatureConfig);
   const username = creatureConfig.username.trim() || "your-username";
   const badgeById = new Map(readmeConfig.badges.map((b) => [b.id, b]));
@@ -109,6 +195,7 @@ export function PreviewWorkspace({
     (l) => l.enabled && l.label.trim()
   );
 
+  const derived = derivePalette(creatureConfig);
   const displayName = snapshot?.displayName || username;
   const statusBio = snapshot?.bio || "";
   const location = snapshot?.location || "";
@@ -165,174 +252,196 @@ export function PreviewWorkspace({
   const isMinimal = readmeConfig.templateId === "minimal-header";
   const isMarkerOnly = readmeConfig.templateId === "auto-evolve-block";
   const isAlignedLeft = readmeConfig.align === "left";
+  const bannerWidthPx = Math.min(
+    848,
+    Math.max(320, readmeConfig.imageWidth || 760)
+  );
+  const intrinsicWidth = showSidebar ? 1200 : 880;
+  const effectiveFitZoom =
+    !showSidebar && editorTab === "readme" && sharedFitZoom !== undefined
+      ? sharedFitZoom
+      : localFitZoom;
+  const zoomPct = Math.round(effectiveFitZoom * 100);
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground sm:p-5">
-      {/* Unified Action Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3.5">
-        <div className="flex flex-col">
-          <h2 className="font-mono text-sm font-semibold text-foreground">
-            {editorTab === "readme"
-              ? `Live README Preview · ${meta.name}`
-              : `Live Creature Canvas · ${meta.name}`}
+    <div
+      className={cn(
+        "flex flex-col gap-4 rounded-[8px] border border-[var(--border)] bg-[var(--surface)]",
+        editorTab === "readme"
+          ? "p-4 sm:p-5 min-[1800px]:px-0 min-[1800px]:pb-0"
+          : "p-4 sm:p-5"
+      )}
+    >
+      {/* Row 1: Preview Title + Export Actions */}
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-4",
+          editorTab === "readme" && "min-[1800px]:px-5"
+        )}
+      >
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-[16px] leading-6 font-semibold text-[var(--text)]">
+            Live preview
           </h2>
-          <p className="font-mono text-[11px] text-muted-foreground">
-            Stage {stage.stage} ({stage.rank}) · {viewLabel} ·{" "}
+          <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+            {meta.name} · Stage {stage.stage} · {viewShort} ·{" "}
             {waterStatusLabel}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
+        <div className="flex flex-wrap items-center gap-2">
+          <StudioButton
+            variant="secondary"
             size="sm"
             disabled={webpBusy}
             onClick={handleExportWebP}
           >
-            <Download data-icon="inline-start" />
-            {webpBusy ? "WebP..." : "WebP"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
+            <Download />
+            <span>{webpBusy ? "Exporting WebP..." : "Download WebP"}</span>
+          </StudioButton>
+
+          <StudioButton
+            variant="secondary"
             size="sm"
             disabled={gifBusy}
             onClick={handleExportGif}
           >
-            <Download data-icon="inline-start" />
-            {gifBusy ? "GIF..." : "GIF"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
+            <Download />
+            <span>{gifBusy ? "Exporting GIF..." : "Download GIF"}</span>
+          </StudioButton>
+
+          <StudioButton
+            variant="secondary"
             size="sm"
             onClick={() => handleCopy("readme", readmeMarkdown)}
           >
-            {copiedId === "readme" ? (
-              <Check data-icon="inline-start" />
-            ) : (
-              <Copy data-icon="inline-start" />
-            )}
-            {copiedId === "readme" ? "Copied" : "Copy"}
-          </Button>
-          <Button
-            type="button"
+            {copiedId === "readme" ? <Check /> : <Copy />}
+            <span>{copiedId === "readme" ? "Copied" : "Copy"}</span>
+          </StudioButton>
+
+          <StudioButton
             variant="secondary"
             size="sm"
             onClick={onOpenAutoEvolve}
           >
-            <Clock data-icon="inline-start" />
-            12AM Action
-          </Button>
+            <Clock />
+            <span>12 AM Action</span>
+          </StudioButton>
         </div>
       </div>
 
-      {/* Interactive Creature Stage (Tab 1) */}
-      {editorTab === "creature" && (
-        <div
-          className={cn(
-            "overflow-hidden rounded-lg p-3 sm:p-4",
-            creatureConfig.backgroundMode === "transparent"
-              ? "transparency-grid"
-              : "bg-muted/20"
-          )}
-        >
-          <div className="mx-auto max-w-2xl">
-            <CreatureAnimatedView config={creatureConfig} className="w-full" />
+      {/* Row 2: Tabs / README Toolbar */}
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-2.5",
+          editorTab === "readme" && "min-[1800px]:px-5"
+        )}
+      >
+        {editorTab === "creature" ? (
+          <div className="w-full sm:w-auto sm:min-w-[340px]">
+            <StudioSegmentedControl<PreviewTab>
+              ariaLabel="Preview mode"
+              size="sm"
+              value={activePreviewTab}
+              onChange={onPreviewTabChange}
+              options={[
+                { value: "creature", label: "Creature" },
+                { value: "profile", label: "README" },
+                { value: "share-card", label: "Social card" },
+                { value: "stages", label: "Stages" },
+              ]}
+            />
           </div>
-        </div>
-      )}
-
-      {/* Preview Mode Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Tabs
-          value={previewTab}
-          onValueChange={(val) => onPreviewTabChange(val as PreviewTab)}
-        >
-          <TabsList>
-            <TabsTrigger value="profile" className="gap-1.5 font-mono text-xs">
-              <Eye className="size-3.5" />
-              README
-            </TabsTrigger>
-            <TabsTrigger
-              value="share-card"
-              className="gap-1.5 font-mono text-xs"
+        ) : (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="follow-edits-switch"
+              size="sm"
+              checked={followEdits}
+              onCheckedChange={(checked) =>
+                onFollowEditsChange?.(Boolean(checked))
+              }
+            />
+            <label
+              htmlFor="follow-edits-switch"
+              className="cursor-pointer text-[13px] font-medium text-[var(--text)]"
             >
-              <Share2 className="size-3.5" />
-              Social Card
-            </TabsTrigger>
-            <TabsTrigger value="stages" className="gap-1.5 font-mono text-xs">
-              <Clock className="size-3.5" />
-              Stages
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+              Follow my edits
+            </label>
+          </div>
+        )}
 
-        {previewTab === "profile" && (
-          <div className="flex flex-wrap items-center gap-1">
-            <div className="inline-flex rounded-lg bg-muted/70 p-0.5">
-              <button
-                type="button"
-                onClick={() => setCodeSubTab("visual")}
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition",
-                  codeSubTab === "visual"
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Visual
-              </button>
-              <button
-                type="button"
-                onClick={() => setCodeSubTab("markdown")}
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition",
-                  codeSubTab === "markdown"
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                Markdown
-              </button>
+        {activePreviewTab === "profile" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="w-40">
+              <StudioSegmentedControl<CodeSubTab>
+                ariaLabel="README view format"
+                size="sm"
+                value={codeSubTab}
+                onChange={setCodeSubTab}
+                options={[
+                  { value: "visual", label: "Visual" },
+                  { value: "markdown", label: "Markdown" },
+                ]}
+              />
             </div>
 
             {codeSubTab === "visual" && (
               <>
-                <Button
-                  type="button"
-                  variant="ghost"
+                <StudioButton
+                  variant="secondary"
                   size="sm"
-                  onClick={() => setSidebarOverride(!showSidebar)}
-                  title="Toggle GitHub profile sidebar"
+                  active={showSidebar}
+                  onClick={() => setShowSidebar((prev) => !prev)}
                 >
-                  <PanelLeft data-icon="inline-start" />
-                  Sidebar
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setGithubTheme((prev) =>
-                      prev === "dark" ? "light" : "dark"
-                    )
-                  }
-                >
-                  <Sun data-icon="inline-start" />
-                  {githubTheme === "dark" ? "Dark" : "Light"}
-                </Button>
+                  <PanelLeft />
+                  <span>Sidebar</span>
+                </StudioButton>
+
+                <div className="w-36">
+                  <StudioSegmentedControl<"light" | "dark">
+                    ariaLabel="GitHub preview theme"
+                    size="sm"
+                    value={githubTheme}
+                    onChange={onGithubThemeChange}
+                    options={[
+                      { value: "light", label: "Light", icon: <Sun /> },
+                      { value: "dark", label: "Dark", icon: <Moon /> },
+                    ]}
+                  />
+                </div>
+
+                {(effectiveFitZoom < 0.99 || zoomMode === "100") && (
+                  <div className="flex items-center gap-1.5">
+                    {showSidebar && (
+                      <span className="text-[12px] text-[var(--text-muted)]">
+                        Profile view, scaled {zoomMode === "100" ? 100 : zoomPct}%
+                      </span>
+                    )}
+                    <div className="w-36">
+                      <StudioSegmentedControl<ReadmeZoomMode>
+                        ariaLabel="README preview zoom"
+                        size="sm"
+                        value={zoomMode}
+                        onChange={onZoomModeChange}
+                        options={[
+                          { value: "fit", label: `Fit ${zoomPct}%` },
+                          { value: "100", label: "100%" },
+                        ]}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {editorTab === "creature" && (
-                  <Button
-                    type="button"
+                  <StudioButton
                     variant="secondary"
                     size="sm"
                     onClick={onEditReadme}
                   >
-                    <Edit3 data-icon="inline-start" />
-                    Edit README
-                  </Button>
+                    <Edit3 />
+                    <span>Edit README</span>
+                  </StudioButton>
                 )}
               </>
             )}
@@ -340,414 +449,427 @@ export function PreviewWorkspace({
         )}
       </div>
 
-      {/* Live GitHub Profile Preview */}
-      {previewTab === "profile" && codeSubTab === "visual" && (
+      {/* Tab Content: Creature */}
+      {activePreviewTab === "creature" && (
         <div
           className={cn(
-            "rounded-xl border p-4 transition sm:p-5",
-            githubTheme === "dark"
-              ? "border-[#30363d] bg-[#0d1117] text-[#e6edf3]"
-              : "border-[#d0d7de] bg-white text-[#1f2328]"
+            "flex items-center justify-center rounded-[8px] border border-[var(--border)] p-4 sm:p-6",
+            creatureConfig.backgroundMode === "transparent" &&
+              "transparency-grid"
           )}
+          style={
+            creatureConfig.backgroundMode === "custom"
+              ? { backgroundColor: derived.background }
+              : undefined
+          }
         >
-          <div
-            className={cn(
-              "grid gap-6",
-              showSidebar ? "lg:grid-cols-[180px_1fr]" : "grid-cols-1"
-            )}
-          >
-            {showSidebar && (
-              <aside className="flex flex-col gap-3">
-                {snapshot?.avatarUrl ? (
-                  <img
-                    src={snapshot.avatarUrl}
-                    alt={displayName}
-                    className={cn(
-                      "size-20 rounded-full border object-cover",
-                      githubTheme === "dark"
-                        ? "border-[#30363d]"
-                        : "border-[#d0d7de]"
-                    )}
-                  />
-                ) : (
-                  <div
-                    className={cn(
-                      "flex size-20 items-center justify-center rounded-full border font-mono text-lg font-bold",
-                      githubTheme === "dark"
-                        ? "border-[#30363d] bg-[#161b22] text-[#e6edf3]"
-                        : "border-[#d0d7de] bg-[#f6f8fa] text-[#1f2328]"
-                    )}
-                  >
-                    {displayName.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-
-                <div>
-                  <div className="text-base font-semibold leading-tight">
-                    {displayName}
-                  </div>
-                  <div
-                    className={cn(
-                      "text-xs",
-                      githubTheme === "dark"
-                        ? "text-[#8b949e]"
-                        : "text-[#656d76]"
-                    )}
-                  >
-                    @{username}
-                  </div>
-                </div>
-
-                {statusBio && (
-                  <p className="text-xs leading-relaxed opacity-90">
-                    {resolveDynamicTokens(statusBio, creatureConfig)}
-                  </p>
-                )}
-
-                <div
-                  className={cn(
-                    "flex flex-col gap-1.5 text-xs",
-                    githubTheme === "dark"
-                      ? "text-[#8b949e]"
-                      : "text-[#656d76]"
-                  )}
-                >
-                  {company && (
-                    <div className="flex items-center gap-2">
-                      <Building2 className="size-3.5 shrink-0" />
-                      <span className="truncate">{company}</span>
-                    </div>
-                  )}
-                  {location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="size-3.5 shrink-0" />
-                      <span className="truncate">{location}</span>
-                    </div>
-                  )}
-                  {website && (
-                    <div className="flex items-center gap-2">
-                      <Link2 className="size-3.5 shrink-0" />
-                      <span className="truncate text-[#2f81f7]">
-                        {website.replace(/^https?:\/\//, "")}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </aside>
-            )}
-
-            <div className="min-w-0">
-              <div
-                className={cn(
-                  "mb-4 flex items-center justify-between border-b pb-2.5 text-xs",
-                  githubTheme === "dark"
-                    ? "border-[#30363d] text-[#8b949e]"
-                    : "border-[#d0d7de] text-[#656d76]"
-                )}
-              >
-                <span className="font-mono">{username} / README.md</span>
-                <span className="font-mono">
-                  {meta.name} · Stage {stage.stage}
-                </span>
-              </div>
-
-              {readmeConfig.rawOverride !== null ? (
-                <pre
-                  className={cn(
-                    "max-h-[420px] overflow-auto rounded-lg border p-4 font-mono text-xs leading-relaxed",
-                    githubTheme === "dark"
-                      ? "border-[#30363d] bg-[#161b22] text-[#e6edf3]"
-                      : "border-[#d0d7de] bg-[#f6f8fa] text-[#1f2328]"
-                  )}
-                >
-                  {readmeConfig.rawOverride}
-                </pre>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {!isMarkerOnly && (
-                    <>
-                      {readmeConfig.advancedProfileMarkdown.trim() && (
-                        <AdvancedMarkdownPreview
-                          markdown={resolveDynamicTokens(
-                            readmeConfig.advancedProfileMarkdown,
-                            creatureConfig
-                          )}
-                          isDark={githubTheme === "dark"}
-                        />
-                      )}
-
-                      {!isMinimal && (
-                        <div className="flex flex-col gap-3">
-                          {readmeConfig.stackCards.map((card) => {
-                            const cardBadges = card.badgeIds
-                              .map((id) => badgeById.get(id))
-                              .filter((b): b is ReadmeBadge =>
-                                Boolean(b && b.label.trim())
-                              );
-                            if (cardBadges.length === 0) return null;
-                            return (
-                              <div
-                                key={card.id}
-                                className="flex flex-col gap-1.5"
-                              >
-                                {card.title.trim() && (
-                                  <h4
-                                    className={cn(
-                                      "text-xs font-semibold uppercase tracking-wide opacity-80",
-                                      isAlignedLeft
-                                        ? "text-left"
-                                        : "text-center"
-                                    )}
-                                  >
-                                    {card.title}
-                                  </h4>
-                                )}
-                                <div
-                                  className={cn(
-                                    "flex flex-wrap gap-1.5",
-                                    isAlignedLeft
-                                      ? "justify-start"
-                                      : "justify-center"
-                                  )}
-                                >
-                                  {cardBadges.map((badge) => (
-                                    <img
-                                      key={`${card.id}-${badge.id}`}
-                                      src={buildShieldBadgeUrl(badge)}
-                                      alt={badge.label}
-                                      className="h-6 rounded"
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {!isMinimal && enabledLinks.length > 0 && (
-                        <div
-                          className={cn(
-                            "flex flex-wrap gap-2",
-                            isAlignedLeft ? "justify-start" : "justify-center"
-                          )}
-                        >
-                          {enabledLinks.map((link) => {
-                            const href = resolveDynamicTokens(
-                              link.url,
-                              creatureConfig
-                            );
-                            return (
-                              <a
-                                key={link.id}
-                                href={href}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                <img
-                                  src={buildActionLinkBadgeUrl(
-                                    link,
-                                    creatureConfig
-                                  )}
-                                  alt={link.label}
-                                  className="h-6 rounded transition hover:opacity-85"
-                                />
-                              </a>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {(() => {
-                    const bannerWidthPercent = Math.min(
-                      100,
-                      Math.max(35, (readmeConfig.imageWidth / 920) * 100)
-                    );
-                    return (
-                      <>
-                        <div className="flex justify-center">
-                          <div style={{ width: `${bannerWidthPercent}%` }}>
-                            <CreatureAnimatedView
-                              config={creatureConfig}
-                              className="w-full"
-                            />
-                          </div>
-                        </div>
-
-                        {!isMarkerOnly &&
-                          !isMinimal &&
-                          readmeConfig.includeStatsTable && (
-                            <div className="pt-2 text-left">
-                              <h3 className="mb-2 text-sm font-semibold">
-                                {resolveDynamicTokens(
-                                  readmeConfig.statsTableTitle ||
-                                    "Telemetry Snapshot",
-                                  creatureConfig
-                                )}
-                              </h3>
-                              <div
-                                className={cn(
-                                  "overflow-hidden rounded-lg border text-xs",
-                                  githubTheme === "dark"
-                                    ? "border-[#30363d]"
-                                    : "border-[#d0d7de]"
-                                )}
-                              >
-                                <table className="w-full border-collapse">
-                                  <thead>
-                                    <tr
-                                      className={
-                                        githubTheme === "dark"
-                                          ? "bg-[#161b22]"
-                                          : "bg-[#f6f8fa]"
-                                      }
-                                    >
-                                      <th className="px-3 py-2 text-left font-medium">
-                                        Metric
-                                      </th>
-                                      <th className="px-3 py-2 text-left font-medium">
-                                        Value
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody
-                                    className={cn(
-                                      "divide-y",
-                                      githubTheme === "dark"
-                                        ? "divide-[#30363d]"
-                                        : "divide-[#d0d7de]"
-                                    )}
-                                  >
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Creature Model
-                                      </td>
-                                      <td className="px-3 py-1.5 font-medium">
-                                        {meta.name} ({viewLabel})
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Evolution Stage
-                                      </td>
-                                      <td className="px-3 py-1.5 font-medium">
-                                        Stage {stage.stage}: {stage.rank}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Contributions
-                                      </td>
-                                      <td className="px-3 py-1.5 font-mono">
-                                        {creatureConfig.commits.toLocaleString(
-                                          "en-US"
-                                        )}
-                                      </td>
-                                    </tr>
-                                    <tr>
-                                      <td className="px-3 py-1.5 opacity-80">
-                                        Top Stack ({visibleLanguages.length})
-                                      </td>
-                                      <td className="px-3 py-1.5">
-                                        {visibleLanguages
-                                          .map((l) => l.name)
-                                          .join(" · ")}
-                                      </td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          )}
-
-                        {!isMarkerOnly &&
-                          !isMinimal &&
-                          readmeConfig.includeShareCard && (
-                            <div className="flex justify-center">
-                              <div
-                                style={{ width: `${bannerWidthPercent}%` }}
-                                className={cn(
-                                  "overflow-hidden rounded-lg border",
-                                  githubTheme === "dark"
-                                    ? "border-[#30363d]"
-                                    : "border-[#d0d7de]"
-                                )}
-                              >
-                                <ShareCardCanvasView
-                                  config={creatureConfig}
-                                  className="w-full"
-                                />
-                              </div>
-                            </div>
-                          )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
+          <div className="w-full max-w-3xl">
+            <CreatureAnimatedView config={creatureConfig} className="w-full" />
           </div>
         </div>
       )}
 
-      {previewTab === "profile" && codeSubTab === "markdown" && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-xs text-muted-foreground">
+      {/* Tab Content: README Visual */}
+      {activePreviewTab === "profile" && codeSubTab === "visual" && (
+        <div ref={previewSurfaceRef}>
+          <ScaledReadmeViewport
+            intrinsicWidth={intrinsicWidth}
+            zoomMode={zoomMode}
+            overrideFitZoom={
+              !showSidebar && editorTab === "readme" ? sharedFitZoom : undefined
+            }
+            onFitZoomChange={(z) => {
+              setLocalFitZoom(z);
+              if (!showSidebar) {
+                onMeasureFitZoom?.(z);
+              }
+            }}
+          >
+            <div
+              data-gh-theme={githubTheme}
+              className={cn(
+                "grid items-start",
+                showSidebar
+                  ? "w-[1200px] grid-cols-[296px_880px] gap-6"
+                  : "w-[880px] grid-cols-1"
+              )}
+            >
+              {showSidebar && (
+                <aside className="flex w-[296px] flex-col gap-4 rounded-[6px] border border-[var(--gh-border)] bg-[var(--gh-bg)] p-4 text-[var(--gh-text)]">
+                  {snapshot?.avatarUrl ? (
+                    <img
+                      src={snapshot.avatarUrl}
+                      alt={displayName}
+                      className="size-64 max-w-full rounded-full border border-[var(--gh-border)] object-cover"
+                    />
+                  ) : (
+                    <div className="studio-mono flex size-24 items-center justify-center rounded-full border border-[var(--gh-border)] bg-[var(--gh-surface)] text-xl font-semibold text-[var(--gh-text)]">
+                      {displayName.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col">
+                    <div className="text-[20px] leading-snug font-semibold text-[var(--gh-text)]">
+                      {displayName}
+                    </div>
+                    <div className="text-[16px] font-light text-[var(--gh-muted)]">
+                      {username}
+                    </div>
+                  </div>
+
+                  {statusBio && (
+                    <p className="text-[14px] leading-5 text-[var(--gh-text)]">
+                      {resolveDynamicTokens(statusBio, creatureConfig)}
+                    </p>
+                  )}
+
+                  <div className="flex flex-col gap-1.5 text-[13px] text-[var(--gh-muted)]">
+                    {company && (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="size-4 shrink-0" />
+                        <span className="truncate">{company}</span>
+                      </div>
+                    )}
+                    {location && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="size-4 shrink-0" />
+                        <span className="truncate">{location}</span>
+                      </div>
+                    )}
+                    {website && (
+                      <div className="flex items-center gap-2">
+                        <Link2 className="size-4 shrink-0" />
+                        <span
+                          className="truncate"
+                          style={{ color: "var(--gh-link)" }}
+                        >
+                          {website.replace(/^https?:\/\//, "")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </aside>
+              )}
+
+              {/* Real 848px GitHub README Box (880px = 848px content + 16px horizontal padding each side) */}
+              <div
+                className={cn(
+                  "w-[880px] border border-[var(--gh-border)] bg-[var(--gh-bg)] text-[var(--gh-text)]",
+                  editorTab === "readme" && !showSidebar
+                    ? "rounded-[6px] min-[1800px]:rounded-none min-[1800px]:rounded-b-[7px] min-[1800px]:border-x-0 min-[1800px]:border-b-0"
+                    : "rounded-[6px]"
+                )}
+              >
+                <div className="flex items-center justify-between border-b border-[var(--gh-border)] bg-[var(--gh-surface)] px-4 py-2.5 text-[12px] text-[var(--gh-muted)]">
+                  <span className="studio-mono font-medium text-[var(--gh-text)]">
+                    {username} / README.md
+                  </span>
+                  <span>
+                    {meta.name} · Stage {stage.stage}
+                  </span>
+                </div>
+
+                <div className="px-4 py-6">
+                  {debouncedRawOverride !== null ? (
+                    <div
+                      data-preview-section="raw"
+                      className={cn(
+                        "w-[848px]",
+                        flashedRegion === "raw" && "studio-preview-flash"
+                      )}
+                    >
+                      <pre className="studio-mono max-h-[600px] overflow-auto rounded-[6px] border border-[var(--gh-border)] bg-[var(--gh-surface)] p-4 text-[13px] leading-relaxed text-[var(--gh-text)]">
+                        {resolveDynamicTokens(
+                          debouncedRawOverride,
+                          creatureConfig
+                        )}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="flex w-[848px] flex-col gap-5">
+                      {!isMarkerOnly && (
+                        <>
+                          {debouncedIntroMarkdown.trim() && (
+                            <div
+                              data-preview-section="header"
+                              className={cn(
+                                flashedRegion === "header" &&
+                                  "studio-preview-flash"
+                              )}
+                            >
+                              <AdvancedMarkdownPreview
+                                markdown={resolveDynamicTokens(
+                                  debouncedIntroMarkdown,
+                                  creatureConfig
+                                )}
+                                isDark={githubTheme === "dark"}
+                              />
+                            </div>
+                          )}
+
+                          {!isMinimal && (
+                            <div
+                              data-preview-section="stack"
+                              className={cn(
+                                "flex flex-col gap-4",
+                                flashedRegion === "stack" &&
+                                  "studio-preview-flash"
+                              )}
+                            >
+                              {readmeConfig.stackCards.map((card) => {
+                                if (card.visible === false) return null;
+                                const cardBadges = card.badgeIds
+                                  .map((id) => badgeById.get(id))
+                                  .filter((b): b is ReadmeBadge =>
+                                    Boolean(b && b.label.trim())
+                                  );
+                                if (cardBadges.length === 0) return null;
+                                return (
+                                  <div
+                                    key={card.id}
+                                    className="flex flex-col gap-2"
+                                  >
+                                    {card.title.trim() && (
+                                      <h4
+                                        className={cn(
+                                          "text-[16px] leading-tight font-semibold text-[var(--gh-text)]",
+                                          isAlignedLeft
+                                            ? "text-left"
+                                            : "text-center"
+                                        )}
+                                      >
+                                        {card.title}
+                                      </h4>
+                                    )}
+                                    <div
+                                      className={cn(
+                                        "flex flex-wrap gap-1.5",
+                                        isAlignedLeft
+                                          ? "justify-start"
+                                          : "justify-center"
+                                      )}
+                                    >
+                                      {cardBadges.map((badge) => (
+                                        <img
+                                          key={`${card.id}-${badge.id}`}
+                                          src={buildShieldBadgeUrl(badge)}
+                                          alt={badge.label}
+                                          className="h-7 w-auto"
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {!isMinimal && enabledLinks.length > 0 && (
+                            <div
+                              data-preview-section="links"
+                              className={cn(
+                                "flex flex-wrap gap-2",
+                                isAlignedLeft ? "justify-start" : "justify-center",
+                                flashedRegion === "links" &&
+                                  "studio-preview-flash"
+                              )}
+                            >
+                              {enabledLinks.map((link) => {
+                                const href = resolveDynamicTokens(
+                                  link.url,
+                                  creatureConfig
+                                );
+                                return (
+                                  <a
+                                    key={link.id}
+                                    href={href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <img
+                                      src={buildActionLinkBadgeUrl(
+                                        link,
+                                        creatureConfig
+                                      )}
+                                      alt={link.label}
+                                      className="h-7 w-auto transition-opacity duration-150 hover:opacity-85"
+                                    />
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div
+                        data-preview-section="creature"
+                        className={cn(
+                          "flex justify-center",
+                          flashedRegion === "creature" && "studio-preview-flash"
+                        )}
+                      >
+                        <div style={{ width: `${bannerWidthPx}px` }}>
+                          <CreatureAnimatedView
+                            config={creatureConfig}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+
+                      {!isMarkerOnly &&
+                        !isMinimal &&
+                        readmeConfig.includeStatsTable && (
+                          <div
+                            data-preview-section="telemetry"
+                            className={cn(
+                              "gh-markdown-body",
+                              flashedRegion === "telemetry" &&
+                                "studio-preview-flash"
+                            )}
+                          >
+                            <h3>
+                              {resolveDynamicTokens(
+                                readmeConfig.statsTableTitle ||
+                                  "Telemetry Snapshot",
+                                creatureConfig
+                              )}
+                            </h3>
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th>Metric</th>
+                                  <th>Active Value</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td>Guardian Model</td>
+                                  <td>
+                                    {meta.name} ({viewLabel})
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>Evolution Stage</td>
+                                  <td>
+                                    Stage {stage.stage} / 5 ({stage.rank})
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>Contributions</td>
+                                  <td>
+                                    <code>
+                                      {creatureConfig.commits.toLocaleString(
+                                        "en-US"
+                                      )}
+                                    </code>{" "}
+                                    commits
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>Top Languages ({visibleLanguages.length})</td>
+                                  <td>
+                                    {visibleLanguages
+                                      .map((l) => l.name)
+                                      .join(" · ")}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                      {!isMarkerOnly &&
+                        !isMinimal &&
+                        readmeConfig.includeShareCard && (
+                          <div
+                            data-preview-section="share-card"
+                            className={cn(
+                              "flex justify-center",
+                              flashedRegion === "share-card" &&
+                                "studio-preview-flash"
+                            )}
+                          >
+                            <div
+                              style={{ width: `${bannerWidthPx}px` }}
+                              className="overflow-hidden rounded-[6px] border border-[var(--gh-border)]"
+                            >
+                              <ShareCardCanvasView
+                                config={creatureConfig}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </ScaledReadmeViewport>
+        </div>
+      )}
+
+      {/* Tab Content: README Raw Markdown */}
+      {activePreviewTab === "profile" && codeSubTab === "markdown" && (
+        <div
+          className={cn(
+            "flex flex-col gap-3",
+            editorTab === "readme" && "min-[1800px]:px-5 min-[1800px]:pb-5"
+          )}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="studio-mono text-[13px] text-[var(--text-muted)]">
               {username}/{username}/README.md
             </span>
-            <Button
-              type="button"
+            <StudioButton
               variant="secondary"
               size="sm"
               onClick={() => handleCopy("md-tab", readmeMarkdown)}
             >
-              {copiedId === "md-tab" ? (
-                <Check data-icon="inline-start" />
-              ) : (
-                <Copy data-icon="inline-start" />
-              )}
-              {copiedId === "md-tab" ? "Copied" : "Copy Markdown"}
-            </Button>
+              {copiedId === "md-tab" ? <Check /> : <Copy />}
+              <span>
+                {copiedId === "md-tab" ? "Copied" : "Copy markdown"}
+              </span>
+            </StudioButton>
           </div>
-          <pre className="max-h-[520px] overflow-auto rounded-lg bg-muted/40 p-4 font-mono text-xs leading-relaxed text-foreground">
-            {readmeMarkdown}
+          <pre className="studio-mono max-h-[540px] overflow-auto rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] p-4 text-[13px] leading-relaxed text-[var(--text)]">
+            {debouncedMarkdown}
           </pre>
         </div>
       )}
 
-      {previewTab === "share-card" && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+      {/* Tab Content: Social Card */}
+      {activePreviewTab === "share-card" && (
+        <div className="flex flex-col gap-4 rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-col gap-0.5">
-              <CardTitle className="font-mono">
-                Social Share Banner (1280×640)
-              </CardTitle>
-              <CardDescription>
-                Optional PNG banner synced with your creature palette.
-              </CardDescription>
+              <h3 className="text-[14px] font-semibold text-[var(--text)]">
+                Social share card (1280×640)
+              </h3>
+              <p className="text-[13px] text-[var(--text-muted)]">
+                Static PNG banner synced with your creature palette and evolution
+                tier.
+              </p>
             </div>
-            <Button
-              type="button"
+            <StudioButton
+              variant="secondary"
               size="sm"
               disabled={shareBusy}
               onClick={handleExportShareCardPng}
             >
-              <Download data-icon="inline-start" />
-              {shareBusy ? "Exporting..." : "Download PNG"}
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-hidden rounded-lg border">
-              <ShareCardCanvasView config={creatureConfig} className="w-full" />
-            </div>
-          </CardContent>
-        </Card>
+              <Download />
+              <span>{shareBusy ? "Exporting..." : "Download PNG"}</span>
+            </StudioButton>
+          </div>
+          <div className="overflow-hidden rounded-[6px] border border-[var(--border)]">
+            <ShareCardCanvasView config={creatureConfig} className="w-full" />
+          </div>
+        </div>
       )}
 
-      {previewTab === "stages" && (
+      {/* Tab Content: Stages */}
+      {activePreviewTab === "stages" && (
         <EvolutionPanel
           baseConfig={creatureConfig}
           onSelectView={onSelectView}

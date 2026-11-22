@@ -172,28 +172,43 @@ export async function fetchGitHubProfileSnapshot(
   }
   const currentYear = String(new Date().getUTCFullYear());
 
-  const [userRes, reposRes, profileRepoRes, contribAllRes] = await Promise.all([
-    fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
-      headers,
-    }),
-    fetch(
-      `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`,
-      { headers }
-    ),
-    fetch(
-      `https://api.github.com/repos/${encodeURIComponent(username)}/${encodeURIComponent(username)}`,
-      { headers }
-    ).catch(() => null),
-    fetch(
-      `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}`
-    ).catch(() => null),
-  ]);
+  let userRes: Response;
+  let reposRes: Response;
+  let profileRepoRes: Response | null;
+  let contribAllRes: Response | null;
+
+  try {
+    [userRes, reposRes, profileRepoRes, contribAllRes] = await Promise.all([
+      fetch(`https://api.github.com/users/${encodeURIComponent(username)}`, {
+        headers,
+      }),
+      fetch(
+        `https://api.github.com/users/${encodeURIComponent(username)}/repos?per_page=100&sort=updated`,
+        { headers }
+      ),
+      fetch(
+        `https://api.github.com/repos/${encodeURIComponent(username)}/${encodeURIComponent(username)}`,
+        { headers }
+      ).catch(() => null),
+      fetch(
+        `https://github-contributions-api.jogruber.de/v4/${encodeURIComponent(username)}`
+      ).catch(() => null),
+    ]);
+  } catch {
+    throw new Error(
+      "Network error while contacting GitHub. Check your connection and try again."
+    );
+  }
 
   if (userRes.status === 404) {
-    throw new Error(`GitHub user "@${username}" was not found.`);
+    throw new Error(
+      `GitHub user "@${username}" was not found. Check the spelling and try again.`
+    );
   }
   if (userRes.status === 403) {
-    throw new Error("GitHub API rate limit reached. Try again in a minute.");
+    throw new Error(
+      "GitHub API rate limit reached. Please wait a minute and try again."
+    );
   }
   if (!userRes.ok) {
     throw new Error(`Failed to fetch GitHub profile (${userRes.status}).`);
@@ -360,18 +375,56 @@ export async function fetchGitHubProfileSnapshot(
   };
 }
 
+export type PublishProgressStep =
+  | "uploading-webp"
+  | "updating-readme"
+  | "adding-workflow"
+  | "committing";
+
+function mapGitHubPushStatusError(
+  status: number,
+  context: {
+    owner: string;
+    repo: string;
+    branch: string;
+    includesWorkflow: boolean;
+    fallback: string;
+  }
+): string {
+  if (status === 401) {
+    return "Invalid or expired token. Generate a new GitHub Personal Access Token and try again.";
+  }
+  if (status === 403) {
+    return context.includesWorkflow
+      ? "Missing permission to update repository files or GitHub Actions workflows. Check that your Classic token has 'repo' + 'workflow', or your Fine-grained token has 'Contents: Read and write' + 'Workflows: Read and write'."
+      : "Missing repository write permission. Check that your Classic token has 'repo', or your Fine-grained token has 'Contents: Read and write'.";
+  }
+  if (status === 404) {
+    return `Repository "${context.owner}/${context.repo}" was not found. Make sure it exists, is accessible to your token, and matches your username.`;
+  }
+  if (status === 409 || status === 422) {
+    return `Branch conflict while updating ${context.branch}. Retry the push to sync with the latest commit.`;
+  }
+  return context.fallback;
+}
+
 export async function publishFilesToProfileRepo(params: {
   token: string;
   owner: string;
   repo: string;
   branch: string;
   files: PublishFileInput[];
+  onStep?: (step: PublishProgressStep) => void;
 }): Promise<{ updatedPaths: string[]; repoUrl: string }> {
-  const { token, owner, repo, branch, files } = params;
+  const { token, owner, repo, branch, files, onStep } = params;
   const cleanToken = token.trim();
   if (!cleanToken) {
     throw new Error("A Personal Access Token is required before pushing.");
   }
+
+  const includesWorkflow = files.some((f) =>
+    f.path.startsWith(".github/workflows/")
+  );
 
   const headers = {
     Authorization: `Bearer ${cleanToken}`,
@@ -379,35 +432,48 @@ export async function publishFilesToProfileRepo(params: {
     "Content-Type": "application/json",
   };
 
-  const repoInfoRes = await fetch(
-    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
-    { headers }
-  );
-
-  if (repoInfoRes.status === 404) {
+  let repoInfoRes: Response;
+  try {
+    repoInfoRes = await fetch(
+      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      { headers }
+    );
+  } catch {
     throw new Error(
-      `Repository "${owner}/${repo}" was not found. Make sure you created a public repository named "${repo}" under your GitHub account.`
+      "Network error while contacting GitHub. Your token was kept in the field so you can retry."
     );
   }
-  if (repoInfoRes.status === 401 || repoInfoRes.status === 403) {
+
+  if (!repoInfoRes.ok) {
     throw new Error(
-      "Authentication failed. Verify your Personal Access Token has Contents (Read and write) or classic 'repo' permissions."
+      mapGitHubPushStatusError(repoInfoRes.status, {
+        owner,
+        repo,
+        branch,
+        includesWorkflow,
+        fallback: `Unable to access "${owner}/${repo}" (${repoInfoRes.status}).`,
+      })
     );
   }
 
   let targetBranch = branch;
-  if (repoInfoRes.ok) {
-    const repoMeta = (await repoInfoRes.json()) as { default_branch?: string };
-    if (repoMeta.default_branch) {
-      targetBranch = repoMeta.default_branch;
-    }
+  const repoMeta = (await repoInfoRes.json()) as { default_branch?: string };
+  if (repoMeta.default_branch) {
+    targetBranch = repoMeta.default_branch;
   }
 
   const repoApiBase = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
-  const refRes = await fetch(
-    `${repoApiBase}/git/ref/heads/${encodeURIComponent(targetBranch)}`,
-    { headers }
-  );
+  let refRes: Response;
+  try {
+    refRes = await fetch(
+      `${repoApiBase}/git/ref/heads/${encodeURIComponent(targetBranch)}`,
+      { headers }
+    );
+  } catch {
+    throw new Error(
+      "Network error while reading the repository branch. Your token was kept in the field so you can retry."
+    );
+  }
 
   if (refRes.ok) {
     const refJson = (await refRes.json()) as { object?: { sha?: string } };
@@ -420,7 +486,13 @@ export async function publishFilesToProfileRepo(params: {
       if (!commitRes.ok) {
         const errText = await commitRes.text();
         throw new Error(
-          `Failed reading branch commit (${commitRes.status}): ${errText}`
+          mapGitHubPushStatusError(commitRes.status, {
+            owner,
+            repo,
+            branch: targetBranch,
+            includesWorkflow,
+            fallback: `Failed reading branch commit (${commitRes.status}): ${errText}`,
+          })
         );
       }
       const commitJson = (await commitRes.json()) as { tree?: { sha?: string } };
@@ -437,19 +509,40 @@ export async function publishFilesToProfileRepo(params: {
       }[] = [];
 
       for (const file of files) {
-        const blobRes = await fetch(`${repoApiBase}/git/blobs`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(
-            file.base64Content !== undefined
-              ? { content: file.base64Content, encoding: "base64" }
-              : { content: file.content ?? "", encoding: "utf-8" }
-          ),
-        });
+        if (file.path === "creature.webp") {
+          onStep?.("uploading-webp");
+        } else if (file.path === "README.md") {
+          onStep?.("updating-readme");
+        } else if (file.path.startsWith(".github/workflows/")) {
+          onStep?.("adding-workflow");
+        }
+
+        let blobRes: Response;
+        try {
+          blobRes = await fetch(`${repoApiBase}/git/blobs`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(
+              file.base64Content !== undefined
+                ? { content: file.base64Content, encoding: "base64" }
+                : { content: file.content ?? "", encoding: "utf-8" }
+            ),
+          });
+        } catch {
+          throw new Error(
+            "Network error while uploading files to GitHub. Your token was kept in the field so you can retry."
+          );
+        }
         if (!blobRes.ok) {
           const errText = await blobRes.text();
           throw new Error(
-            `Failed uploading blob for ${file.path} (${blobRes.status}): ${errText}`
+            mapGitHubPushStatusError(blobRes.status, {
+              owner,
+              repo,
+              branch: targetBranch,
+              includesWorkflow,
+              fallback: `Failed uploading ${file.path} (${blobRes.status}): ${errText}`,
+            })
           );
         }
         const blobJson = (await blobRes.json()) as { sha: string };
@@ -460,6 +553,8 @@ export async function publishFilesToProfileRepo(params: {
           sha: blobJson.sha,
         });
       }
+
+      onStep?.("committing");
 
       const treeRes = await fetch(`${repoApiBase}/git/trees`, {
         method: "POST",
@@ -472,7 +567,13 @@ export async function publishFilesToProfileRepo(params: {
       if (!treeRes.ok) {
         const errText = await treeRes.text();
         throw new Error(
-          `Failed creating commit tree (${treeRes.status}): ${errText}`
+          mapGitHubPushStatusError(treeRes.status, {
+            owner,
+            repo,
+            branch: targetBranch,
+            includesWorkflow,
+            fallback: `Failed creating commit tree (${treeRes.status}): ${errText}`,
+          })
         );
       }
       const treeJson = (await treeRes.json()) as { sha: string };
@@ -488,11 +589,14 @@ export async function publishFilesToProfileRepo(params: {
       });
       if (!newCommitRes.ok) {
         const errText = await newCommitRes.text();
-        const hint = files.some((f) => f.path.startsWith(".github/workflows/"))
-          ? " Make sure your PAT includes 'Workflows: Read and write' (or classic 'workflow') scope."
-          : "";
         throw new Error(
-          `Failed creating commit (${newCommitRes.status}): ${errText}.${hint}`
+          mapGitHubPushStatusError(newCommitRes.status, {
+            owner,
+            repo,
+            branch: targetBranch,
+            includesWorkflow,
+            fallback: `Failed creating commit (${newCommitRes.status}): ${errText}`,
+          })
         );
       }
       const newCommitJson = (await newCommitRes.json()) as { sha: string };
@@ -507,11 +611,14 @@ export async function publishFilesToProfileRepo(params: {
       );
       if (!patchRefRes.ok) {
         const errText = await patchRefRes.text();
-        const hint = files.some((f) => f.path.startsWith(".github/workflows/"))
-          ? " Make sure your PAT includes 'Workflows: Read and write' (or classic 'workflow') scope."
-          : "";
         throw new Error(
-          `Failed updating branch ref (${patchRefRes.status}): ${errText}.${hint}`
+          mapGitHubPushStatusError(patchRefRes.status, {
+            owner,
+            repo,
+            branch: targetBranch,
+            includesWorkflow,
+            fallback: `Failed updating branch ref (${patchRefRes.status}): ${errText}`,
+          })
         );
       }
 
@@ -523,7 +630,13 @@ export async function publishFilesToProfileRepo(params: {
   } else if (refRes.status !== 404 && refRes.status !== 409) {
     const errText = await refRes.text();
     throw new Error(
-      `Failed inspecting branch ref (${refRes.status}): ${errText}`
+      mapGitHubPushStatusError(refRes.status, {
+        owner,
+        repo,
+        branch: targetBranch,
+        includesWorkflow,
+        fallback: `Failed inspecting branch ref (${refRes.status}): ${errText}`,
+      })
     );
   }
 
@@ -531,6 +644,14 @@ export async function publishFilesToProfileRepo(params: {
   const updatedPaths: string[] = [];
 
   for (const file of files) {
+    if (file.path === "creature.webp") {
+      onStep?.("uploading-webp");
+    } else if (file.path === "README.md") {
+      onStep?.("updating-readme");
+    } else if (file.path.startsWith(".github/workflows/")) {
+      onStep?.("adding-workflow");
+    }
+
     const endpoint = `${repoApiBase}/contents/${file.path}`;
     let existingSha: string | undefined;
 
@@ -546,7 +667,13 @@ export async function publishFilesToProfileRepo(params: {
     } else {
       const errBody = await getRes.text();
       throw new Error(
-        `Failed checking ${file.path} (${getRes.status}): ${errBody}`
+        mapGitHubPushStatusError(getRes.status, {
+          owner,
+          repo,
+          branch: targetBranch,
+          includesWorkflow,
+          fallback: `Failed checking ${file.path} (${getRes.status}): ${errBody}`,
+        })
       );
     }
 
@@ -564,12 +691,20 @@ export async function publishFilesToProfileRepo(params: {
     if (!putRes.ok) {
       const errText = await putRes.text();
       throw new Error(
-        `Failed pushing ${file.path} (${putRes.status}): ${errText}`
+        mapGitHubPushStatusError(putRes.status, {
+          owner,
+          repo,
+          branch: targetBranch,
+          includesWorkflow,
+          fallback: `Failed pushing ${file.path} (${putRes.status}): ${errText}`,
+        })
       );
     }
 
     updatedPaths.push(file.path);
   }
+
+  onStep?.("committing");
 
   return {
     updatedPaths,

@@ -1,0 +1,419 @@
+/* Scoped design tokens & GitHub markdown surface tokens for the Studio screens */
+
+[data-app="studio"] {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --border: #d1d9e0;
+  --border-strong: #afb8c1;
+  --text: #1f2328;
+  --text-muted: #59636e;
+  --text-faint: #818b98;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-soft: #e6f4f1;
+  --on-accent: #ffffff;
+  --warm: #c2410c;
+  --warm-soft: #fff1e8;
+  --success: #1a7f37;
+  --success-soft: #e7f6ec;
+  --danger: #cf222e;
+  --danger-soft: #fdecee;
+  --warning: #9a6700;
+  --warning-soft: #fff4d6;
+  --studio-shadow-overlay: 0 8px 24px rgba(31, 35, 40, 0.12);
+
+  /* Map shadcn semantic tokens inside studio scope & portals */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent-foreground: var(--on-accent);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--accent);
+  --radius: 6px;
+
+  --studio-font-sans:
+    var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --studio-font-mono:
+    var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
+
+  font-family: var(--studio-font-sans);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.dark [data-app="studio"],
+[data-app="studio"].dark {
+  --bg: #0d1117;
+  --surface: #151b23;
+  --surface-2: #1b222c;
+  --border: #2f3742;
+  --border-strong: #444c56;
+  --text: #e6edf3;
+  --text-muted: #9aa4b0;
+  --text-faint: #768390;
+  --accent: #2db8a8;
+  --accent-hover: #4ccbbb;
+  --accent-soft: #11302d;
+  --on-accent: #04211d;
+  --warm: #f0883e;
+  --warm-soft: #2d1b0f;
+  --success: #3fb950;
+  --success-soft: #12261a;
+  --danger: #f85149;
+  --danger-soft: #2d1517;
+  --warning: #d29922;
+  --warning-soft: #2a2210;
+  --studio-shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.45);
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent-foreground: var(--on-accent);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--accent);
+}
+
+[data-app="studio"] .studio-mono {
+  font-family: var(--studio-font-mono);
+}
+
+[data-app="studio"] .rcp-root {
+  --rcp-background-color: var(--surface);
+  --rcp-field-input-color: var(--text);
+  --rcp-field-input-border-color: var(--border);
+  --rcp-field-label-color: var(--text-muted);
+}
+
+[data-app="studio"] .rcp-field-input,
+[data-app="studio"] .rcp-field-label {
+  font-family: var(--studio-font-mono);
+}
+
+[data-app="studio"] :is(
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  [tabindex],
+  [role="switch"],
+  [role="slider"],
+  [role="checkbox"],
+  [role="tab"],
+  [role="radio"]
+):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-app="studio"] *,
+  [data-app="studio"] *::before,
+  [data-app="studio"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.studio-preview-flash {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.studio-no-scrollbar {
+  scrollbar-width: none;
+}
+.studio-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* GitHub-surface tokens used inside README editor & README preview */
+[data-gh-theme="light"] {
+  --gh-bg: #ffffff;
+  --gh-surface: #f6f8fa;
+  --gh-code-bg: #eff1f3;
+  --gh-border: #d1d9e0;
+  --gh-text: #1f2328;
+  --gh-muted: #59636e;
+  --gh-link: #0969da;
+  --gh-underline: #d1d9e0;
+}
+
+[data-gh-theme="dark"] {
+  --gh-bg: #0d1117;
+  --gh-surface: #161b22;
+  --gh-code-bg: rgba(110, 118, 129, 0.4);
+  --gh-border: #3d444d;
+  --gh-text: #f0f6fc;
+  --gh-muted: #9198a1;
+  --gh-link: #4493f8;
+  --gh-underline: #3d444d;
+}
+
+/* Shared GitHub Markdown typography for BOTH TipTap WYSIWYG editor and live README preview */
+.gh-markdown-body {
+  color: var(--gh-text);
+  background-color: var(--gh-bg);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.gh-markdown-body .ProseMirror {
+  outline: none;
+  min-height: inherit;
+}
+
+.gh-markdown-body > *:first-child,
+.gh-markdown-body .ProseMirror > *:first-child {
+  margin-top: 0;
+}
+
+.gh-markdown-body > *:last-child,
+.gh-markdown-body .ProseMirror > *:last-child {
+  margin-bottom: 0;
+}
+
+.gh-markdown-body h1 {
+  font-size: 2em;
+  font-weight: 600;
+  line-height: 1.25;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--gh-underline);
+  margin: 24px 0 16px;
+}
+
+.gh-markdown-body h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--gh-underline);
+  margin: 24px 0 16px;
+}
+
+.gh-markdown-body h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.25;
+  border-bottom: none;
+  margin: 24px 0 16px;
+}
+
+.gh-markdown-body h4 {
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.25;
+  border-bottom: none;
+  margin: 24px 0 16px;
+}
+
+.gh-markdown-body p {
+  margin: 0 0 16px;
+}
+
+.gh-markdown-body strong {
+  font-weight: 600;
+}
+
+.gh-markdown-body em {
+  font-style: italic;
+}
+
+.gh-markdown-body u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gh-markdown-body del,
+.gh-markdown-body s {
+  text-decoration: line-through;
+}
+
+.gh-markdown-body a {
+  color: var(--gh-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.gh-markdown-body code {
+  background-color: var(--gh-code-bg);
+  color: var(--gh-text);
+  border-radius: 6px;
+  padding: 0.2em 0.4em;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 85%;
+}
+
+.gh-markdown-body pre {
+  background-color: var(--gh-surface);
+  border: 1px solid var(--gh-border);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+  font-family:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 85%;
+  line-height: 1.45;
+}
+
+.gh-markdown-body pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+.gh-markdown-body blockquote {
+  border-left: 0.25em solid var(--gh-border);
+  color: var(--gh-muted);
+  padding: 0 1em;
+  margin: 0 0 16px;
+}
+
+.gh-markdown-body blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.gh-markdown-body hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 24px 0;
+  background-color: var(--gh-border);
+  border: 0;
+  cursor: pointer;
+}
+
+.gh-markdown-body hr.ProseMirror-selectednode {
+  outline: 2px solid var(--gh-link);
+  outline-offset: 2px;
+}
+
+.gh-markdown-body ul:not([data-type="taskList"]) {
+  list-style-type: disc;
+  padding-left: 2em;
+  margin: 0 0 16px;
+}
+
+.gh-markdown-body ol {
+  list-style-type: decimal;
+  padding-left: 2em;
+  margin: 0 0 16px;
+}
+
+.gh-markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+.gh-markdown-body li > p {
+  margin-bottom: 0.25em;
+}
+
+.gh-markdown-body ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25em;
+  margin: 0 0 16px;
+}
+
+.gh-markdown-body ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.25em;
+}
+
+.gh-markdown-body ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.25em;
+  user-select: none;
+}
+
+.gh-markdown-body ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--gh-link);
+  cursor: pointer;
+}
+
+.gh-markdown-body ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.gh-markdown-body table {
+  border-collapse: collapse;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 16px;
+  display: block;
+  overflow-x: auto;
+}
+
+.gh-markdown-body th,
+.gh-markdown-body td {
+  border: 1px solid var(--gh-border);
+  padding: 6px 13px;
+  vertical-align: top;
+  min-width: 96px;
+}
+
+.gh-markdown-body th {
+  background-color: var(--gh-surface);
+  font-weight: 600;
+}
+
+.gh-markdown-body th p,
+.gh-markdown-body td p {
+  margin: 0;
+}
+
+.gh-markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.gh-markdown-body img.ProseMirror-selectednode {
+  outline: 2px solid var(--gh-link);
+}
+
+.gh-markdown-body p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--gh-muted);
+  pointer-events: none;
+  height: 0;
+}

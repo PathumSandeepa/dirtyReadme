@@ -3,13 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   BookOpen,
+  Check,
   CheckCircle2,
   Download,
   ExternalLink,
-  FolderGit2,
-  KeyRound,
+  Eye,
+  EyeOff,
+  FileCode2,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
   Lock,
   RefreshCw,
   ShieldCheck,
@@ -44,27 +50,19 @@ import {
   checkProfileRepoExists,
   publishFilesToProfileRepo,
   type PublishFileInput,
+  type PublishProgressStep,
 } from "@/infrastructure/github/githubClient";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioField, StudioInput } from "../studio/ui/StudioInput";
+import { StudioSectionCard } from "../studio/ui/StudioSectionCard";
+import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
+import { StudioSwitchRow } from "../studio/ui/StudioSwitchRow";
 import { TokenGuideDialog } from "./TokenGuideDialog";
 
 interface TokenPublishScreenProps {
@@ -78,6 +76,18 @@ interface TokenPublishScreenProps {
   onBack: () => void;
 }
 
+function formatByteSize(text: string): string {
+  const bytes = new TextEncoder().encode(text).length;
+  if (bytes < 1024) return `${bytes} B`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function isValidTokenFormat(raw: string): boolean {
+  const trimmed = raw.trim();
+  if (!trimmed) return false;
+  return /^(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})$/.test(trimmed);
+}
+
 export function TokenPublishScreen({
   creatureConfig,
   readmeConfig,
@@ -89,10 +99,22 @@ export function TokenPublishScreen({
   onBack,
 }: TokenPublishScreenProps) {
   const username = creatureConfig.username.trim() || "your-username";
+  const repoPath = `${username}/${username}`;
+  const repoUrl = `https://github.com/${encodeURIComponent(username)}/${encodeURIComponent(username)}`;
+
   const [tokenInput, setTokenInput] = useState("");
+  const [showToken, setShowToken] = useState(false);
+  const [tokenTab, setTokenTab] = useState<"classic" | "fine-grained">(
+    "classic"
+  );
   const [includeWorkflowFiles, setIncludeWorkflowFiles] = useState(false);
   const [timezoneMode, setTimezoneMode] = useState<"local" | "utc">("local");
   const [pushLoading, setPushLoading] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<PublishProgressStep[]>(
+    []
+  );
+  const [activePushStep, setActivePushStep] =
+    useState<PublishProgressStep | null>(null);
   const [webpBusy, setWebpBusy] = useState(false);
   const [gifBusy, setGifBusy] = useState(false);
   const [tokenGuideOpen, setTokenGuideOpen] = useState(false);
@@ -152,6 +174,87 @@ export function TokenPublishScreen({
 
   const cronExpression = timezoneMode === "local" ? localCron : "0 0 * * *";
 
+  const configJson = useMemo(
+    () => generateCreatureConfigJson(creatureConfig, readmeConfig),
+    [creatureConfig, readmeConfig]
+  );
+
+  const workflowYaml = useMemo(
+    () =>
+      includeWorkflowFiles
+        ? generateEvolveWorkflowYaml(creatureConfig, cronExpression)
+        : "",
+    [includeWorkflowFiles, creatureConfig, cronExpression]
+  );
+
+  const evolveScript = useMemo(
+    () =>
+      includeWorkflowFiles
+        ? generateEvolveScriptMjs(creatureConfig, readmeConfig)
+        : "",
+    [includeWorkflowFiles, creatureConfig, readmeConfig]
+  );
+
+  const trimmedToken = tokenInput.trim();
+  const tokenValid = isValidTokenFormat(trimmedToken);
+  const tokenFormatError =
+    trimmedToken.length > 0 && !tokenValid
+      ? "Enter a valid GitHub token starting with github_pat_ or ghp_."
+      : null;
+
+  const commitFiles = useMemo(() => {
+    const items: {
+      path: string;
+      size: string;
+      kind: "image" | "doc" | "code";
+    }[] = [
+      { path: "creature.webp", size: "Animated WebP", kind: "image" },
+      {
+        path: "README.md",
+        size: formatByteSize(readmeMarkdown),
+        kind: "doc",
+      },
+      {
+        path: "creature-config.json",
+        size: formatByteSize(configJson),
+        kind: "code",
+      },
+    ];
+
+    if (includeShareCard) {
+      items.push({ path: "share-card.png", size: "1280×640 PNG", kind: "image" });
+    }
+
+    if (includeWorkflowFiles) {
+      items.push(
+        {
+          path: ".github/workflows/evolve-creature.yml",
+          size: formatByteSize(workflowYaml),
+          kind: "code",
+        },
+        {
+          path: "scripts/evolve-creature.mjs",
+          size: formatByteSize(evolveScript),
+          kind: "code",
+        },
+        {
+          path: "assets/creature-sprite.png",
+          size: "Sprite PNG",
+          kind: "image",
+        }
+      );
+    }
+
+    return items;
+  }, [
+    readmeMarkdown,
+    configJson,
+    includeShareCard,
+    includeWorkflowFiles,
+    workflowYaml,
+    evolveScript,
+  ]);
+
   const handleDownloadWebP = async () => {
     setWebpBusy(true);
     try {
@@ -188,14 +291,18 @@ export function TokenPublishScreen({
 
   const handlePush = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!tokenInput.trim()) {
-      setPushError("Enter your GitHub Personal Access Token before pushing.");
+    if (!tokenValid) {
+      setPushError(
+        "Paste a valid GitHub Personal Access Token (github_pat_... or ghp_...) before pushing."
+      );
       return;
     }
 
     setPushLoading(true);
     setPushError(null);
     setPublishResult(null);
+    setCompletedSteps([]);
+    setActivePushStep("uploading-webp");
 
     try {
       const spriteKey = getSpriteKey(
@@ -222,7 +329,7 @@ export function TokenPublishScreen({
         },
         {
           path: "creature-config.json",
-          content: generateCreatureConfigJson(creatureConfig, readmeConfig),
+          content: configJson,
           message: "ci: save creature & README studio configuration",
         },
       ];
@@ -246,26 +353,45 @@ export function TokenPublishScreen({
           },
           {
             path: ".github/workflows/evolve-creature.yml",
-            content: generateEvolveWorkflowYaml(creatureConfig, cronExpression),
+            content: workflowYaml,
             message: "ci: add 12:00 AM daily creature auto-evolve workflow",
           },
           {
             path: "scripts/evolve-creature.mjs",
-            content: generateEvolveScriptMjs(creatureConfig, readmeConfig),
+            content: evolveScript,
             message: "ci: add daily creature WebP & README evolution script",
           }
         );
       }
 
+      const stepOrder: PublishProgressStep[] = includeWorkflowFiles
+        ? [
+            "uploading-webp",
+            "updating-readme",
+            "adding-workflow",
+            "committing",
+          ]
+        : ["uploading-webp", "updating-readme", "committing"];
+
       const result = await publishFilesToProfileRepo({
-        token: tokenInput,
+        token: trimmedToken,
         owner: username,
         repo: username,
         branch: resolvedBranch || "main",
         files,
+        onStep: (step) => {
+          setActivePushStep(step);
+          const idx = stepOrder.indexOf(step);
+          if (idx > 0) {
+            setCompletedSteps(stepOrder.slice(0, idx));
+          }
+        },
       });
 
+      setCompletedSteps(stepOrder);
+      setActivePushStep(null);
       setTokenInput("");
+      setShowToken(false);
       setPublishResult({
         username,
         repoUrl: result.repoUrl,
@@ -275,498 +401,647 @@ export function TokenPublishScreen({
       setPushError(
         err instanceof Error
           ? err.message
-          : "Failed to push changes to GitHub."
+          : "Failed to push changes to GitHub. Your token was kept in the field so you can retry."
       );
     } finally {
       setPushLoading(false);
+      setActivePushStep(null);
     }
   };
 
+  const pushButton = (
+    <StudioButton
+      type="submit"
+      variant="primary"
+      size="lg"
+      disabled={pushLoading || !tokenValid}
+    >
+      {pushLoading ? (
+        <>
+          <Loader2 className="animate-spin" />
+          <span>Pushing changes...</span>
+        </>
+      ) : (
+        <>
+          <Zap />
+          <span>Push changes to README</span>
+        </>
+      )}
+    </StudioButton>
+  );
+
+  const pushStepRows: { id: PublishProgressStep; label: string }[] = [
+    { id: "uploading-webp", label: "Uploading creature.webp" },
+    { id: "updating-readme", label: "Updating README.md" },
+    ...(includeWorkflowFiles
+      ? [
+          {
+            id: "adding-workflow" as const,
+            label: "Adding .github/workflows/evolve-creature.yml",
+          },
+        ]
+      : []),
+    { id: "committing", label: "Creating commit on branch" },
+  ];
+
+  const classicCreateUrl = `https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=${includeWorkflowFiles ? "repo,workflow" : "repo"}`;
+
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 py-4 sm:py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <TooltipProvider delay={150}>
+      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+        {/* Page Header */}
         <div className="flex flex-col gap-2">
-          <Badge variant="secondary" className="w-fit font-mono text-[10px]">
-            STEP 4 OF 4 · PUBLISH
-          </Badge>
-          <h1 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Publish to {username}/{username}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Commit your animated WebP creature and README directly from browser
-            memory using a temporary GitHub token.
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-[24px] leading-8 font-semibold tracking-tight text-[var(--text)]">
+              Publish to your profile repository
+            </h1>
+            <a
+              href={repoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="studio-mono inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[13px] font-medium text-[var(--text)] transition-[color,border-color] duration-150 hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              <span>{repoPath}</span>
+              <ExternalLink className="size-3.5 text-[var(--text-muted)]" />
+            </a>
+          </div>
+          <p className="text-[14px] leading-6 text-[var(--text-muted)]">
+            Commit your animated WebP creature and README directly from your
+            browser using a temporary GitHub token.
           </p>
         </div>
 
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => setTokenGuideOpen(true)}
-        >
-          <BookOpen data-icon="inline-start" />
-          How to Create Classic Token &amp; Permissions
-        </Button>
-      </div>
+        {/* Repository Status Banner */}
+        {repoCheckState === "checking" && (
+          <div
+            role="status"
+            className="flex items-center gap-2.5 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--text-muted)]"
+          >
+            <Loader2 className="size-4 shrink-0 animate-spin text-[var(--accent)]" />
+            <span>
+              Checking{" "}
+              <code className="studio-mono text-[var(--text)]">{repoPath}</code>{" "}
+              on GitHub...
+            </span>
+          </div>
+        )}
 
-      {repoCheckState !== "exists" ? (
-        <div className="flex flex-col gap-6 rounded-xl bg-muted/35 p-6">
-          <div className="flex items-start gap-3">
-            {repoCheckState === "checking" ? (
-              <RefreshCw className="mt-0.5 size-5 shrink-0 animate-spin text-primary" />
-            ) : (
-              <FolderGit2 className="mt-0.5 size-5 shrink-0 text-destructive" />
-            )}
-            <div className="flex flex-col gap-1.5">
-              <h2 className="font-mono text-sm font-semibold text-foreground">
-                {repoCheckState === "checking"
-                  ? `Checking ${username}/${username} on GitHub...`
-                  : `Profile Repository ${username}/${username} Not Found`}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {repoCheckState === "checking"
-                  ? "Verifying that your public GitHub profile repository exists before requesting a Personal Access Token."
-                  : `Create a public repository named ${username}/${username} on GitHub first. Token entry stays hidden until it is detected.`}
-              </p>
+        {repoCheckState === "missing" && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[var(--warning)]/35 bg-[var(--warning-soft)] px-4 py-3 text-[13px] text-[var(--text)]"
+          >
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+              <span>
+                Public repository{" "}
+                <code className="studio-mono font-medium">{repoPath}</code> was
+                not detected yet. Create it on GitHub or re-check before
+                pushing.
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <StudioButton
+                variant="secondary"
+                size="sm"
+                onClick={handleRecheckRepo}
+              >
+                <RefreshCw />
+                <span>Re-check repository</span>
+              </StudioButton>
+              <a
+                href="https://github.com/new"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-3 text-[13px] font-medium text-[var(--text)] transition-[color,border-color] duration-150 hover:border-[var(--border-strong)]"
+              >
+                <span>Create {repoPath}</span>
+                <ExternalLink className="size-3.5 text-[var(--text-muted)]" />
+              </a>
             </div>
           </div>
+        )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button type="button" variant="ghost" onClick={onBack}>
-              <ArrowLeft data-icon="inline-start" />
-              Back to Studio
-            </Button>
+        {/* Two-column layout: 640px main + 360px sticky right column on >=1024px */}
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,640px)_360px] lg:justify-between">
+          {/* Left Main Column */}
+          <div className="flex flex-col gap-6">
+            {/* Summary Card: What will be committed */}
+            <StudioSectionCard
+              title="What will be committed"
+              description="Files included in the atomic commit to your profile repository."
+              headerAction={
+                <span className="studio-mono inline-flex items-center rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[12px] font-medium text-[var(--text)]">
+                  Branch: {resolvedBranch || "main"}
+                </span>
+              }
+            >
+              <ul className="divide-y divide-[var(--border)] rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)]">
+                {commitFiles.map((file) => {
+                  const Icon =
+                    file.kind === "image"
+                      ? ImageIcon
+                      : file.kind === "code"
+                        ? FileCode2
+                        : FileText;
+                  return (
+                    <li
+                      key={file.path}
+                      className="flex items-center justify-between gap-3 px-3.5 py-2.5 text-[13px]"
+                    >
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <Icon className="size-4 shrink-0 text-[var(--text-muted)]" />
+                        <span className="studio-mono truncate font-medium text-[var(--text)]">
+                          {file.path}
+                        </span>
+                      </span>
+                      <span className="studio-mono shrink-0 text-[12px] text-[var(--text-muted)]">
+                        {file.size}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </StudioSectionCard>
 
-            {repoCheckState === "missing" && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleRecheckRepo}
-                >
-                  <RefreshCw data-icon="inline-start" />
-                  Re-check Repository
-                </Button>
-                <Button
-                  nativeButton={false}
-                  render={
+            {/* Card 1: Create a token */}
+            <StudioSectionCard
+              number={1}
+              title="Create a token"
+              description="Generate a temporary GitHub Personal Access Token with write access to your profile repository."
+            >
+              <StudioSegmentedControl<"classic" | "fine-grained">
+                ariaLabel="Token format"
+                value={tokenTab}
+                onChange={setTokenTab}
+                options={[
+                  { value: "classic", label: "Classic token" },
+                  { value: "fine-grained", label: "Fine-grained token" },
+                ]}
+              />
+
+              {tokenTab === "classic" ? (
+                <div className="flex flex-col gap-4 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] p-4">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[13px] font-medium text-[var(--text)]">
+                      Required permissions
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2 text-[13px]">
+                      <span className="studio-mono inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 font-medium text-[var(--text)]">
+                        <Check className="size-3.5 text-[var(--accent)]" />
+                        repo
+                      </span>
+                      {includeWorkflowFiles ? (
+                        <span className="studio-mono inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--accent)] bg-[var(--accent-soft)] px-2.5 py-1 font-medium text-[var(--accent)]">
+                          <Check className="size-3.5" />
+                          workflow
+                        </span>
+                      ) : (
+                        <span className="text-[13px] text-[var(--text-muted)]">
+                          (Add <code className="studio-mono">workflow</code> if
+                          enabling the 12:00 AM action)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
                     <a
-                      href="https://github.com/new"
+                      href={classicCreateUrl}
                       target="_blank"
                       rel="noreferrer"
-                    />
-                  }
-                >
-                  Create {username}/{username}
-                  <ExternalLink data-icon="inline-end" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>Or export files locally instead:</span>
-            <div className="flex flex-wrap items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={webpBusy}
-                onClick={handleDownloadWebP}
-              >
-                <Download data-icon="inline-start" />
-                {webpBusy ? "Encoding..." : "creature.webp"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={gifBusy}
-                onClick={handleDownloadGif}
-              >
-                <Download data-icon="inline-start" />
-                {gifBusy ? "Encoding..." : "creature.gif"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  downloadTextFile("README.md", readmeMarkdown, "text/markdown")
-                }
-              >
-                <Download data-icon="inline-start" />
-                README.md
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="grid items-start gap-8 lg:grid-cols-12">
-          <div className="lg:col-span-7">
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle className="font-mono text-base">
-                  Enter Personal Access Token
-                </CardTitle>
-                <CardDescription>
-                  Target branch: <code>{resolvedBranch}</code> · Copy, cut, and
-                  context-menu actions are blocked on the token field.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="pt-4">
-                <form onSubmit={handlePush} className="flex flex-col gap-5">
-                  <FieldGroup>
-                    <Field data-invalid={pushError ? true : undefined}>
-                      <div className="flex items-center justify-between">
-                        <FieldLabel
-                          htmlFor="pat-single-input"
-                          className="flex items-center gap-1.5 font-mono text-xs"
-                        >
-                          <KeyRound className="size-3.5" />
-                          GitHub Personal Access Token
-                        </FieldLabel>
-                        <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
-                          <Lock className="size-3" />
-                          Ephemeral RAM only
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Input
-                          id="pat-single-input"
-                          type="password"
-                          autoComplete="off"
-                          spellCheck={false}
-                          value={tokenInput}
-                          aria-invalid={Boolean(pushError)}
-                          onChange={(e) => {
-                            setTokenInput(e.target.value);
-                            if (pushError) setPushError(null);
-                          }}
-                          onCopy={(e) => e.preventDefault()}
-                          onCut={(e) => e.preventDefault()}
-                          onDragStart={(e) => e.preventDefault()}
-                          onContextMenu={(e) => e.preventDefault()}
-                          placeholder="github_pat_... or ghp_..."
-                          className="h-10 flex-1 select-none font-mono"
-                        />
-                        {tokenInput && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setTokenInput("")}
-                            title="Clear token from memory"
-                          >
-                            <Trash2 />
-                          </Button>
-                        )}
-                      </div>
-                    </Field>
-                  </FieldGroup>
-
-                  <Separator />
-
-                  <div className="flex flex-col gap-3">
-                    <Field orientation="horizontal">
-                      <Switch
-                        id="auto-evolve-check"
-                        checked={includeWorkflowFiles}
-                        onCheckedChange={(val) =>
-                          setIncludeWorkflowFiles(Boolean(val))
-                        }
-                      />
-                      <div className="flex flex-col gap-0.5">
-                        <FieldLabel
-                          htmlFor="auto-evolve-check"
-                          className="font-mono text-xs font-semibold"
-                        >
-                          Include 12:00 AM Daily Auto-Evolve GitHub Action
-                        </FieldLabel>
-                        <FieldDescription className="text-xs">
-                          Requires <code>workflow</code> permission. Updates{" "}
-                          <code>creature.webp</code> &amp; <code>README.md</code>{" "}
-                          every midnight.
-                        </FieldDescription>
-                      </div>
-                    </Field>
-
-                    {includeWorkflowFiles && (
-                      <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
-                        <button
-                          type="button"
-                          onClick={() => setTimezoneMode("local")}
-                          className={cn(
-                            "rounded-md px-2.5 py-1.5 font-mono text-[11px] font-medium transition",
-                            timezoneMode === "local"
-                              ? "bg-background text-foreground shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          12:00 AM Local ({localCron})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTimezoneMode("utc")}
-                          className={cn(
-                            "rounded-md px-2.5 py-1.5 font-mono text-[11px] font-medium transition",
-                            timezoneMode === "utc"
-                              ? "bg-background text-foreground shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          12:00 AM UTC (0 0 * * *)
-                        </button>
-                      </div>
-                    )}
-
-                    {hasLegacyWorkflow && !includeWorkflowFiles && (
-                      <p className="flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                        <AlertCircle className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                        <span>
-                          Earlier <code>evolve-creature.yml</code> detected in{" "}
-                          <code>{username}/{username}</code>. Enable the switch
-                          above (with <code>workflow</code> scope) to upgrade it
-                          to Animated WebP.
-                        </span>
-                      </p>
-                    )}
-                  </div>
-
-                  {pushError && (
-                    <Alert variant="destructive">
-                      <AlertCircle />
-                      <AlertTitle className="font-mono text-xs">
-                        Push Failed
-                      </AlertTitle>
-                      <AlertDescription className="text-xs">
-                        {pushError}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {publishResult && (
-                    <Alert>
-                      <CheckCircle2 />
-                      <AlertTitle className="font-mono text-xs font-semibold">
-                        Published {publishResult.updatedPaths.join(", ")}
-                      </AlertTitle>
-                      <AlertDescription className="mt-2 flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          nativeButton={false}
-                          render={
-                            <a
-                              href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
-                              target="_blank"
-                              rel="noreferrer"
-                            />
-                          }
-                        >
-                          View GitHub Profile
-                          <ExternalLink data-icon="inline-end" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          nativeButton={false}
-                          render={
-                            <a
-                              href={publishResult.repoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            />
-                          }
-                        >
-                          Open Repo
-                          <ExternalLink data-icon="inline-end" />
-                        </Button>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={onBack}
-                      disabled={pushLoading}
+                      className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-3.5 text-[13px] font-medium text-[var(--text)] transition-[color,background-color,border-color] duration-150 hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
                     >
-                      <ArrowLeft data-icon="inline-start" />
-                      Back
-                    </Button>
-
-                    <Button
-                      type="submit"
-                      disabled={pushLoading || !tokenInput.trim()}
-                    >
-                      {pushLoading ? (
-                        <>
-                          <RefreshCw
-                            data-icon="inline-start"
-                            className="animate-spin"
-                          />
-                          Pushing...
-                        </>
-                      ) : (
-                        <>
-                          <Zap data-icon="inline-start" />
-                          Push Changes to README
-                        </>
-                      )}
-                    </Button>
+                      <span>Create classic token</span>
+                      <ExternalLink className="size-3.5 text-[var(--text-muted)]" />
+                    </a>
                   </div>
-                </form>
-              </CardContent>
-
-              <CardFooter className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                <span>Manual downloads:</span>
-                <div className="flex flex-wrap gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={webpBusy}
-                    onClick={handleDownloadWebP}
-                  >
-                    <Download data-icon="inline-start" />
-                    {webpBusy ? "Encoding..." : "creature.webp"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={gifBusy}
-                    onClick={handleDownloadGif}
-                  >
-                    <Download data-icon="inline-start" />
-                    {gifBusy ? "Encoding..." : "creature.gif"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      downloadTextFile(
-                        "README.md",
-                        readmeMarkdown,
-                        "text/markdown"
-                      )
-                    }
-                  >
-                    <Download data-icon="inline-start" />
-                    README.md
-                  </Button>
                 </div>
-              </CardFooter>
-            </Card>
-          </div>
+              ) : (
+                <div className="flex flex-col gap-4 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] p-4">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[13px] font-medium text-[var(--text)]">
+                      Required repository permissions (for{" "}
+                      <code className="studio-mono">{repoPath}</code>)
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2 text-[13px]">
+                      <span className="studio-mono inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 font-medium text-[var(--text)]">
+                        <Check className="size-3.5 text-[var(--accent)]" />
+                        Contents: Read and write
+                      </span>
+                      {includeWorkflowFiles && (
+                        <span className="studio-mono inline-flex items-center gap-1.5 rounded-[6px] border border-[var(--accent)] bg-[var(--accent-soft)] px-2.5 py-1 font-medium text-[var(--accent)]">
+                          <Check className="size-3.5" />
+                          Workflows: Read and write
+                        </span>
+                      )}
+                      <span className="studio-mono inline-flex items-center rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--text-muted)]">
+                        Metadata: Read-only (auto)
+                      </span>
+                    </div>
+                  </div>
 
-          <aside className="flex flex-col gap-6 lg:col-span-5 lg:pt-1">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-mono text-sm font-semibold text-foreground">
-                  Required Token Permissions
-                </h2>
+                  <div>
+                    <a
+                      href="https://github.com/settings/personal-access-tokens/new"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-9 items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-3.5 text-[13px] font-medium text-[var(--text)] transition-[color,background-color,border-color] duration-150 hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
+                    >
+                      <span>Create fine-grained token</span>
+                      <ExternalLink className="size-3.5 text-[var(--text-muted)]" />
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <StudioButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setTokenGuideOpen(true)}
+                >
+                  <BookOpen />
+                  <span>How to create a classic token and permissions</span>
+                </StudioButton>
+
                 <button
                   type="button"
                   onClick={() => setTokenGuideOpen(true)}
-                  className="font-mono text-xs text-primary underline underline-offset-4 hover:opacity-80"
+                  className="cursor-pointer rounded-[6px] py-1 text-[13px] font-medium text-[var(--accent)] underline underline-offset-4 hover:text-[var(--accent-hover)]"
                 >
-                  Full Step Guide
+                  Full step guide
                 </button>
               </div>
+            </StudioSectionCard>
 
-              <div className="flex flex-col gap-2.5 text-xs text-muted-foreground">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-mono text-foreground">
-                    Classic (<code>ghp_...</code>):
-                  </span>
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    repo
-                  </Badge>
-                  {includeWorkflowFiles ? (
-                    <Badge className="font-mono text-[10px]">+ workflow</Badge>
-                  ) : (
-                    <span>
-                      (+ <code>workflow</code> if 12:00 AM Action enabled)
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-mono text-foreground">
-                    Fine-Grained (<code>github_pat_...</code>):
-                  </span>
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    Contents: Read &amp; write
-                  </Badge>
-                  {includeWorkflowFiles && (
-                    <Badge className="font-mono text-[10px]">
-                      + Workflows: R/W
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-1 text-xs">
-                <a
-                  href="https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=repo,workflow"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4"
-                >
-                  Create Classic Token
-                  <ExternalLink className="size-3" />
-                </a>
-                <a
-                  href="https://github.com/settings/personal-access-tokens/new"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-primary underline underline-offset-4"
-                >
-                  Create Fine-Grained PAT
-                  <ExternalLink className="size-3" />
-                </a>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 font-mono text-sm font-semibold text-foreground">
-                <ShieldCheck className="size-4 text-primary" />
-                In-Memory Security Guarantee
-              </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                This static app never stores tokens in cookies, localStorage, or
-                any server. Your token stays strictly inside React memory during
-                the push and is cleared automatically afterward.
-              </p>
-              <a
-                href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            {/* Form wrapping Card 2 & Card 3 */}
+            <form onSubmit={handlePush} className="flex flex-col gap-6">
+              {/* Card 2: Paste your token */}
+              <StudioSectionCard
+                number={2}
+                title="Paste your token"
+                description="Copy, cut and context menu actions are disabled on this field."
               >
-                GitHub Privacy Statement
-                <ExternalLink className="size-3" />
-              </a>
-            </div>
+                <StudioField
+                  label="GitHub personal access token"
+                  htmlFor="pat-single-input"
+                  trailing={
+                    <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--text-muted)]">
+                      <Lock className="size-3.5" />
+                      <span>Kept in memory only</span>
+                    </span>
+                  }
+                  error={tokenFormatError}
+                  helper={
+                    tokenValid
+                      ? undefined
+                      : "Prefix should start with github_pat_ or ghp_."
+                  }
+                >
+                  <div className="flex items-center gap-2">
+                    <StudioInput
+                      id="pat-single-input"
+                      inputSize="lg"
+                      type={showToken ? "text" : "password"}
+                      monospace
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={tokenInput}
+                      invalid={Boolean(tokenFormatError)}
+                      onChange={(e) => {
+                        setTokenInput(e.target.value);
+                        if (pushError) setPushError(null);
+                      }}
+                      onCopy={(e) => e.preventDefault()}
+                      onCut={(e) => e.preventDefault()}
+                      onDragStart={(e) => e.preventDefault()}
+                      onContextMenu={(e) => e.preventDefault()}
+                      placeholder="github_pat_... or ghp_..."
+                      className="flex-1 select-none"
+                    />
+
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <StudioButton
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="sm:size-10"
+                            onClick={() => setShowToken((prev) => !prev)}
+                            aria-label={
+                              showToken ? "Hide token" : "Show token"
+                            }
+                          />
+                        }
+                      >
+                        {showToken ? <EyeOff /> : <Eye />}
+                      </TooltipTrigger>
+                      <TooltipContent
+                        data-app="studio"
+                        className="border border-[var(--border)] bg-[var(--text)] text-[var(--bg)] shadow-[var(--studio-shadow-overlay)]"
+                      >
+                        {showToken ? "Hide token" : "Show token"}
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {tokenInput && (
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <StudioButton
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="sm:size-10"
+                              onClick={() => setTokenInput("")}
+                              aria-label="Clear token from memory"
+                            />
+                          }
+                        >
+                          <Trash2 />
+                        </TooltipTrigger>
+                        <TooltipContent
+                          data-app="studio"
+                          className="border border-[var(--border)] bg-[var(--text)] text-[var(--bg)] shadow-[var(--studio-shadow-overlay)]"
+                        >
+                          Clear token from memory
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+
+                  {tokenValid && (
+                    <p className="mt-1 flex items-center gap-1.5 text-[13px] text-[var(--success)]">
+                      <CheckCircle2 className="size-3.5 shrink-0" />
+                      <span>Token format recognized.</span>
+                    </p>
+                  )}
+                </StudioField>
+              </StudioSectionCard>
+
+              {/* Card 3: Options and publish */}
+              <StudioSectionCard
+                number={3}
+                title="Options and publish"
+                description="Choose whether to install the automated midnight update workflow, then push."
+              >
+                <StudioSwitchRow
+                  id="auto-evolve-check"
+                  checked={includeWorkflowFiles}
+                  onCheckedChange={setIncludeWorkflowFiles}
+                  label="Include 12:00 AM daily auto-evolve GitHub Action"
+                  description="Updates creature.webp and README.md every midnight. Requires the workflow permission."
+                />
+
+                {includeWorkflowFiles && (
+                  <div className="flex flex-col gap-2">
+                    <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                      Daily schedule
+                    </span>
+                    <StudioSegmentedControl<"local" | "utc">
+                      ariaLabel="Daily GitHub Action schedule"
+                      value={timezoneMode}
+                      onChange={setTimezoneMode}
+                      options={[
+                        {
+                          value: "local",
+                          label: `12:00 AM Local (${localCron})`,
+                        },
+                        {
+                          value: "utc",
+                          label: "12:00 AM UTC (0 0 * * *)",
+                        },
+                      ]}
+                    />
+                  </div>
+                )}
+
+                {hasLegacyWorkflow && !includeWorkflowFiles && (
+                  <div className="flex items-start gap-2.5 rounded-[6px] border border-[var(--warning)]/35 bg-[var(--warning-soft)] px-3.5 py-2.5 text-[13px] leading-5 text-[var(--text)]">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+                    <span>
+                      An older{" "}
+                      <code className="studio-mono">evolve-creature.yml</code>{" "}
+                      was detected in <code className="studio-mono">{repoPath}</code>
+                      . Enable the switch above (with workflow permission) to
+                      upgrade it to Animated WebP.
+                    </span>
+                  </div>
+                )}
+
+                {pushLoading && (
+                  <ul
+                    aria-live="polite"
+                    className="flex flex-col gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] p-3.5 text-[13px]"
+                  >
+                    {pushStepRows.map((step) => {
+                      const isDone = completedSteps.includes(step.id);
+                      const isActive = activePushStep === step.id && !isDone;
+                      return (
+                        <li
+                          key={step.id}
+                          className={cn(
+                            "flex items-center gap-2.5",
+                            isDone
+                              ? "text-[var(--success)]"
+                              : isActive
+                                ? "font-medium text-[var(--text)]"
+                                : "text-[var(--text-faint)]"
+                          )}
+                        >
+                          {isDone ? (
+                            <CheckCircle2 className="size-4 shrink-0" />
+                          ) : isActive ? (
+                            <Loader2 className="size-4 shrink-0 animate-spin text-[var(--accent)]" />
+                          ) : (
+                            <span className="size-4 shrink-0 rounded-full border border-[var(--border)]" />
+                          )}
+                          <span>{step.label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                {pushError && (
+                  <div
+                    role="alert"
+                    className="flex items-start gap-3 rounded-[6px] border border-[var(--danger)]/40 bg-[var(--danger-soft)] p-4 text-[13px] leading-5 text-[var(--text)]"
+                  >
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--danger)]" />
+                    <div className="flex flex-col gap-1">
+                      <span className="font-semibold text-[var(--danger)]">
+                        Push failed
+                      </span>
+                      <span>{pushError}</span>
+                    </div>
+                  </div>
+                )}
+
+                {publishResult && (
+                  <div
+                    role="status"
+                    className="flex flex-col gap-3 rounded-[6px] border border-[var(--success)]/40 bg-[var(--success-soft)] p-4 text-[13px] leading-5 text-[var(--text)]"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[14px] font-semibold text-[var(--success)]">
+                          Published
+                        </span>
+                        <span>
+                          Committed{" "}
+                          <code className="studio-mono">
+                            {publishResult.updatedPaths.join(", ")}
+                          </code>{" "}
+                          to <code className="studio-mono">{repoPath}</code>.
+                          Your token was cleared from memory.
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pl-6">
+                      <a
+                        href={publishResult.repoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-3 text-[13px] font-medium text-[var(--text)] transition-[color,border-color] duration-150 hover:border-[var(--border-strong)]"
+                      >
+                        <span>View repository</span>
+                        <ExternalLink className="size-3.5 text-[var(--text-muted)]" />
+                      </a>
+                      <a
+                        href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-[6px] bg-[var(--accent)] px-3 text-[13px] font-medium text-[var(--on-accent)] transition-colors duration-150 hover:bg-[var(--accent-hover)]"
+                      >
+                        <span>View your profile</span>
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                  <StudioButton
+                    type="button"
+                    variant="ghost"
+                    onClick={onBack}
+                    disabled={pushLoading}
+                  >
+                    <ArrowLeft />
+                    <span>Back</span>
+                  </StudioButton>
+
+                  {!tokenValid && !pushLoading ? (
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <span tabIndex={0} className="inline-flex">
+                            {pushButton}
+                          </span>
+                        }
+                      />
+                      <TooltipContent
+                        data-app="studio"
+                        className="border border-[var(--border)] bg-[var(--text)] text-[var(--bg)] shadow-[var(--studio-shadow-overlay)]"
+                      >
+                        Paste a valid token starting with github_pat_ or ghp_ to
+                        push.
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    pushButton
+                  )}
+                </div>
+              </StudioSectionCard>
+            </form>
+
+            {/* Secondary Section: Prefer to do it yourself? */}
+            <StudioSectionCard
+              title="Prefer to do it yourself?"
+              description="Download the generated files and commit them to your repository manually."
+            >
+              <div className="flex flex-wrap gap-2">
+                <StudioButton
+                  variant="secondary"
+                  disabled={webpBusy}
+                  onClick={handleDownloadWebP}
+                >
+                  <Download />
+                  <span>
+                    {webpBusy ? "Encoding WebP..." : "Download creature.webp"}
+                  </span>
+                </StudioButton>
+
+                <StudioButton
+                  variant="secondary"
+                  disabled={gifBusy}
+                  onClick={handleDownloadGif}
+                >
+                  <Download />
+                  <span>
+                    {gifBusy ? "Encoding GIF..." : "Download creature.gif"}
+                  </span>
+                </StudioButton>
+
+                <StudioButton
+                  variant="secondary"
+                  onClick={() =>
+                    downloadTextFile(
+                      "README.md",
+                      readmeMarkdown,
+                      "text/markdown"
+                    )
+                  }
+                >
+                  <Download />
+                  <span>Download README.md</span>
+                </StudioButton>
+              </div>
+            </StudioSectionCard>
+          </div>
+
+          {/* Right Sticky Column */}
+          <aside className="lg:sticky lg:top-[120px]">
+            <StudioSectionCard title="Token safety">
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-[14px] font-medium text-[var(--text)]">
+                  <ShieldCheck className="size-4 shrink-0 text-[var(--accent)]" />
+                  <span>In-memory security guarantee</span>
+                </div>
+
+                <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+                  Your token stays in this tab&apos;s memory. This static app
+                  never stores tokens in cookies, localStorage, sessionStorage
+                  or on any server. It is cleared automatically after the push.
+                </p>
+
+                <a
+                  href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex w-fit items-center gap-1.5 rounded-[6px] py-0.5 text-[13px] font-medium text-[var(--accent)] underline underline-offset-4 hover:text-[var(--accent-hover)]"
+                >
+                  <span>GitHub privacy statement</span>
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </div>
+            </StudioSectionCard>
           </aside>
         </div>
-      )}
 
-      <TokenGuideDialog
-        open={tokenGuideOpen}
-        onClose={() => setTokenGuideOpen(false)}
-        username={username}
-        includeWorkflowFiles={includeWorkflowFiles}
-      />
-    </div>
+        <TokenGuideDialog
+          open={tokenGuideOpen}
+          onClose={() => setTokenGuideOpen(false)}
+          username={username}
+          includeWorkflowFiles={includeWorkflowFiles}
+        />
+      </div>
+    </TooltipProvider>
   );
 }

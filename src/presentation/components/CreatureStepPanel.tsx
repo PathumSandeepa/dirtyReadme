@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
-  ArrowRight,
   Calendar,
-  EyeOff,
+  Check,
   History,
   RotateCcw,
 } from "lucide-react";
@@ -33,46 +31,49 @@ import {
   getCreatureMeta,
   getEvolutionStage,
   getLuminance,
+  getSpriteAssetPath,
   getVisibleLanguages,
-  normalizeHex,
   resolveHudFontColor,
   resolveWaterMode,
 } from "@/domain/creature/services";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { StudioButton } from "../studio/ui/StudioButton";
 import {
-  Field,
-  FieldDescription,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import {
-  ColorPalettePicker,
-  ColorPalettePopoverButton,
-} from "./ColorPalettePicker";
+  StudioChipColorPopover,
+  StudioColorSwatch,
+} from "../studio/ui/StudioColorSwatch";
+import { StudioField, StudioInput } from "../studio/ui/StudioInput";
+import { StudioSectionCard } from "../studio/ui/StudioSectionCard";
+import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
+import { StudioSliderField } from "../studio/ui/StudioSliderField";
+import { StudioSwitchRow } from "../studio/ui/StudioSwitchRow";
 
 const SPEED_PRESETS = [
-  { label: "Slow", value: 0.6 },
-  { label: "Normal", value: 1.0 },
-  { label: "Fast", value: 1.8 },
+  { label: "Slow", value: "0.6", numeric: 0.6 },
+  { label: "Normal", value: "1.0", numeric: 1.0 },
+  { label: "Fast", value: "1.8", numeric: 1.8 },
 ] as const;
 
-const HUD_FONT_FAMILIES: { id: HudFontFamily; label: string }[] = [
-  { id: "pixel", label: "Pixel" },
-  { id: "mono", label: "Mono" },
-  { id: "sans", label: "Sans" },
-  { id: "serif", label: "Serif" },
+const HUD_FONT_FAMILIES: { value: HudFontFamily; label: string }[] = [
+  { value: "pixel", label: "Pixel" },
+  { value: "mono", label: "Mono" },
+  { value: "sans", label: "Sans" },
+  { value: "serif", label: "Serif" },
 ];
 
-const HUD_FONT_WEIGHTS: { id: HudFontWeight; label: string }[] = [
-  { id: "normal", label: "Normal" },
-  { id: "semibold", label: "Medium" },
-  { id: "bold", label: "Bold" },
+const HUD_FONT_WEIGHTS: { value: HudFontWeight; label: string }[] = [
+  { value: "normal", label: "Normal" },
+  { value: "semibold", label: "Medium" },
+  { value: "bold", label: "Bold" },
 ];
+
+const STAGE_SENTENCE_LABELS: Record<number, string> = {
+  1: "Calf",
+  2: "Young",
+  3: "Sub-adult",
+  4: "Mature",
+  5: "Elder",
+};
 
 interface CreatureStepPanelProps {
   config: CreatureConfig;
@@ -91,7 +92,6 @@ interface CreatureStepPanelProps {
   onSetBackgroundMode: (mode: BackgroundMode) => void;
   onUpdateCustomBg: (hex: string) => void;
   onUpdateConfig: (updater: (prev: CreatureConfig) => CreatureConfig) => void;
-  onNextStep: () => void;
 }
 
 export function CreatureStepPanel({
@@ -111,19 +111,13 @@ export function CreatureStepPanel({
   onSetBackgroundMode,
   onUpdateCustomBg,
   onUpdateConfig,
-  onNextStep,
 }: CreatureStepPanelProps) {
-  const [selectedLangIdx, setSelectedLangIdx] = useState(0);
-
   const meta = getCreatureMeta(config.creature);
   const evolution = getEvolutionStage(config.commits);
   const nextStageDef = STAGE_DEFINITIONS.find(
     (s) => s.stage === evolution.stage + 1
   );
   const visibleLanguages = getVisibleLanguages(config);
-  const safeLangIdx =
-    selectedLangIdx < visibleLanguages.length ? selectedLangIdx : 0;
-  const activeLang = visibleLanguages[safeLangIdx];
   const waterMode = resolveWaterMode(config);
   const isOriginalMode = config.colorMode === "canonical";
 
@@ -136,689 +130,525 @@ export function CreatureStepPanel({
       : "#D8F3FF";
   const currentHudColor = resolveHudFontColor(config);
 
-  return (
-    <div className="flex flex-col gap-7 rounded-xl border bg-card p-5 text-card-foreground sm:p-6">
-      {/* Section 1: Creature & Camera */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-sm font-semibold text-foreground">
-            Creature &amp; Perspective
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Choose your animated guardian. Export cleanly to Animated WebP or GIF.
-          </p>
-        </div>
+  const commitsCount = Math.max(0, Math.floor(config.commits || 0));
+  const commitsText = commitsCount.toLocaleString("en-US");
+  const activeSpeedPreset =
+    SPEED_PRESETS.find(
+      (p) => Math.abs(config.animationSpeed - p.numeric) < 0.08
+    )?.value ?? "custom";
 
-        <div className="grid gap-2.5 sm:grid-cols-2">
+  const hudSampleTitle = config.customTitle.trim()
+    ? config.customTitle.trim().toUpperCase()
+    : `${evolution.rank} ${meta.name.toUpperCase()}`;
+
+  const hudSampleFontCss =
+    config.hudFontFamily === "pixel" || config.hudFontFamily === "mono"
+      ? "var(--studio-font-mono)"
+      : config.hudFontFamily === "serif"
+        ? 'Georgia, "Times New Roman", serif'
+        : "var(--studio-font-sans)";
+
+  const hudSampleWeight =
+    config.hudFontWeight === "normal"
+      ? 400
+      : config.hudFontWeight === "semibold"
+        ? 600
+        : 700;
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* 1. Creature */}
+      <StudioSectionCard
+        number={1}
+        title="Creature"
+        description="Choose an animated marine creature and camera angle."
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
           {CREATURE_CATALOG.map((item) => {
             const selected = config.creature === item.id;
+            const thumbPath = getSpriteAssetPath(
+              item.id === "jellyfish" ? "jellyfish" : "tulkun-side"
+            );
             return (
               <button
                 key={item.id}
                 type="button"
+                aria-pressed={selected}
                 onClick={() => onSelectCreature(item.id)}
                 className={cn(
-                  "flex flex-col gap-1.5 rounded-xl p-3.5 text-left transition",
+                  "flex cursor-pointer flex-col gap-3 rounded-[8px] border p-3.5 text-left transition-[color,background-color,border-color] duration-150",
                   selected
-                    ? "bg-accent ring-1 ring-primary"
-                    : "bg-muted/45 hover:bg-muted/75"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)]"
+                    : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
                 )}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-sm font-semibold text-foreground">
-                    {item.name}
-                  </span>
-                  <Badge variant="secondary" className="font-mono text-[10px]">
-                    {item.subtitle}
-                  </Badge>
+                <div className="flex h-20 items-center justify-center overflow-hidden rounded-[6px] border border-[var(--border)] bg-[#0d1117] px-3 py-2">
+                  <img
+                    src={thumbPath}
+                    alt={item.name}
+                    style={{ imageRendering: "pixelated" }}
+                    className="max-h-full w-auto object-contain"
+                  />
                 </div>
-                <p className="text-xs leading-relaxed text-muted-foreground">
-                  {item.description}
-                </p>
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[14px] font-semibold text-[var(--text)]">
+                      {item.name}
+                    </span>
+                    {selected && (
+                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--on-accent)]">
+                        <Check className="size-3 stroke-[2.5]" />
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                    {item.subtitle}
+                  </span>
+                  <p className="mt-0.5 line-clamp-2 text-[13px] leading-5 text-[var(--text-muted)]">
+                    {item.description}
+                  </p>
+                </div>
               </button>
             );
           })}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-xs font-medium text-foreground">
-            Camera Perspective
-          </span>
+        <StudioField
+          label="Camera perspective"
+          helper={
+            meta.supportsViewSelection
+              ? undefined
+              : "Pelagic side view applies to Pixel Jellyfish."
+          }
+        >
+          <StudioSegmentedControl<CameraView>
+            ariaLabel="Camera perspective"
+            value={meta.supportsViewSelection ? config.view : "side"}
+            onChange={onSelectView}
+            options={CAMERA_VIEWS.map((v) => ({
+              value: v.id,
+              label: v.id === "side" ? "Side view" : "Top view",
+              disabled: v.id === "top" && !meta.supportsViewSelection,
+            }))}
+          />
+        </StudioField>
+      </StudioSectionCard>
 
-          {meta.supportsViewSelection ? (
-            <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
-              {CAMERA_VIEWS.map((v) => {
-                const active = config.view === v.id;
-                return (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => onSelectView(v.id)}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 font-mono text-xs font-medium transition",
-                      active
-                        ? "bg-background text-foreground shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {v.name}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <EyeOff className="size-3.5 shrink-0" />
-              <span>
-                Pelagic view locked — camera angles apply to Pixel Tulkun only.
-              </span>
-            </div>
-          )}
-        </div>
-      </section>
+      {/* 2. Colors */}
+      <StudioSectionCard
+        number={2}
+        title="Colors"
+        description="Keep canonical creature armor colors or tint from your top languages."
+      >
+        <StudioField label="Creature color mode">
+          <StudioSegmentedControl<"canonical" | "languages">
+            ariaLabel="Creature color mode"
+            value={isOriginalMode ? "canonical" : "languages"}
+            onChange={(mode) => {
+              if (mode === "canonical") onApplyOriginalColors();
+              else onApplyAutoLanguageColors();
+            }}
+            options={[
+              { value: "canonical", label: "Original colors" },
+              { value: "languages", label: "Auto (from languages)" },
+            ]}
+          />
+        </StudioField>
 
-      <Separator />
+        <StudioField
+          label="Stats languages"
+          trailing={
+            !isOriginalMode ? (
+              <StudioButton
+                variant="ghost"
+                size="sm"
+                onClick={onResetLanguageColors}
+              >
+                <RotateCcw />
+                <span>Reset colors</span>
+              </StudioButton>
+            ) : null
+          }
+          helper={
+            isOriginalMode
+              ? "Original palette maps your top languages automatically. Switch to Auto to edit colors."
+              : "Click any language chip to edit its label or color."
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <StudioSegmentedControl<`${LanguageCount}`>
+              ariaLabel="Stats languages count"
+              value={`${config.languageCount}` as `${LanguageCount}`}
+              onChange={(val) =>
+                onSetLanguageCount(Number(val) as LanguageCount)
+              }
+              options={LANGUAGE_COUNTS.map((count) => ({
+                value: `${count}` as `${LanguageCount}`,
+                label: `${count}`,
+              }))}
+            />
 
-      {/* Section 2: Colors, Languages & Environment */}
-      <section className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1">
-          <h2 className="font-mono text-sm font-semibold text-foreground">
-            Colors &amp; Canvas Backdrop
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Keep canonical artwork colors or tint the creature directly from your
-            top languages.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-xs font-medium text-foreground">
-            Creature Color Mode
-          </span>
-          <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
-            <button
-              type="button"
-              onClick={onApplyOriginalColors}
-              className={cn(
-                "rounded-md px-3 py-1.5 font-mono text-xs font-medium transition",
-                config.colorMode === "canonical"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Original Colors
-            </button>
-            <button
-              type="button"
-              onClick={onApplyAutoLanguageColors}
-              className={cn(
-                "rounded-md px-3 py-1.5 font-mono text-xs font-medium transition",
-                config.colorMode !== "canonical"
-                  ? "bg-background text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Auto (Languages)
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-mono text-xs font-medium text-foreground">
-              HUD Languages ({config.languageCount})
-            </span>
-            <div className="flex items-center gap-2">
-              {!isOriginalMode && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  onClick={onResetLanguageColors}
-                  title="Reset official GitHub language colors"
-                >
-                  <RotateCcw data-icon="inline-start" />
-                  Reset
-                </Button>
-              )}
-              <div className="inline-flex rounded-lg bg-muted/70 p-0.5">
-                {LANGUAGE_COUNTS.map((count) => {
-                  const active = config.languageCount === count;
-                  return (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => onSetLanguageCount(count)}
-                      className={cn(
-                        "rounded-md px-2.5 py-1 font-mono text-xs font-medium transition",
-                        active
-                          ? "bg-background text-foreground shadow-xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {count}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {isOriginalMode ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-1.5">
-                {visibleLanguages.map((lang, idx) => (
+            <div className="flex flex-wrap gap-2">
+              {visibleLanguages.map((lang, idx) =>
+                isOriginalMode ? (
                   <div
                     key={`${idx}-${lang.name}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-muted/60 px-2.5 py-1.5"
+                    className="inline-flex min-h-[36px] items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1.5 text-[13px] font-medium text-[var(--text)]"
                   >
                     <span
-                      className="size-2.5 shrink-0 rounded-full"
+                      className="size-3 shrink-0 rounded-full border border-black/15"
                       style={{ backgroundColor: lang.color }}
                     />
-                    <span className="font-mono text-xs font-medium text-foreground">
-                      {lang.name || `Lang ${idx + 1}`}
-                    </span>
+                    <span>{lang.name || `Language ${idx + 1}`}</span>
                   </div>
-                ))}
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Original palette automatically maps your top{" "}
-                {config.languageCount} HUD languages. Switch to Auto to edit
-                colors individually.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap gap-1.5">
-                {visibleLanguages.map((lang, idx) => {
-                  const selected = safeLangIdx === idx;
-                  const hex = normalizeHex(lang.color, "#3178C6");
-                  return (
-                    <button
-                      key={`${idx}-${lang.name}`}
-                      type="button"
-                      onClick={() => setSelectedLangIdx(idx)}
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-left transition",
-                        selected
-                          ? "bg-accent text-foreground ring-1 ring-primary"
-                          : "bg-muted/55 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <span
-                        className="size-3 shrink-0 rounded-full"
-                        style={{ backgroundColor: hex }}
-                      />
-                      <span className="font-mono text-xs font-medium">
-                        {lang.name || `Lang ${idx + 1}`}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {activeLang && (
-                <div className="flex flex-col gap-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <Input
-                      type="text"
-                      maxLength={18}
-                      value={activeLang.name}
-                      onChange={(e) =>
-                        onUpdateLanguageName(safeLangIdx, e.target.value)
-                      }
-                      aria-label="Selected language name"
-                      className="h-8 flex-1 font-mono text-xs"
-                    />
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {normalizeHex(activeLang.color, "#3178C6")}
-                    </span>
-                  </div>
-
-                  <ColorPalettePicker
-                    value={activeLang.color}
-                    onChange={(hex) => onUpdateLanguageColor(safeLangIdx, hex)}
-                    height={120}
+                ) : (
+                  <StudioChipColorPopover
+                    key={`${idx}-editable`}
+                    index={idx}
+                    name={lang.name}
+                    color={lang.color}
+                    onChangeName={(nextName) =>
+                      onUpdateLanguageName(idx, nextName)
+                    }
+                    onChangeColor={(nextHex) =>
+                      onUpdateLanguageColor(idx, nextHex)
+                    }
                   />
-                </div>
+                )
               )}
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-xs font-medium text-foreground">
-            Water Environment
-          </span>
-          <div className="grid grid-cols-3 rounded-lg bg-muted/70 p-1">
-            {(
-              [
-                { id: "water", label: "In Water" },
-                { id: "no-water", label: "No Water" },
-                { id: "clear", label: "Clear" },
-              ] as const
-            ).map((opt) => {
-              const active = waterMode === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => onSetWaterMode(opt.id)}
-                  className={cn(
-                    "rounded-md px-2 py-1.5 font-mono text-xs font-medium transition",
-                    active
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            {waterMode === "water"
+        </StudioField>
+      </StudioSectionCard>
+
+      {/* 3. Water and background */}
+      <StudioSectionCard
+        number={3}
+        title="Water and background"
+        description="Control ambient underwater atmosphere and canvas fill."
+      >
+        <StudioField
+          label="Water"
+          helper={
+            waterMode === "water"
               ? "Animated ocean glow, light rays, rising bubbles, and wake motes."
               : waterMode === "no-water"
-                ? "Removes underwater glow & rays while keeping subtle wake motes."
-                : "Pure clean creature canvas with all water particles removed."}
-          </p>
-        </div>
+                ? "Removes underwater glow and light rays while keeping subtle wake motes."
+                : "Clean creature canvas with all water rays, glow, and particles removed."
+          }
+        >
+          <StudioSegmentedControl<WaterMode>
+            ariaLabel="Water environment"
+            value={waterMode}
+            onChange={onSetWaterMode}
+            options={[
+              { value: "water", label: "In water" },
+              { value: "no-water", label: "No water" },
+              { value: "clear", label: "Clear" },
+            ]}
+          />
+        </StudioField>
 
-        <div className="flex flex-col gap-2.5">
-          <span className="font-mono text-xs font-medium text-foreground">
-            Canvas Background
-          </span>
-          <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
-            {(
-              [
-                { id: "transparent", label: "Transparent" },
-                { id: "custom", label: "Custom Color" },
-              ] as const
-            ).map((mode) => {
-              const active = config.backgroundMode === mode.id;
+        <StudioField label="Canvas background">
+          <div className="flex flex-col gap-3">
+            <StudioSegmentedControl<BackgroundMode>
+              ariaLabel="Canvas background"
+              value={config.backgroundMode}
+              onChange={onSetBackgroundMode}
+              options={[
+                { value: "transparent", label: "Transparent" },
+                { value: "custom", label: "Custom color" },
+              ]}
+            />
+
+            {config.backgroundMode === "custom" && (
+              <StudioField label="Background color">
+                <StudioColorSwatch
+                  label="Background color"
+                  value={customBgHex}
+                  onChange={onUpdateCustomBg}
+                />
+              </StudioField>
+            )}
+          </div>
+        </StudioField>
+      </StudioSectionCard>
+
+      {/* 4. Evolution stage */}
+      <StudioSectionCard
+        number={4}
+        title="Evolution stage"
+        description="Creature size and wake intensity scale with your GitHub commit count."
+      >
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-5 gap-1.5">
+            {STAGE_DEFINITIONS.map((stageDef) => {
+              const isCurrent = stageDef.stage === evolution.stage;
+              const isPassed = stageDef.stage < evolution.stage;
+              const label =
+                STAGE_SENTENCE_LABELS[stageDef.stage] ?? stageDef.rank;
+
               return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  onClick={() => onSetBackgroundMode(mode.id)}
+                <div
+                  key={stageDef.stage}
+                  aria-current={isCurrent ? "step" : undefined}
                   className={cn(
-                    "rounded-md px-3 py-1.5 font-mono text-xs font-medium transition",
-                    active
-                      ? "bg-background text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
+                    "flex flex-col items-center gap-1 rounded-[6px] border px-1.5 py-2 text-center",
+                    isCurrent
+                      ? "border-[var(--warm)] bg-[var(--warm-soft)] text-[var(--warm)]"
+                      : isPassed
+                        ? "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)]"
+                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-faint)]"
                   )}
                 >
-                  {mode.label}
-                </button>
+                  <span className="studio-mono text-[11px] font-semibold">
+                    S{stageDef.stage}
+                  </span>
+                  <span className="truncate text-[12px] font-medium">
+                    {label}
+                  </span>
+                  <span className="hidden text-[11px] opacity-80 sm:inline">
+                    {stageDef.minCommits.toLocaleString("en-US")}+
+                  </span>
+                </div>
               );
             })}
           </div>
 
-          {config.backgroundMode === "custom" && (
-            <div className="flex flex-col gap-2 pt-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-mono text-muted-foreground">
-                  Background Hex
-                </span>
-                <span className="font-mono font-semibold text-foreground">
-                  {normalizeHex(customBgHex, "#0D1117")}
-                </span>
-              </div>
-              <ColorPalettePicker
-                value={customBgHex}
-                onChange={onUpdateCustomBg}
-                height={115}
-              />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* Section 3: Stage, Speed & Pixel HUD */}
-      <section className="flex flex-col gap-5">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <h2 className="font-mono text-sm font-semibold text-foreground">
-                Evolution Stage
-              </h2>
-              <Badge variant="secondary" className="font-mono text-[11px]">
-                Stage {evolution.stage}: {evolution.rank}
-              </Badge>
-            </div>
-            <span className="font-mono text-xs font-semibold text-foreground">
-              {Math.max(0, Math.floor(config.commits || 0)).toLocaleString(
-                "en-US"
-              )}{" "}
-              commits
-            </span>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+            <span className="font-semibold text-[var(--warm)]">
+              {commitsText} commits.
+            </span>{" "}
             {nextStageDef
-              ? `${Math.max(0, nextStageDef.minCommits - config.commits).toLocaleString("en-US")} more commits to reach Stage ${nextStageDef.stage} (${nextStageDef.rank}).`
-              : "Maximum Elder evolution stage unlocked."}
+              ? `${Math.max(0, nextStageDef.minCommits - commitsCount).toLocaleString("en-US")} more to reach Stage ${nextStageDef.stage} (${STAGE_SENTENCE_LABELS[nextStageDef.stage] ?? nextStageDef.rank}).`
+              : "Stage 5 (Elder) maximum tier reached."}
           </p>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] font-medium text-muted-foreground">
-              Commit Count Source
-            </span>
-            <div className="grid grid-cols-2 rounded-lg bg-muted/70 p-1">
-              <button
-                type="button"
-                onClick={() => onSelectWindow("annual")}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-xs font-medium transition",
-                  config.windowMode === "annual"
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Calendar className="size-3.5" />
-                <span>
-                  Current Year
-                  {snapshot
-                    ? ` (${snapshot.annualCommits.toLocaleString("en-US")})`
-                    : ""}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectWindow("all-time")}
-                className={cn(
-                  "flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-xs font-medium transition",
-                  config.windowMode === "all-time"
-                    ? "bg-background text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <History className="size-3.5" />
-                <span>
-                  All Time
-                  {snapshot
-                    ? ` (${snapshot.allTimeCommits.toLocaleString("en-US")})`
-                    : ""}
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-mono text-xs font-medium text-foreground">
-              Swimming Speed
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="inline-flex rounded-lg bg-muted/70 p-0.5">
-                {SPEED_PRESETS.map((preset) => {
-                  const active =
-                    Math.abs(config.animationSpeed - preset.value) < 0.08;
-                  return (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      onClick={() =>
-                        onUpdateConfig((prev) => ({
-                          ...prev,
-                          animationSpeed: preset.value,
-                        }))
-                      }
-                      className={cn(
-                        "rounded-md px-2 py-0.5 font-mono text-[11px] font-medium transition",
-                        active
-                          ? "bg-background text-foreground shadow-xs"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      {preset.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <span className="min-w-10 text-right font-mono text-xs font-semibold text-foreground">
-                {config.animationSpeed.toFixed(1)}x
-              </span>
-            </div>
-          </div>
-
-          <Slider
-            aria-label="Swimming Speed"
-            min={0.4}
-            max={2.5}
-            step={0.1}
-            value={[config.animationSpeed]}
-            onValueChange={(val) => {
-              const next = Array.isArray(val) ? val[0] : val;
-              if (typeof next === "number" && Number.isFinite(next)) {
-                onUpdateConfig((prev) => ({ ...prev, animationSpeed: next }));
-              }
-            }}
+        <StudioField label="Commit count source">
+          <StudioSegmentedControl<ContributionWindow>
+            ariaLabel="Commit count source"
+            value={config.windowMode}
+            onChange={onSelectWindow}
+            options={[
+              {
+                value: "annual",
+                label: snapshot
+                  ? `Current year (${snapshot.annualCommits.toLocaleString("en-US")})`
+                  : "Current year",
+                icon: <Calendar />,
+              },
+              {
+                value: "all-time",
+                label: snapshot
+                  ? `All time (${snapshot.allTimeCommits.toLocaleString("en-US")})`
+                  : "All time",
+                icon: <History />,
+              },
+            ]}
           />
-        </div>
+        </StudioField>
+      </StudioSectionCard>
 
-        <div className="flex flex-col gap-4">
-          <Field orientation="horizontal">
-            <Switch
-              id="hud-toggle"
-              checked={config.showHud}
-              onCheckedChange={(checked) =>
-                onUpdateConfig((prev) => ({
-                  ...prev,
-                  showHud: Boolean(checked),
-                }))
+      {/* 5. Animation */}
+      <StudioSectionCard
+        number={5}
+        title="Animation"
+        description="Adjust swimming cadence for the live canvas and WebP/GIF exports."
+      >
+        <StudioSliderField
+          label="Swimming speed"
+          value={config.animationSpeed}
+          min={0.4}
+          max={2.5}
+          step={0.1}
+          unit="x"
+          formatValue={(v) => v.toFixed(1)}
+          onChange={(next) =>
+            onUpdateConfig((prev) => ({ ...prev, animationSpeed: next }))
+          }
+          presetSlot={
+            <StudioSegmentedControl<string>
+              ariaLabel="Swimming speed preset"
+              size="sm"
+              value={activeSpeedPreset}
+              onChange={(val) => {
+                const preset = SPEED_PRESETS.find((p) => p.value === val);
+                if (preset) {
+                  onUpdateConfig((prev) => ({
+                    ...prev,
+                    animationSpeed: preset.numeric,
+                  }));
+                }
+              }}
+              options={SPEED_PRESETS.map((p) => ({
+                value: p.value,
+                label: p.label,
+              }))}
+            />
+          }
+        />
+      </StudioSectionCard>
+
+      {/* 6. Stats overlay (HUD) */}
+      <StudioSectionCard
+        number={6}
+        title="Stats overlay (HUD)"
+        description="Display evolution rank, commits, and top languages along the bottom edge."
+      >
+        <StudioSwitchRow
+          id="hud-toggle"
+          checked={config.showHud}
+          onCheckedChange={(checked) =>
+            onUpdateConfig((prev) => ({ ...prev, showHud: checked }))
+          }
+          label="Show pixel HUD overlay"
+          description="Stage, commits and top languages shown on the image."
+        />
+
+        {config.showHud && (
+          <div className="flex flex-col gap-5 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] p-4">
+            <div className="flex flex-col gap-2">
+              <span className="text-[13px] font-medium text-[var(--text-muted)]">
+                Overlay style preview
+              </span>
+              <div
+                className="rounded-[6px] border border-[var(--border)] px-3.5 py-3"
+                style={{
+                  backgroundColor:
+                    config.backgroundMode === "custom"
+                      ? derived.background
+                      : "#0D1117",
+                  textAlign: config.hudAlign,
+                }}
+              >
+                <div
+                  style={{
+                    color: currentHudColor,
+                    fontFamily: hudSampleFontCss,
+                    fontWeight: hudSampleWeight,
+                    fontSize: `${Math.min(18, Math.max(12, config.hudFontSize))}px`,
+                    letterSpacing:
+                      config.hudFontFamily === "pixel" ? "0.04em" : undefined,
+                  }}
+                >
+                  STAGE {evolution.stage}: {hudSampleTitle}
+                </div>
+                <div
+                  style={{
+                    color: currentHudColor,
+                    fontFamily: hudSampleFontCss,
+                    fontWeight: hudSampleWeight,
+                    fontSize: `${Math.max(11, Math.min(16, config.hudFontSize - 1))}px`,
+                    opacity: 0.9,
+                  }}
+                >
+                  CONTRIBUTIONS: {commitsText}
+                </div>
+              </div>
+            </div>
+
+            <StudioField label="Custom label" htmlFor="hud-title-input">
+              <StudioInput
+                id="hud-title-input"
+                maxLength={32}
+                placeholder={`${evolution.rank} ${meta.name.toUpperCase()}`}
+                value={config.customTitle}
+                onChange={(e) =>
+                  onUpdateConfig((prev) => ({
+                    ...prev,
+                    customTitle: e.target.value,
+                  }))
+                }
+              />
+            </StudioField>
+
+            <StudioField label="Position">
+              <StudioSegmentedControl<HudAlign>
+                ariaLabel="HUD position"
+                value={config.hudAlign}
+                onChange={(align) =>
+                  onUpdateConfig((prev) => ({ ...prev, hudAlign: align }))
+                }
+                options={[
+                  { value: "left", label: "Left", icon: <AlignLeft /> },
+                  { value: "center", label: "Center", icon: <AlignCenter /> },
+                  { value: "right", label: "Right", icon: <AlignRight /> },
+                ]}
+              />
+            </StudioField>
+
+            <StudioField label="Font family">
+              <StudioSegmentedControl<HudFontFamily>
+                ariaLabel="HUD font family"
+                value={config.hudFontFamily}
+                onChange={(family) =>
+                  onUpdateConfig((prev) => ({
+                    ...prev,
+                    hudFontFamily: family,
+                  }))
+                }
+                options={HUD_FONT_FAMILIES}
+              />
+            </StudioField>
+
+            <StudioField label="Font weight">
+              <StudioSegmentedControl<HudFontWeight>
+                ariaLabel="HUD font weight"
+                value={config.hudFontWeight}
+                onChange={(weight) =>
+                  onUpdateConfig((prev) => ({
+                    ...prev,
+                    hudFontWeight: weight,
+                  }))
+                }
+                options={HUD_FONT_WEIGHTS}
+              />
+            </StudioField>
+
+            <StudioSliderField
+              label="Font size"
+              value={config.hudFontSize}
+              min={12}
+              max={22}
+              step={1}
+              unit="px"
+              onChange={(next) =>
+                onUpdateConfig((prev) => ({ ...prev, hudFontSize: next }))
               }
             />
-            <div className="flex flex-col gap-0.5">
-              <FieldLabel
-                htmlFor="hud-toggle"
-                className="font-mono text-xs font-semibold"
-              >
-                Show Pixel HUD Overlay
-              </FieldLabel>
-              <FieldDescription className="text-xs">
-                Stage, commits &amp; {config.languageCount} languages along
-                bottom ({config.hudAlign}).
-              </FieldDescription>
-            </div>
-          </Field>
 
-          {config.showHud && (
-            <div className="flex flex-col gap-4 border-l-2 border-muted pl-4">
-              <Field>
-                <FieldLabel
-                  htmlFor="hud-title-input"
-                  className="font-mono text-[11px]"
-                >
-                  Custom HUD Label
-                </FieldLabel>
-                <Input
-                  id="hud-title-input"
-                  maxLength={32}
-                  placeholder={`${evolution.rank} ${meta.id.toUpperCase()}`}
-                  value={config.customTitle}
-                  onChange={(e) =>
+            <StudioField label="Font color">
+              <div className="flex flex-wrap items-center gap-2">
+                <StudioColorSwatch
+                  label="HUD font color"
+                  value={currentHudColor}
+                  onChange={(hex) =>
                     onUpdateConfig((prev) => ({
                       ...prev,
-                      customTitle: e.target.value,
+                      hudFontColor: hex,
                     }))
                   }
-                  className="font-mono text-xs"
                 />
-              </Field>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="font-mono text-[11px] font-medium text-foreground">
-                  HUD Position
-                </span>
-                <div className="grid grid-cols-3 rounded-lg bg-muted/70 p-1">
-                  {(
-                    [
-                      { id: "left", label: "Left", Icon: AlignLeft },
-                      { id: "center", label: "Center", Icon: AlignCenter },
-                      { id: "right", label: "Right", Icon: AlignRight },
-                    ] as { id: HudAlign; label: string; Icon: typeof AlignLeft }[]
-                  ).map(({ id, label, Icon }) => {
-                    const active = config.hudAlign === id;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() =>
-                          onUpdateConfig((prev) => ({ ...prev, hudAlign: id }))
-                        }
-                        className={cn(
-                          "flex items-center justify-center gap-1.5 rounded-md py-1.5 font-mono text-xs font-medium transition",
-                          active
-                            ? "bg-background text-foreground shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        <Icon className="size-3.5" />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <StudioButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    onUpdateConfig((prev) => ({
+                      ...prev,
+                      hudFontColor: defaultContrastHudColor,
+                    }))
+                  }
+                >
+                  <RotateCcw />
+                  <span>Auto</span>
+                </StudioButton>
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="font-mono text-[11px] font-medium text-foreground">
-                  HUD Font Family
-                </span>
-                <div className="grid grid-cols-4 rounded-lg bg-muted/70 p-1">
-                  {HUD_FONT_FAMILIES.map((f) => {
-                    const active = config.hudFontFamily === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        type="button"
-                        onClick={() =>
-                          onUpdateConfig((prev) => ({
-                            ...prev,
-                            hudFontFamily: f.id,
-                          }))
-                        }
-                        className={cn(
-                          "rounded-md py-1.5 font-mono text-xs font-medium transition",
-                          active
-                            ? "bg-background text-foreground shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        {f.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <span className="font-mono text-[11px] font-medium text-foreground">
-                    Font Weight
-                  </span>
-                  <div className="grid grid-cols-3 rounded-lg bg-muted/70 p-1">
-                    {HUD_FONT_WEIGHTS.map((w) => {
-                      const active = config.hudFontWeight === w.id;
-                      return (
-                        <button
-                          key={w.id}
-                          type="button"
-                          onClick={() =>
-                            onUpdateConfig((prev) => ({
-                              ...prev,
-                              hudFontWeight: w.id,
-                            }))
-                          }
-                          className={cn(
-                            "rounded-md py-1 font-mono text-[11px] font-medium transition",
-                            active
-                              ? "bg-background text-foreground shadow-xs"
-                              : "text-muted-foreground hover:text-foreground"
-                          )}
-                        >
-                          {w.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between font-mono text-[11px]">
-                    <span className="font-medium text-foreground">
-                      Font Size
-                    </span>
-                    <span className="font-semibold text-foreground">
-                      {config.hudFontSize}px
-                    </span>
-                  </div>
-                  <Slider
-                    aria-label="HUD Font Size"
-                    min={12}
-                    max={22}
-                    step={1}
-                    value={[config.hudFontSize]}
-                    onValueChange={(val) => {
-                      const next = Array.isArray(val) ? val[0] : val;
-                      if (typeof next === "number" && Number.isFinite(next)) {
-                        onUpdateConfig((prev) => ({
-                          ...prev,
-                          hudFontSize: next,
-                        }));
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <span className="font-mono text-[11px] font-medium text-foreground">
-                  HUD Font Color
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <ColorPalettePopoverButton
-                    value={currentHudColor}
-                    onChange={(hex) =>
-                      onUpdateConfig((prev) => ({
-                        ...prev,
-                        hudFontColor: hex,
-                      }))
-                    }
-                    label="HUD Font Color"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="xs"
-                    onClick={() =>
-                      onUpdateConfig((prev) => ({
-                        ...prev,
-                        hudFontColor: defaultContrastHudColor,
-                      }))
-                    }
-                    title="Reset HUD text contrast color"
-                  >
-                    <RotateCcw data-icon="inline-start" />
-                    Auto
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      <Button type="button" size="lg" onClick={onNextStep} className="w-full">
-        Next: Customize Profile README
-        <ArrowRight data-icon="inline-end" />
-      </Button>
+            </StudioField>
+          </div>
+        )}
+      </StudioSectionCard>
     </div>
   );
 }

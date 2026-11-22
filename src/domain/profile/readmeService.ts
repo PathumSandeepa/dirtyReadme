@@ -189,9 +189,12 @@ export function combineAllStackCards(cards: TechStackCard[]): {
     ...card,
     badgeIds: [...card.badgeIds],
   }));
+  const sourceCards = cards.some((card) => card.visible !== false)
+    ? cards.filter((card) => card.visible !== false)
+    : cards;
   const seen = new Set<string>();
   const mergedIds: string[] = [];
-  for (const card of cards) {
+  for (const card of sourceCards) {
     for (const id of card.badgeIds) {
       if (!seen.has(id)) {
         seen.add(id);
@@ -200,7 +203,7 @@ export function combineAllStackCards(cards: TechStackCard[]): {
     }
   }
   return {
-    cards: [{ id: "card-combined", title: "", badgeIds: mergedIds }],
+    cards: [{ id: "card-combined", title: "", badgeIds: mergedIds, visible: true }],
     snapshot,
   };
 }
@@ -386,6 +389,7 @@ export function buildGeneratedReadmeMarkdown(
     const badgeById = new Map(readme.badges.map((b) => [b.id, b]));
     const cardSections = readme.stackCards
       .map((card) => {
+        if (card.visible === false) return null;
         const badges = card.badgeIds
           .map((id) => badgeById.get(id))
           .filter((b): b is ReadmeBadge => Boolean(b && b.label.trim()));

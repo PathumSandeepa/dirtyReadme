@@ -61,7 +61,7 @@ function renderMarkdownOnlyInline(
             key={k}
             src={safeSrc}
             alt={imgMatch[1]}
-            className="my-1 inline-block max-h-24 rounded align-middle"
+            className="my-1 inline-block align-middle"
           />
         );
       } else {
@@ -76,7 +76,6 @@ function renderMarkdownOnlyInline(
             href={sanitizeHref(linkMatch[2])}
             target="_blank"
             rel="noreferrer"
-            className="text-[#2f81f7] underline"
           >
             {renderInlineMarkdown(linkMatch[1])}
           </a>
@@ -85,32 +84,17 @@ function renderMarkdownOnlyInline(
         nodes.push(token);
       }
     } else if (token.startsWith("`") && token.endsWith("`")) {
-      nodes.push(
-        <code
-          key={k}
-          className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-xs dark:bg-white/10"
-        >
-          {token.slice(1, -1)}
-        </code>
-      );
+      nodes.push(<code key={k}>{token.slice(1, -1)}</code>);
     } else if (token.startsWith("**") && token.endsWith("**")) {
       nodes.push(
-        <strong key={k} className="font-semibold">
-          {renderInlineMarkdown(token.slice(2, -2))}
-        </strong>
+        <strong key={k}>{renderInlineMarkdown(token.slice(2, -2))}</strong>
       );
     } else if (token.startsWith("~~") && token.endsWith("~~")) {
       nodes.push(
-        <del key={k} className="line-through opacity-75">
-          {renderInlineMarkdown(token.slice(2, -2))}
-        </del>
+        <del key={k}>{renderInlineMarkdown(token.slice(2, -2))}</del>
       );
     } else if (token.startsWith("*") && token.endsWith("*")) {
-      nodes.push(
-        <em key={k} className="italic">
-          {renderInlineMarkdown(token.slice(1, -1))}
-        </em>
-      );
+      nodes.push(<em key={k}>{renderInlineMarkdown(token.slice(1, -1))}</em>);
     } else {
       nodes.push(token);
     }
@@ -155,7 +139,7 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
             key={k}
             src={safeSrc}
             alt={alt}
-            className="my-1 inline-block max-h-24 rounded align-middle"
+            className="my-1 inline-block align-middle"
           />
         );
       }
@@ -168,7 +152,6 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
           href={sanitizeHref(parseAttr(attrs, "href"))}
           target="_blank"
           rel="noreferrer"
-          className="text-[#2f81f7] underline"
         >
           {renderInlineMarkdown(inner)}
         </a>
@@ -177,38 +160,15 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
       const tag = (match[4] || "").toLowerCase();
       const inner = match[5] || "";
       if (tag === "strong" || tag === "b") {
-        nodes.push(
-          <strong key={k} className="font-semibold">
-            {renderInlineMarkdown(inner)}
-          </strong>
-        );
+        nodes.push(<strong key={k}>{renderInlineMarkdown(inner)}</strong>);
       } else if (tag === "em" || tag === "i") {
-        nodes.push(
-          <em key={k} className="italic">
-            {renderInlineMarkdown(inner)}
-          </em>
-        );
+        nodes.push(<em key={k}>{renderInlineMarkdown(inner)}</em>);
       } else if (tag === "u" || tag === "ins") {
-        nodes.push(
-          <u key={k} className="underline underline-offset-2">
-            {renderInlineMarkdown(inner)}
-          </u>
-        );
+        nodes.push(<u key={k}>{renderInlineMarkdown(inner)}</u>);
       } else if (tag === "del" || tag === "s") {
-        nodes.push(
-          <del key={k} className="line-through opacity-75">
-            {renderInlineMarkdown(inner)}
-          </del>
-        );
+        nodes.push(<del key={k}>{renderInlineMarkdown(inner)}</del>);
       } else if (tag === "code") {
-        nodes.push(
-          <code
-            key={k}
-            className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-xs dark:bg-white/10"
-          >
-            {inner}
-          </code>
-        );
+        nodes.push(<code key={k}>{inner}</code>);
       }
     }
 
@@ -236,11 +196,12 @@ function isTableSeparator(line: string): boolean {
   return /^\|?(\s*:?-{3,}:?\s*\|)+(\s*:?-{3,}:?\s*)?\|?$/.test(line.trim());
 }
 
-function getAlignClass(align?: string): string {
+function getAlignStyle(align?: string): React.CSSProperties | undefined {
   const clean = align?.toLowerCase();
-  if (clean === "center") return "text-center";
-  if (clean === "right") return "text-right";
-  return "text-left";
+  if (clean === "center") return { textAlign: "center" };
+  if (clean === "right") return { textAlign: "right" };
+  if (clean === "left") return { textAlign: "left" };
+  return undefined;
 }
 
 export function AdvancedMarkdownPreview({
@@ -263,28 +224,32 @@ export function AdvancedMarkdownPreview({
       blocks.push(
         <ul
           key={key++}
-          className={`space-y-1 text-left text-sm ${
-            hasCheckboxes ? "list-none pl-1" : "list-disc pl-5"
-          }`}
+          data-type={hasCheckboxes ? "taskList" : undefined}
+          className={hasCheckboxes ? undefined : undefined}
         >
           {ulItems.map((item, idx) =>
             item.checked !== null ? (
-              <li key={idx} className="flex items-start gap-2">
-                <span
-                  aria-hidden="true"
-                  className={`mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded border text-[10px] ${
-                    item.checked
-                      ? "border-[#2f81f7] bg-[#2f81f7] text-white"
-                      : isDark
-                        ? "border-[#30363d] bg-[#161b22]"
-                        : "border-[#d0d7de] bg-white"
-                  }`}
-                >
-                  {item.checked && <Check className="size-3 stroke-[3]" />}
-                </span>
-                <span className={item.checked ? "opacity-80" : ""}>
+              <li key={idx}>
+                <label>
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex size-4 items-center justify-center rounded-[3px] border"
+                    style={{
+                      borderColor: item.checked
+                        ? "var(--gh-link)"
+                        : "var(--gh-border)",
+                      backgroundColor: item.checked
+                        ? "var(--gh-link)"
+                        : "var(--gh-bg)",
+                      color: "#FFFFFF",
+                    }}
+                  >
+                    {item.checked && <Check className="size-3 stroke-[3]" />}
+                  </span>
+                </label>
+                <div style={{ opacity: item.checked ? 0.85 : 1 }}>
                   {renderInlineMarkdown(item.text)}
-                </span>
+                </div>
               </li>
             ) : (
               <li key={idx}>{renderInlineMarkdown(item.text)}</li>
@@ -297,7 +262,7 @@ export function AdvancedMarkdownPreview({
 
     if (olItems.length > 0) {
       blocks.push(
-        <ol key={key++} className="list-decimal space-y-1 pl-5 text-left text-sm">
+        <ol key={key++}>
           {olItems.map((item, idx) => (
             <li key={idx}>{renderInlineMarkdown(item)}</li>
           ))}
@@ -327,27 +292,9 @@ export function AdvancedMarkdownPreview({
         j++;
       }
       blocks.push(
-        <div
-          key={key++}
-          className={`overflow-x-auto rounded-lg border text-left font-mono text-xs ${
-            isDark
-              ? "border-[#30363d] bg-[#161b22] text-[#e6edf3]"
-              : "border-[#d0d7de] bg-[#f6f8fa] text-[#1f2328]"
-          }`}
-        >
-          {lang && (
-            <div
-              className={`border-b px-3 py-1 text-[10px] uppercase tracking-wider opacity-70 ${
-                isDark ? "border-[#30363d]" : "border-[#d0d7de]"
-              }`}
-            >
-              {lang}
-            </div>
-          )}
-          <pre className="p-3 leading-relaxed">
-            <code>{codeLines.join("\n")}</code>
-          </pre>
-        </div>
+        <pre key={key++} data-lang={lang || undefined}>
+          <code>{codeLines.join("\n")}</code>
+        </pre>
       );
       i = j;
       continue;
@@ -360,30 +307,29 @@ export function AdvancedMarkdownPreview({
     if (htmlHeading) {
       flushLists();
       const lvl = htmlHeading[1];
-      const alignCls = getAlignClass(htmlHeading[2]);
+      const alignStyle = getAlignStyle(htmlHeading[2]);
       const content = htmlHeading[3].trim();
-      const borderCls = isDark ? "border-[#30363d]" : "border-[#d0d7de]";
       if (lvl === "1") {
         blocks.push(
-          <h1 key={key++} className={`border-b pb-2 text-2xl font-bold ${borderCls} ${alignCls}`}>
+          <h1 key={key++} style={alignStyle}>
             {renderInlineMarkdown(content)}
           </h1>
         );
       } else if (lvl === "2") {
         blocks.push(
-          <h2 key={key++} className={`border-b pb-2 text-xl font-semibold ${borderCls} ${alignCls}`}>
+          <h2 key={key++} style={alignStyle}>
             {renderInlineMarkdown(content)}
           </h2>
         );
       } else if (lvl === "3") {
         blocks.push(
-          <h3 key={key++} className={`text-lg font-semibold ${alignCls}`}>
+          <h3 key={key++} style={alignStyle}>
             {renderInlineMarkdown(content)}
           </h3>
         );
       } else {
         blocks.push(
-          <h4 key={key++} className={`text-sm font-semibold ${alignCls}`}>
+          <h4 key={key++} style={alignStyle}>
             {renderInlineMarkdown(content)}
           </h4>
         );
@@ -397,9 +343,8 @@ export function AdvancedMarkdownPreview({
     );
     if (paraSingle) {
       flushLists();
-      const alignCls = getAlignClass(paraSingle[1]);
       blocks.push(
-        <p key={key++} className={`text-sm leading-relaxed opacity-95 ${alignCls}`}>
+        <p key={key++} style={getAlignStyle(paraSingle[1])}>
           {renderInlineMarkdown(paraSingle[2].trim())}
         </p>
       );
@@ -411,7 +356,7 @@ export function AdvancedMarkdownPreview({
     );
     if (paraStart) {
       flushLists();
-      const alignCls = getAlignClass(paraStart[1]);
+      const alignStyle = getAlignStyle(paraStart[1]);
       const innerLines: string[] = [];
       let j = i + 1;
       while (j < lines.length && !/<\/p>/i.test(lines[j])) {
@@ -419,7 +364,7 @@ export function AdvancedMarkdownPreview({
         j++;
       }
       blocks.push(
-        <div key={key++} className={`flex flex-col gap-1 text-sm leading-relaxed ${alignCls}`}>
+        <div key={key++} style={alignStyle}>
           {innerLines
             .filter(Boolean)
             .map((lineText, idx) => (
@@ -446,44 +391,24 @@ export function AdvancedMarkdownPreview({
         j++;
       }
       blocks.push(
-        <div
-          key={key++}
-          className={`overflow-x-auto rounded-lg border text-left text-xs ${
-            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
-          }`}
-        >
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className={isDark ? "bg-[#161b22]" : "bg-[#f6f8fa]"}>
-                {headers.map((h, hIdx) => (
-                  <th
-                    key={hIdx}
-                    className={`border-b px-3 py-2 font-semibold ${
-                      isDark ? "border-[#30363d]" : "border-[#d0d7de]"
-                    }`}
-                  >
-                    {renderInlineMarkdown(h)}
-                  </th>
+        <table key={key++}>
+          <thead>
+            <tr>
+              {headers.map((h, hIdx) => (
+                <th key={hIdx}>{renderInlineMarkdown(h)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {bodyRows.map((cells, rIdx) => (
+              <tr key={rIdx}>
+                {headers.map((_, cIdx) => (
+                  <td key={cIdx}>{renderInlineMarkdown(cells[cIdx] ?? "")}</td>
                 ))}
               </tr>
-            </thead>
-            <tbody
-              className={`divide-y ${
-                isDark ? "divide-[#30363d]" : "divide-[#d0d7de]"
-              }`}
-            >
-              {bodyRows.map((cells, rIdx) => (
-                <tr key={rIdx}>
-                  {headers.map((_, cIdx) => (
-                    <td key={cIdx} className="px-3 py-1.5">
-                      {renderInlineMarkdown(cells[cIdx] ?? "")}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       );
       i = j - 1;
       continue;
@@ -515,46 +440,15 @@ export function AdvancedMarkdownPreview({
     flushLists();
 
     if (/^(---+|\*\*\*+)$/.test(trimmed)) {
-      blocks.push(
-        <hr
-          key={key++}
-          className={isDark ? "border-[#30363d]" : "border-[#d0d7de]"}
-        />
-      );
+      blocks.push(<hr key={key++} />);
     } else if (trimmed.startsWith("# ")) {
-      blocks.push(
-        <h1
-          key={key++}
-          className={`border-b pb-2 text-left text-2xl font-bold ${
-            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
-          }`}
-        >
-          {renderInlineMarkdown(trimmed.slice(2))}
-        </h1>
-      );
+      blocks.push(<h1 key={key++}>{renderInlineMarkdown(trimmed.slice(2))}</h1>);
     } else if (trimmed.startsWith("## ")) {
-      blocks.push(
-        <h2
-          key={key++}
-          className={`border-b pb-2 text-left text-xl font-semibold ${
-            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
-          }`}
-        >
-          {renderInlineMarkdown(trimmed.slice(3))}
-        </h2>
-      );
+      blocks.push(<h2 key={key++}>{renderInlineMarkdown(trimmed.slice(3))}</h2>);
     } else if (trimmed.startsWith("### ")) {
-      blocks.push(
-        <h3 key={key++} className="text-left text-lg font-semibold">
-          {renderInlineMarkdown(trimmed.slice(4))}
-        </h3>
-      );
+      blocks.push(<h3 key={key++}>{renderInlineMarkdown(trimmed.slice(4))}</h3>);
     } else if (trimmed.startsWith("#### ")) {
-      blocks.push(
-        <h4 key={key++} className="text-left text-sm font-semibold">
-          {renderInlineMarkdown(trimmed.slice(5))}
-        </h4>
-      );
+      blocks.push(<h4 key={key++}>{renderInlineMarkdown(trimmed.slice(5))}</h4>);
     } else if (trimmed.startsWith(">")) {
       const quoteLines: string[] = [trimmed.replace(/^>\s?/, "")];
       let j = i + 1;
@@ -563,12 +457,7 @@ export function AdvancedMarkdownPreview({
         j++;
       }
       blocks.push(
-        <blockquote
-          key={key++}
-          className={`border-l-2 pl-3 text-left text-sm opacity-85 ${
-            isDark ? "border-[#30363d]" : "border-[#d0d7de]"
-          }`}
-        >
+        <blockquote key={key++}>
           {quoteLines.map((ql, qIdx) => (
             <p key={qIdx}>{renderInlineMarkdown(ql)}</p>
           ))}
@@ -576,14 +465,17 @@ export function AdvancedMarkdownPreview({
       );
       i = j - 1;
     } else {
-      blocks.push(
-        <p key={key++} className="text-left text-sm leading-relaxed opacity-95">
-          {renderInlineMarkdown(trimmed)}
-        </p>
-      );
+      blocks.push(<p key={key++}>{renderInlineMarkdown(trimmed)}</p>);
     }
   }
 
   flushLists();
-  return <div className="flex flex-col gap-2.5 text-left">{blocks}</div>;
+  return (
+    <div
+      data-gh-theme={isDark ? "dark" : "light"}
+      className="gh-markdown-body text-left"
+    >
+      {blocks}
+    </div>
+  );
 }

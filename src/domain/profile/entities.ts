@@ -66,6 +66,7 @@ export interface TechStackCard {
   id: string;
   title: string;
   badgeIds: string[];
+  visible?: boolean;
 }
 
 export interface ReadmeActionLink {
@@ -117,28 +118,28 @@ export const README_TEMPLATES: {
   name: string;
   description: string;
 }[] = [
-  {
-    id: "cyber-guardian",
-    name: "Full Developer Profile",
-    description:
-      "Headline, specialty tags, intro bio, multi-card tech stack, CTA links, and creature",
-  },
-  {
-    id: "minimal-header",
-    name: "Minimalist Header",
-    description: "Clean creature banner with headline and intro paragraph",
-  },
-  {
-    id: "auto-evolve-block",
-    name: "Auto-Evolve Block Only",
-    description: "Drop-in START/END marker block for an existing README.md",
-  },
-  {
-    id: "telemetry-stats",
-    name: "Telemetry & Share Card",
-    description: "Creature, live evolution stats table, and 1280x640 social card",
-  },
-];
+    {
+      id: "cyber-guardian",
+      name: "Full Developer Profile",
+      description:
+        "Headline, specialty tags, intro bio, multi-card tech stack, CTA links, and creature",
+    },
+    {
+      id: "minimal-header",
+      name: "Minimalist Header",
+      description: "Clean creature banner with headline and intro paragraph",
+    },
+    {
+      id: "auto-evolve-block",
+      name: "Auto-Evolve Block Only",
+      description: "Drop-in START/END marker block for an existing README.md",
+    },
+    {
+      id: "telemetry-stats",
+      name: "Telemetry & Share Card",
+      description: "Creature, live evolution stats table, and 1280x640 social card",
+    },
+  ];
 
 export const DYNAMIC_TOKENS = [
   { token: "{{USERNAME}}", description: "GitHub handle" },
@@ -155,13 +156,13 @@ export const CTA_LOGO_PRESETS: {
   label: string;
   logo?: string;
 }[] = [
-  ...PLATFORM_ICON_CATALOG.map((item) => ({
-    id: item.id,
-    label: item.label,
-    logo: item.id,
-  })),
-  { id: "none", label: "No Icon", logo: undefined },
-];
+    ...PLATFORM_ICON_CATALOG.map((item) => ({
+      id: item.id,
+      label: item.label,
+      logo: item.id,
+    })),
+    { id: "none", label: "No Icon", logo: undefined },
+  ];
 
 export const CTA_QUICK_TEMPLATES: Omit<ReadmeActionLink, "id" | "enabled">[] = [
   {

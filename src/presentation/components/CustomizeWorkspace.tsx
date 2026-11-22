@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  Cpu,
-  Eye,
-  FileText,
-  Sliders,
-  X,
-} from "lucide-react";
+import { CheckCircle2, Eye, Sliders, X } from "lucide-react";
 import { cn } from "cn";
 import type {
   BackgroundMode,
@@ -26,18 +17,24 @@ import type {
   ReadmeConfig,
   ReadmeTemplateId,
 } from "@/domain/profile/entities";
-import { buildStructuredProfileMarkdown } from "@/domain/profile/readmeService";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AdvancedMarkdownEditor } from "./AdvancedMarkdownEditor";
+import type { CustomizeSubTab } from "../studio/layout/StudioStepper";
+import { type ReadmeZoomMode } from "../studio/ui/ScaledReadmeViewport";
+import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioDrawer } from "../studio/ui/StudioDialog";
+import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
 import { CreatureStepPanel } from "./CreatureStepPanel";
-import { PreviewWorkspace, type PreviewTab } from "./PreviewWorkspace";
+import {
+  PreviewWorkspace,
+  type PreviewRegion,
+  type PreviewScrollRequest,
+  type PreviewTab,
+} from "./PreviewWorkspace";
 import { ProfileReadmeStepPanel } from "./ProfileReadmeStepPanel";
 
-type CustomizeTab = "creature" | "readme";
-
 interface CustomizeWorkspaceProps {
+  activeTab: CustomizeSubTab;
+  onChangeTab: (tab: CustomizeSubTab) => void;
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
   customBgHex: string;
@@ -80,6 +77,7 @@ interface CustomizeWorkspaceProps {
   ) => void;
   onAddStackCard: (title?: string) => string;
   onRenameStackCard: (cardId: string, title: string) => void;
+  onToggleStackCardVisibility: (cardId: string, visible: boolean) => void;
   onDeleteStackCard: (cardId: string) => void;
   onReorderStackCards: (fromIdx: number, toIdx: number) => void;
   onCombineStackCards: () => void;
@@ -89,11 +87,11 @@ interface CustomizeWorkspaceProps {
     badge: Omit<ReadmeBadge, "enabled">
   ) => void;
   onOpenAutoEvolve: () => void;
-  onBackToRepoGuide: () => void;
-  onNextToPublish: () => void;
 }
 
 export function CustomizeWorkspace({
+  activeTab,
+  onChangeTab,
   creatureConfig,
   readmeConfig,
   customBgHex,
@@ -122,147 +120,118 @@ export function CustomizeWorkspace({
   onMoveBadgeAcrossCards,
   onAddStackCard,
   onRenameStackCard,
+  onToggleStackCardVisibility,
   onDeleteStackCard,
   onReorderStackCards,
   onCombineStackCards,
   onUndoCombineStackCards,
   onAddCustomBadgeToCard,
   onOpenAutoEvolve,
-  onBackToRepoGuide,
-  onNextToPublish,
 }: CustomizeWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState<CustomizeTab>("creature");
   const [previewTab, setPreviewTab] = useState<PreviewTab>("profile");
+  const [githubTheme, setGithubTheme] = useState<"light" | "dark">("dark");
+  const [zoomMode, setZoomMode] = useState<ReadmeZoomMode>("fit");
+  const [followEdits, setFollowEdits] = useState(true);
   const [mobilePane, setMobilePane] = useState<"edit" | "preview">("edit");
-  const [editorFocusWidth, setEditorFocusWidth] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  const handleSwitchEditorTab = (tab: CustomizeTab) => {
-    setActiveTab(tab);
-    setMobilePane("edit");
-    if (tab === "readme") {
-      setPreviewTab("profile");
-    }
+  const [editorFitZoom, setEditorFitZoom] = useState(1);
+  const [previewFitZoom, setPreviewFitZoom] = useState(1);
+  const sharedFitZoom = Math.min(editorFitZoom, previewFitZoom);
+
+  const [scrollRequest, setScrollRequest] =
+    useState<PreviewScrollRequest | null>(null);
+
+  const triggerPreviewScroll = (
+    region: PreviewRegion,
+    forceScroll: boolean
+  ) => {
+    setScrollRequest((prev) => ({
+      region,
+      seq: (prev?.seq ?? 0) + 1,
+      forceScroll,
+    }));
   };
 
-  const editorNode = (
-    <AdvancedMarkdownEditor
-      value={readmeConfig.advancedProfileMarkdown}
-      onChange={(next) =>
-        onUpdateReadmeField("advancedProfileMarkdown", next)
-      }
+  const handleEditReadme = () => {
+    setMobilePane("edit");
+    onChangeTab("readme");
+  };
+
+  const previewNode = (
+    <PreviewWorkspace
+      editorTab={activeTab}
+      previewTab={previewTab}
+      onPreviewTabChange={setPreviewTab}
       creatureConfig={creatureConfig}
-      onSyncFromForm={() =>
-        onUpdateReadmeField(
-          "advancedProfileMarkdown",
-          buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
-        )
-      }
-      focusExpanded={editorFocusWidth}
-      onToggleFocusExpanded={() => setEditorFocusWidth((v) => !v)}
+      readmeConfig={readmeConfig}
+      readmeMarkdown={readmeMarkdown}
+      snapshot={snapshot}
+      githubTheme={githubTheme}
+      onGithubThemeChange={setGithubTheme}
+      zoomMode={zoomMode}
+      onZoomModeChange={setZoomMode}
+      sharedFitZoom={activeTab === "readme" ? sharedFitZoom : undefined}
+      onMeasureFitZoom={setPreviewFitZoom}
+      followEdits={followEdits}
+      onFollowEditsChange={setFollowEdits}
+      scrollRequest={scrollRequest}
+      onEditReadme={handleEditReadme}
+      onOpenAutoEvolve={onOpenAutoEvolve}
+      onSelectView={onSelectView}
     />
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className={cn(
+        "mx-auto w-full px-4 py-6 sm:px-6",
+        activeTab === "readme"
+          ? "max-w-[1784px] min-[1800px]:px-0"
+          : "max-w-[1784px]"
+      )}
+    >
       {restoredNotice && (
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-4 py-2.5 text-xs text-foreground">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 shrink-0 text-primary" />
+        <div className="mb-5 flex items-center justify-between gap-3 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--text)]">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="size-4 shrink-0 text-[var(--accent)]" />
             <span>{restoredNotice}</span>
           </div>
           {onDismissRestoredNotice && (
-            <Button
-              type="button"
+            <StudioButton
               variant="ghost"
-              size="icon-xs"
+              size="icon"
               onClick={onDismissRestoredNotice}
-              aria-label="Dismiss restored notice"
+              aria-label="Dismiss notice"
             >
               <X />
-            </Button>
+            </StudioButton>
           )}
         </div>
       )}
 
-      {/* Clean Sub-Header Step Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => handleSwitchEditorTab(val as CustomizeTab)}
-        >
-          <TabsList>
-            <TabsTrigger value="creature" className="gap-1.5 font-mono text-xs">
-              <Cpu className="size-3.5" />
-              1. Creature &amp; Style
-            </TabsTrigger>
-            <TabsTrigger value="readme" className="gap-1.5 font-mono text-xs">
-              <FileText className="size-3.5" />
-              2. README Text &amp; Stack
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        {/* Responsive Mobile / Tablet View Toggle */}
-        <div
-          className={cn(
-            "inline-grid grid-cols-2 rounded-lg bg-muted/70 p-1",
-            activeTab === "readme" && !editorFocusWidth
-              ? "xl:hidden"
-              : "lg:hidden"
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => setMobilePane("edit")}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1 font-mono text-xs font-medium transition",
-              mobilePane === "edit"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Sliders className="size-3.5" />
-            Editor
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobilePane("preview")}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1 font-mono text-xs font-medium transition",
-              mobilePane === "preview"
-                ? "bg-background text-foreground shadow-xs"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Eye className="size-3.5" />
-            Live Preview
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onBackToRepoGuide}
-          >
-            <ArrowLeft data-icon="inline-start" />
-            Repo Guide
-          </Button>
-          <Button type="button" size="sm" onClick={onNextToPublish}>
-            Next: Token &amp; Push
-            <ArrowRight data-icon="inline-end" />
-          </Button>
-        </div>
+      {/* Below 1200px: Edit | Live preview toggle */}
+      <div className="mb-5 min-[1200px]:hidden">
+        <StudioSegmentedControl<"edit" | "preview">
+          ariaLabel="Mobile pane switch"
+          value={mobilePane}
+          onChange={setMobilePane}
+          options={[
+            { value: "edit", label: "Edit", icon: <Sliders /> },
+            { value: "preview", label: "Live preview", icon: <Eye /> },
+          ]}
+        />
       </div>
 
-      {/* Main Responsive Workspace Grid */}
+      {/* Screen A: 1. Creature & Style */}
       {activeTab === "creature" ? (
-        <div className="grid items-start gap-6 lg:grid-cols-12">
+        <div className="flex flex-col gap-6 min-[1200px]:flex-row min-[1200px]:items-start">
           <div
             className={cn(
-              "min-w-0 lg:col-span-5",
-              mobilePane === "preview" ? "hidden lg:block" : "block"
+              "min-w-0 min-[1200px]:w-[clamp(440px,36vw,560px)] min-[1200px]:shrink-0",
+              mobilePane === "preview"
+                ? "hidden min-[1200px]:block"
+                : "block"
             )}
           >
             <CreatureStepPanel
@@ -282,102 +251,43 @@ export function CustomizeWorkspace({
               onSetBackgroundMode={onSetBackgroundMode}
               onUpdateCustomBg={onUpdateCustomBg}
               onUpdateConfig={onUpdateCreatureConfig}
-              onNextStep={() => handleSwitchEditorTab("readme")}
             />
           </div>
 
           <div
             className={cn(
-              "min-w-0 lg:sticky lg:top-20 lg:col-span-7 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1",
-              mobilePane === "edit" ? "hidden lg:block" : "block"
+              "min-w-0 flex-1 min-[1200px]:sticky min-[1200px]:top-[120px] min-[1200px]:max-h-[calc(100vh-192px)] min-[1200px]:overflow-y-auto",
+              mobilePane === "edit"
+                ? "hidden min-[1200px]:block"
+                : "block"
             )}
           >
-            <PreviewWorkspace
-              editorTab={activeTab}
-              previewTab={previewTab}
-              onPreviewTabChange={setPreviewTab}
-              creatureConfig={creatureConfig}
-              readmeConfig={readmeConfig}
-              readmeMarkdown={readmeMarkdown}
-              snapshot={snapshot}
-              onEditReadme={() => handleSwitchEditorTab("readme")}
-              onOpenAutoEvolve={onOpenAutoEvolve}
-              onSelectView={onSelectView}
-            />
-          </div>
-        </div>
-      ) : editorFocusWidth ? (
-        <div className="flex flex-col gap-6">
-          <div
-            className={cn(
-              "min-w-0",
-              mobilePane === "preview" ? "hidden lg:block" : "block"
-            )}
-          >
-            {editorNode}
-          </div>
-
-          <div className="grid items-start gap-6 lg:grid-cols-12">
-            <div
-              className={cn(
-                "min-w-0 lg:col-span-5",
-                mobilePane === "preview" ? "hidden lg:block" : "block"
-              )}
-            >
-              <ProfileReadmeStepPanel
-                creatureConfig={creatureConfig}
-                readmeConfig={readmeConfig}
-                onUpdateField={onUpdateReadmeField}
-                onSelectTemplate={onSelectTemplate}
-                onChangeRawMarkdown={onChangeRawMarkdown}
-                onAddBadgeToCard={onAddBadgeToCard}
-                onRemoveBadgeFromCard={onRemoveBadgeFromCard}
-                onMoveBadgeAcrossCards={onMoveBadgeAcrossCards}
-                onAddStackCard={onAddStackCard}
-                onRenameStackCard={onRenameStackCard}
-                onDeleteStackCard={onDeleteStackCard}
-                onReorderStackCards={onReorderStackCards}
-                onCombineStackCards={onCombineStackCards}
-                onUndoCombineStackCards={onUndoCombineStackCards}
-                onAddCustomBadgeToCard={onAddCustomBadgeToCard}
-                onPrevStep={() => handleSwitchEditorTab("creature")}
-                onNextStep={onNextToPublish}
-              />
-            </div>
-
-            <div
-              className={cn(
-                "min-w-0 lg:sticky lg:top-20 lg:col-span-7 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:pr-1",
-                mobilePane === "edit" ? "hidden lg:block" : "block"
-              )}
-            >
-              <PreviewWorkspace
-                editorTab={activeTab}
-                previewTab={previewTab}
-                onPreviewTabChange={setPreviewTab}
-                creatureConfig={creatureConfig}
-                readmeConfig={readmeConfig}
-                readmeMarkdown={readmeMarkdown}
-                snapshot={snapshot}
-                onEditReadme={() => handleSwitchEditorTab("readme")}
-                onOpenAutoEvolve={onOpenAutoEvolve}
-                onSelectView={onSelectView}
-              />
-            </div>
+            {previewNode}
           </div>
         </div>
       ) : (
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
+        /* Screen B: 2. README Text & Stack */
+        <div className="grid items-start gap-6 min-[1200px]:grid-cols-2 min-[1800px]:grid-cols-[882px_882px] min-[1800px]:justify-center">
           <div
             className={cn(
-              "flex min-w-0 flex-col gap-6",
-              mobilePane === "preview" ? "hidden xl:flex" : "flex"
+              "flex min-w-0 flex-col gap-2",
+              mobilePane === "preview"
+                ? "hidden min-[1200px]:flex"
+                : "flex"
             )}
           >
-            {editorNode}
+            <span className="text-[13px] font-medium text-[var(--text-muted)]">
+              Editing
+            </span>
             <ProfileReadmeStepPanel
               creatureConfig={creatureConfig}
               readmeConfig={readmeConfig}
+              githubTheme={githubTheme}
+              zoomMode={zoomMode}
+              sharedFitZoom={sharedFitZoom}
+              onMeasureFitZoom={setEditorFitZoom}
+              onSectionFocus={(region) => triggerPreviewScroll(region, true)}
+              onFieldEdited={(region) => triggerPreviewScroll(region, false)}
               onUpdateField={onUpdateReadmeField}
               onSelectTemplate={onSelectTemplate}
               onChangeRawMarkdown={onChangeRawMarkdown}
@@ -386,37 +296,52 @@ export function CustomizeWorkspace({
               onMoveBadgeAcrossCards={onMoveBadgeAcrossCards}
               onAddStackCard={onAddStackCard}
               onRenameStackCard={onRenameStackCard}
+              onToggleStackCardVisibility={onToggleStackCardVisibility}
               onDeleteStackCard={onDeleteStackCard}
               onReorderStackCards={onReorderStackCards}
               onCombineStackCards={onCombineStackCards}
               onUndoCombineStackCards={onUndoCombineStackCards}
               onAddCustomBadgeToCard={onAddCustomBadgeToCard}
-              onPrevStep={() => handleSwitchEditorTab("creature")}
-              onNextStep={onNextToPublish}
             />
           </div>
 
           <div
             className={cn(
-              "min-w-0 xl:sticky xl:top-20 xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto xl:pr-1",
-              mobilePane === "edit" ? "hidden xl:block" : "block"
+              "flex min-w-0 flex-col gap-2 min-[1200px]:sticky min-[1200px]:top-[120px] min-[1200px]:max-h-[calc(100vh-192px)] min-[1200px]:overflow-y-auto",
+              mobilePane === "edit"
+                ? "hidden min-[1200px]:flex"
+                : "flex"
             )}
           >
-            <PreviewWorkspace
-              editorTab={activeTab}
-              previewTab={previewTab}
-              onPreviewTabChange={setPreviewTab}
-              creatureConfig={creatureConfig}
-              readmeConfig={readmeConfig}
-              readmeMarkdown={readmeMarkdown}
-              snapshot={snapshot}
-              onEditReadme={() => handleSwitchEditorTab("readme")}
-              onOpenAutoEvolve={onOpenAutoEvolve}
-              onSelectView={onSelectView}
-            />
+            <span className="text-[13px] font-medium text-[var(--text-muted)]">
+              Live preview (read-only)
+            </span>
+            {previewNode}
           </div>
         </div>
       )}
+
+      {/* Below 1200px: Floating Live preview drawer button */}
+      {mobilePane === "edit" && !mobileDrawerOpen && (
+        <div className="fixed right-4 bottom-[76px] z-20 min-[1200px]:hidden">
+          <StudioButton
+            variant="primary"
+            onClick={() => setMobileDrawerOpen(true)}
+            className="shadow-[var(--studio-shadow-overlay)]"
+          >
+            <Eye />
+            <span>Live preview</span>
+          </StudioButton>
+        </div>
+      )}
+
+      <StudioDrawer
+        open={mobileDrawerOpen}
+        onOpenChange={setMobileDrawerOpen}
+        title="Live preview"
+      >
+        {previewNode}
+      </StudioDrawer>
     </div>
   );
 }
