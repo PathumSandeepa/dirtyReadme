@@ -1,5 +1,5 @@
-:HL["/dynamic-readme-creature/_next/static/chunks/361w87mea3yxc.css","style"]
-:HL["/dynamic-readme-creature/_next/static/chunks/330gjpcnla2c3.css","style"]
+:HL["/dynamic-readme-creature/_next/static/chunks/30--1q9-a7cyq.css","style"]
+:HL["/dynamic-readme-creature/_next/static/chunks/1r9oh7hmnk42b.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"GTByKn2HTUgdbUK9z_s6R","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"AqHcp8YFwxDLJEyn5yvIg","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
