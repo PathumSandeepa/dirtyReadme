@@ -16,10 +16,14 @@ import type {
   ReadmeConfig,
   ReadmeTemplateId,
 } from "@/domain/profile/entities";
+import {
+  buildStructuredProfileMarkdown,
+} from "@/domain/profile/readmeService";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AdvancedMarkdownEditor } from "./AdvancedMarkdownEditor";
 import { CreatureStepPanel } from "./CreatureStepPanel";
 import { PreviewWorkspace, type PreviewTab } from "./PreviewWorkspace";
 import { ProfileReadmeStepPanel } from "./ProfileReadmeStepPanel";
@@ -77,7 +81,6 @@ interface CustomizeWorkspaceProps {
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
   ) => void;
-  onReorderTags: (fromIdx: number, toIdx: number) => void;
   onOpenAutoEvolve: () => void;
   onBackToRepoGuide: () => void;
   onNextToPublish: () => void;
@@ -117,7 +120,6 @@ export function CustomizeWorkspace({
   onCombineStackCards,
   onUndoCombineStackCards,
   onAddCustomBadgeToCard,
-  onReorderTags,
   onOpenAutoEvolve,
   onBackToRepoGuide,
   onNextToPublish,
@@ -189,6 +191,22 @@ export function CustomizeWorkspace({
         </CardContent>
       </Card>
 
+      {activeTab === "readme" && (
+        <AdvancedMarkdownEditor
+          value={readmeConfig.advancedProfileMarkdown}
+          onChange={(next) =>
+            onUpdateReadmeField("advancedProfileMarkdown", next)
+          }
+          creatureConfig={creatureConfig}
+          onSyncFromForm={() =>
+            onUpdateReadmeField(
+              "advancedProfileMarkdown",
+              buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
+            )
+          }
+        />
+      )}
+
       <div className="grid items-start gap-6 lg:grid-cols-12">
         <div className="lg:col-span-5">
           {activeTab === "creature" ? (
@@ -228,7 +246,6 @@ export function CustomizeWorkspace({
               onCombineStackCards={onCombineStackCards}
               onUndoCombineStackCards={onUndoCombineStackCards}
               onAddCustomBadgeToCard={onAddCustomBadgeToCard}
-              onReorderTags={onReorderTags}
               onPrevStep={() => handleSwitchEditorTab("creature")}
               onNextStep={onNextToPublish}
             />

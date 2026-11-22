@@ -315,7 +315,7 @@ export function parseExistingDynamicReadme(
   }
   topText = topText.replace(/\n{3,}/g, "\n\n").trim();
 
-  let profileTextMode: ProfileTextMode = "structured";
+  const profileTextMode: ProfileTextMode = "advanced";
   let advancedProfileMarkdown = "";
   let headline = "";
   let subtitleTags: string[] = [];
@@ -323,54 +323,36 @@ export function parseExistingDynamicReadme(
   let ctaLine = "";
 
   if (markerStartIdx !== -1 && topText) {
+    advancedProfileMarkdown = topText;
     const blocks = topText
       .split(/\r?\n\s*\r?\n/)
       .map((b) => b.trim())
       .filter(Boolean);
 
-    const hasAdvancedMarkdownSyntax =
-      blocks.some(
-        (b, idx) =>
-          (idx > 0 && /^#{1,4}\s/.test(b)) ||
-          /^#{1,1}\s/.test(b) ||
-          /^[-*]\s/m.test(b) ||
-          /^>\s/m.test(b) ||
-          /^---+$/m.test(b)
-      ) || blocks.length > 4;
-
-    if (hasAdvancedMarkdownSyntax) {
-      profileTextMode = "advanced";
-      advancedProfileMarkdown = topText;
-      headline = defaultReadme.headline;
-      subtitleTags = [...defaultReadme.subtitleTags];
-      bio = defaultReadme.bio;
-      ctaLine = defaultReadme.ctaLine;
-    } else {
-      let idx = 0;
-      if (blocks[idx]?.startsWith("## ")) {
-        headline = blocks[idx].slice(3).trim();
-        idx++;
-      }
-      if (
-        blocks[idx] &&
-        blocks[idx].startsWith("**") &&
-        blocks[idx].endsWith("**") &&
-        blocks[idx].includes("|")
-      ) {
-        subtitleTags = blocks[idx]
-          .slice(2, -2)
-          .split("|")
-          .map((t) => t.trim())
-          .filter(Boolean);
-        idx++;
-      }
-      if (blocks[idx]) {
-        bio = blocks[idx];
-        idx++;
-      }
-      if (blocks[idx]) {
-        ctaLine = blocks[idx];
-      }
+    let idx = 0;
+    if (/^#{1,4}\s+/.test(blocks[idx] || "")) {
+      headline = blocks[idx].replace(/^#{1,4}\s+/, "").trim();
+      idx++;
+    }
+    if (
+      blocks[idx] &&
+      blocks[idx].startsWith("**") &&
+      blocks[idx].endsWith("**") &&
+      blocks[idx].includes("|")
+    ) {
+      subtitleTags = blocks[idx]
+        .slice(2, -2)
+        .split("|")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      idx++;
+    }
+    if (blocks[idx]) {
+      bio = blocks[idx];
+      idx++;
+    }
+    if (blocks[idx]) {
+      ctaLine = blocks[idx];
     }
   } else if (beforeMarker === "" && markerMatch) {
     // Auto-evolve marker-only template
@@ -379,6 +361,7 @@ export function parseExistingDynamicReadme(
     subtitleTags = [...defaultReadme.subtitleTags];
     bio = defaultReadme.bio;
     ctaLine = defaultReadme.ctaLine;
+    advancedProfileMarkdown = defaultReadme.advancedProfileMarkdown;
   }
 
   let templateId: ReadmeTemplateId = "cyber-guardian";

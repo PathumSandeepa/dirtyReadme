@@ -493,8 +493,16 @@ const INITIAL_ENABLED_IDS = new Set(
 
 export const DEFAULT_README_CONFIG: ReadmeConfig = {
   templateId: "cyber-guardian",
-  profileTextMode: "structured",
-  advancedProfileMarkdown: "",
+  profileTextMode: "advanced",
+  advancedProfileMarkdown: [
+    "### Your Name | <Occupation here>",
+    "",
+    "**FULL-STACK DEVELOPMENT | SYSTEMS ARCHITECTURE | OPEN SOURCE | UI ENGINEERING**",
+    "",
+    DEFAULT_DUMMY_INTRO,
+    "",
+    "Explore my tech stack and live cybernetic profile creature below.",
+  ].join("\n"),
   headline: "Your Name | <Occupation here>",
   subtitleTags: [
     "FULL-STACK DEVELOPMENT",

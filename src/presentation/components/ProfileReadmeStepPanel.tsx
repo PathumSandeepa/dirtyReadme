@@ -16,16 +16,13 @@ import {
   Link2,
   Plus,
   RefreshCw,
-  RotateCcw,
   Tag,
   Trash2,
   Undo2,
-  User,
 } from "lucide-react";
 import type { CreatureConfig } from "@/domain/creature/entities";
 import {
   CTA_QUICK_TEMPLATES,
-  DEFAULT_DUMMY_INTRO,
   DYNAMIC_TOKENS,
   README_TEMPLATES,
   TECH_CATEGORIES_ORDER,
@@ -41,12 +38,10 @@ import {
 } from "@/domain/profile/platformIcons";
 import {
   buildGeneratedReadmeMarkdown,
-  buildStructuredProfileMarkdown,
   reorderItems,
 } from "@/domain/profile/readmeService";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AdvancedMarkdownEditor } from "./AdvancedMarkdownEditor";
 import { ColorPalettePopoverButton } from "./ColorPalettePicker";
 import { PlatformIconPickerButton } from "./PlatformIconPickerButton";
 
@@ -81,7 +76,6 @@ interface ProfileReadmeStepPanelProps {
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
   ) => void;
-  onReorderTags: (fromIdx: number, toIdx: number) => void;
   onPrevStep: () => void;
   onNextStep: () => void;
 }
@@ -123,7 +117,6 @@ export function ProfileReadmeStepPanel({
   onCombineStackCards,
   onUndoCombineStackCards,
   onAddCustomBadgeToCard,
-  onReorderTags,
   onPrevStep,
   onNextStep,
 }: ProfileReadmeStepPanelProps) {
@@ -139,9 +132,7 @@ export function ProfileReadmeStepPanel({
     cardId: string;
     badgeId: string;
   } | null>(null);
-  const [draggedTagIdx, setDraggedTagIdx] = useState<number | null>(null);
 
-  const [newTagInput, setNewTagInput] = useState("");
   const [newBadgeLabel, setNewBadgeLabel] = useState("");
   const [newBadgeLogo, setNewBadgeLogo] = useState("");
   const [newBadgeColor, setNewBadgeColor] = useState("#2563EB");
@@ -257,14 +248,6 @@ export function ProfileReadmeStepPanel({
     setDragOverChip(null);
   }
 
-  function handleAddTag(e: React.FormEvent) {
-    e.preventDefault();
-    const cleaned = newTagInput.trim().toUpperCase();
-    if (!cleaned) return;
-    onUpdateField("subtitleTags", [...readmeConfig.subtitleTags, cleaned]);
-    setNewTagInput("");
-  }
-
   function handleAddCustomBadge(e: React.FormEvent) {
     e.preventDefault();
     const label = newBadgeLabel.trim();
@@ -331,261 +314,8 @@ export function ProfileReadmeStepPanel({
     onChangeRawMarkdown(`${base}\n${token}`);
   }
 
-  function handleSwitchProfileTextMode(mode: "structured" | "advanced") {
-    if (mode === "advanced" && !readmeConfig.advancedProfileMarkdown.trim()) {
-      onUpdateField(
-        "advancedProfileMarkdown",
-        buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
-      );
-    }
-    onUpdateField("profileTextMode", mode);
-  }
-
-  const isAdvancedText = readmeConfig.profileTextMode === "advanced";
-
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <User className="h-5 w-5 text-foreground/85" />
-            <div>
-              <h2 className="text-base font-semibold text-foreground">
-                Customize Every Text on Your Profile
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {isAdvancedText
-                  ? "Write your entire profile intro block using Markdown formatting."
-                  : "Edit your README headline, specialty tags, intro paragraph, and CTA line."}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 rounded-lg border bg-muted/40 p-0.5">
-            <button
-              type="button"
-              onClick={() => handleSwitchProfileTextMode("structured")}
-              className={`rounded-md px-3 py-1 font-mono text-xs font-semibold transition ${
-                !isAdvancedText
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Form Fields
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchProfileTextMode("advanced")}
-              className={`rounded-md px-3 py-1 font-mono text-xs font-semibold transition ${
-                isAdvancedText
-                  ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Advanced Editor
-            </button>
-          </div>
-        </div>
-
-        {!isAdvancedText ? (
-          <div className="space-y-4">
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <label className="text-xs font-medium text-foreground/85">
-                  README Main Headline
-                </label>
-                {readmeConfig.headline.includes("<Occupation here>") && (
-                  <span className="font-mono text-[11px] text-amber-500">
-                    Replace &lt;Occupation here&gt; with your role
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                value={readmeConfig.headline}
-                onChange={(e) => onUpdateField("headline", e.target.value)}
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm font-medium text-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Role Tagline Chips (Drag to reorder)
-              </label>
-              <div className="mb-2.5 flex flex-wrap gap-2">
-                {readmeConfig.subtitleTags.map((tag, idx) => (
-                  <div
-                    key={`${tag}-${idx}`}
-                    draggable
-                    onDragStart={() => setDraggedTagIdx(idx)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => {
-                      if (draggedTagIdx !== null) {
-                        onReorderTags(draggedTagIdx, idx);
-                      }
-                      setDraggedTagIdx(null);
-                    }}
-                    className="inline-flex cursor-grab items-center gap-1.5 rounded-lg border bg-muted/50 px-2.5 py-1 text-xs font-medium text-foreground active:cursor-grabbing"
-                  >
-                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={tag}
-                      onChange={(e) => {
-                        const updated = [...readmeConfig.subtitleTags];
-                        updated[idx] = e.target.value;
-                        onUpdateField("subtitleTags", updated);
-                      }}
-                      className="w-32 bg-transparent font-mono text-xs focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onUpdateField(
-                          "subtitleTags",
-                          readmeConfig.subtitleTags.filter((_, i) => i !== idx)
-                        )
-                      }
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <form onSubmit={handleAddTag} className="flex gap-2">
-                <input
-                  type="text"
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  placeholder="Add role tag (e.g. CLOUD ARCHITECT)"
-                  className="flex-1 rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="rounded-xl border bg-card px-4 py-2 text-sm font-medium text-foreground/85 hover:bg-muted/50"
-                >
-                  Add Tag
-                </button>
-              </form>
-            </div>
-
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <label className="text-xs font-medium text-foreground/85">
-                  About / Intro Paragraph
-                </label>
-                <button
-                  type="button"
-                  onClick={() => onUpdateField("bio", DEFAULT_DUMMY_INTRO)}
-                  className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-2 py-0.5 font-mono text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                >
-                  <RotateCcw className="size-3" />
-                  Use Sample Intro
-                </button>
-              </div>
-              <textarea
-                rows={3}
-                value={readmeConfig.bio}
-                placeholder={DEFAULT_DUMMY_INTRO}
-                onChange={(e) => onUpdateField("bio", e.target.value)}
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Call To Action Line
-              </label>
-              <input
-                type="text"
-                value={readmeConfig.ctaLine}
-                onChange={(e) => onUpdateField("ctaLine", e.target.value)}
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                  Extra Section Heading (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={readmeConfig.customSectionTitle}
-                  onChange={(e) =>
-                    onUpdateField("customSectionTitle", e.target.value)
-                  }
-                  placeholder="e.g. Current Focus"
-                  className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                  Telemetry Table Title
-                </label>
-                <input
-                  type="text"
-                  value={readmeConfig.statsTableTitle}
-                  onChange={(e) =>
-                    onUpdateField("statsTableTitle", e.target.value)
-                  }
-                  className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                Extra Custom Markdown Block (Optional)
-              </label>
-              <textarea
-                rows={2}
-                value={readmeConfig.customFooterMarkdown}
-                onChange={(e) =>
-                  onUpdateField("customFooterMarkdown", e.target.value)
-                }
-                placeholder="Write any extra Markdown lines or links..."
-                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:outline-none"
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <AdvancedMarkdownEditor
-              value={readmeConfig.advancedProfileMarkdown}
-              onChange={(next) =>
-                onUpdateField("advancedProfileMarkdown", next)
-              }
-              creatureConfig={creatureConfig}
-              onSyncFromForm={() =>
-                onUpdateField(
-                  "advancedProfileMarkdown",
-                  buildStructuredProfileMarkdown(creatureConfig, readmeConfig)
-                )
-              }
-            />
-
-            {readmeConfig.includeStatsTable && (
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-foreground/85">
-                  Telemetry Table Title
-                </label>
-                <input
-                  type="text"
-                  value={readmeConfig.statsTableTitle}
-                  onChange={(e) =>
-                    onUpdateField("statsTableTitle", e.target.value)
-                  }
-                  className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Drag & Drop Multi-Card Tech Stack Builder */}
       <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -1333,6 +1063,22 @@ export function ProfileReadmeStepPanel({
               </label>
             ))}
           </div>
+
+          {readmeConfig.includeStatsTable && (
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-foreground/85">
+                Telemetry Table Title
+              </label>
+              <input
+                type="text"
+                value={readmeConfig.statsTableTitle}
+                onChange={(e) =>
+                  onUpdateField("statsTableTitle", e.target.value)
+                }
+                className="w-full rounded-xl border bg-muted/50 px-3.5 py-2 text-sm text-foreground focus:border-primary focus:bg-background focus:outline-none"
+              />
+            </div>
+          )}
 
           <div className="border-t border-border pt-3">
             <button

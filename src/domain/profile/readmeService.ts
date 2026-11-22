@@ -315,7 +315,7 @@ export function buildStructuredProfileMarkdown(
   const isMinimal = readme.templateId === "minimal-header";
 
   if (resolvedHeadline) {
-    parts.push(`## ${resolvedHeadline}`);
+    parts.push(`### ${resolvedHeadline}`);
   }
 
   if (readme.subtitleTags.length > 0 && !isMinimal) {
@@ -363,9 +363,11 @@ export function buildGeneratedReadmeMarkdown(
 
   const parts: string[] = [];
   const isMinimal = readme.templateId === "minimal-header";
-  const isAdvancedText = readme.profileTextMode === "advanced";
 
-  if (isAdvancedText) {
+  if (
+    readme.profileTextMode === "advanced" ||
+    readme.advancedProfileMarkdown.trim()
+  ) {
     const advancedResolved = resolveDynamicTokens(
       readme.advancedProfileMarkdown,
       creature
@@ -374,30 +376,9 @@ export function buildGeneratedReadmeMarkdown(
       parts.push(advancedResolved);
     }
   } else {
-    const resolvedHeadline = resolveDynamicTokens(readme.headline, creature).trim();
-    const resolvedBio = resolveDynamicTokens(readme.bio, creature).trim();
-    const resolvedCta = resolveDynamicTokens(readme.ctaLine, creature).trim();
-
-    if (resolvedHeadline) {
-      parts.push(`## ${resolvedHeadline}`);
-    }
-
-    if (readme.subtitleTags.length > 0 && !isMinimal) {
-      const tagLine = readme.subtitleTags
-        .map((t) => resolveDynamicTokens(t, creature).trim().toUpperCase())
-        .filter(Boolean)
-        .join(" | ");
-      if (tagLine) {
-        parts.push(`**${tagLine}**`);
-      }
-    }
-
-    if (resolvedBio) {
-      parts.push(resolvedBio);
-    }
-
-    if (resolvedCta && !isMinimal) {
-      parts.push(resolvedCta);
+    const fallbackIntro = buildStructuredProfileMarkdown(creature, readme);
+    if (fallbackIntro) {
+      parts.push(fallbackIntro);
     }
   }
 
@@ -459,7 +440,11 @@ export function buildGeneratedReadmeMarkdown(
     );
   }
 
-  if (!isAdvancedText && !isMinimal && readme.customFooterMarkdown.trim()) {
+  if (
+    readme.profileTextMode !== "advanced" &&
+    !isMinimal &&
+    readme.customFooterMarkdown.trim()
+  ) {
     const heading = resolveDynamicTokens(
       readme.customSectionTitle,
       creature

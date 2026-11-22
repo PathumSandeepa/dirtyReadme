@@ -29,19 +29,28 @@ function sanitizeImageSrc(rawUrl: string): string | null {
   return null;
 }
 
-export function renderInlineMarkdown(text: string): React.ReactNode[] {
+function parseAttr(attrText: string, name: string): string {
+  const match = attrText.match(new RegExp(`${name}=["']([^"']*)["']`, "i"));
+  return match?.[1] ?? "";
+}
+
+function renderMarkdownOnlyInline(
+  text: string,
+  keyPrefix: string
+): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   const tokenRegex =
     /(!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|`[^`]+`|\*\*[^*]+\*\*|~~[^~]+~~|\*[^*]+\*)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-  let key = 0;
+  let idx = 0;
 
   while ((match = tokenRegex.exec(text)) !== null) {
     if (match.index > lastIndex) {
       nodes.push(text.slice(lastIndex, match.index));
     }
     const token = match[0];
+    const k = `${keyPrefix}-${idx++}`;
 
     if (token.startsWith("![")) {
       const imgMatch = token.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
@@ -49,7 +58,7 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
       if (imgMatch && safeSrc) {
         nodes.push(
           <img
-            key={key++}
+            key={k}
             src={safeSrc}
             alt={imgMatch[1]}
             className="my-1 inline-block max-h-24 rounded align-middle"
@@ -63,13 +72,13 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
       if (linkMatch) {
         nodes.push(
           <a
-            key={key++}
+            key={k}
             href={sanitizeHref(linkMatch[2])}
             target="_blank"
             rel="noreferrer"
             className="text-[#2f81f7] underline"
           >
-            {linkMatch[1]}
+            {renderInlineMarkdown(linkMatch[1])}
           </a>
         );
       } else {
@@ -78,7 +87,7 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
     } else if (token.startsWith("`") && token.endsWith("`")) {
       nodes.push(
         <code
-          key={key++}
+          key={k}
           className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-xs dark:bg-white/10"
         >
           {token.slice(1, -1)}
@@ -86,20 +95,20 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
       );
     } else if (token.startsWith("**") && token.endsWith("**")) {
       nodes.push(
-        <strong key={key++} className="font-semibold">
-          {token.slice(2, -2)}
+        <strong key={k} className="font-semibold">
+          {renderInlineMarkdown(token.slice(2, -2))}
         </strong>
       );
     } else if (token.startsWith("~~") && token.endsWith("~~")) {
       nodes.push(
-        <del key={key++} className="line-through opacity-75">
-          {token.slice(2, -2)}
+        <del key={k} className="line-through opacity-75">
+          {renderInlineMarkdown(token.slice(2, -2))}
         </del>
       );
     } else if (token.startsWith("*") && token.endsWith("*")) {
       nodes.push(
-        <em key={key++} className="italic">
-          {token.slice(1, -1)}
+        <em key={k} className="italic">
+          {renderInlineMarkdown(token.slice(1, -1))}
         </em>
       );
     } else {
@@ -115,6 +124,105 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
   return nodes;
 }
 
+export function renderInlineMarkdown(text: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const htmlRegex =
+    /(<br\s*\/?>|<img\b[^>]*\/?>|<a\b([^>]*)>([\s\S]*?)<\/a>|<(strong|b|em|i|u|ins|del|s|code)>([\s\S]*?)<\/\4>)/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = htmlRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(
+        ...renderMarkdownOnlyInline(
+          text.slice(lastIndex, match.index),
+          `md-${key++}`
+        )
+      );
+    }
+    const full = match[0];
+    const k = `html-${key++}`;
+
+    if (/^<br/i.test(full)) {
+      nodes.push(<br key={k} />);
+    } else if (/^<img/i.test(full)) {
+      const safeSrc = sanitizeImageSrc(parseAttr(full, "src"));
+      const alt = parseAttr(full, "alt");
+      if (safeSrc) {
+        nodes.push(
+          <img
+            key={k}
+            src={safeSrc}
+            alt={alt}
+            className="my-1 inline-block max-h-24 rounded align-middle"
+          />
+        );
+      }
+    } else if (/^<a\b/i.test(full)) {
+      const attrs = match[2] || "";
+      const inner = match[3] || "";
+      nodes.push(
+        <a
+          key={k}
+          href={sanitizeHref(parseAttr(attrs, "href"))}
+          target="_blank"
+          rel="noreferrer"
+          className="text-[#2f81f7] underline"
+        >
+          {renderInlineMarkdown(inner)}
+        </a>
+      );
+    } else {
+      const tag = (match[4] || "").toLowerCase();
+      const inner = match[5] || "";
+      if (tag === "strong" || tag === "b") {
+        nodes.push(
+          <strong key={k} className="font-semibold">
+            {renderInlineMarkdown(inner)}
+          </strong>
+        );
+      } else if (tag === "em" || tag === "i") {
+        nodes.push(
+          <em key={k} className="italic">
+            {renderInlineMarkdown(inner)}
+          </em>
+        );
+      } else if (tag === "u" || tag === "ins") {
+        nodes.push(
+          <u key={k} className="underline underline-offset-2">
+            {renderInlineMarkdown(inner)}
+          </u>
+        );
+      } else if (tag === "del" || tag === "s") {
+        nodes.push(
+          <del key={k} className="line-through opacity-75">
+            {renderInlineMarkdown(inner)}
+          </del>
+        );
+      } else if (tag === "code") {
+        nodes.push(
+          <code
+            key={k}
+            className="rounded bg-black/10 px-1.5 py-0.5 font-mono text-xs dark:bg-white/10"
+          >
+            {inner}
+          </code>
+        );
+      }
+    }
+
+    lastIndex = match.index + full.length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(
+      ...renderMarkdownOnlyInline(text.slice(lastIndex), `md-${key++}`)
+    );
+  }
+  return nodes;
+}
+
 function splitTableCells(row: string): string[] {
   return row
     .trim()
@@ -126,6 +234,13 @@ function splitTableCells(row: string): string[] {
 
 function isTableSeparator(line: string): boolean {
   return /^\|?(\s*:?-{3,}:?\s*\|)+(\s*:?-{3,}:?\s*)?\|?$/.test(line.trim());
+}
+
+function getAlignClass(align?: string): string {
+  const clean = align?.toLowerCase();
+  if (clean === "center") return "text-center";
+  if (clean === "right") return "text-right";
+  return "text-left";
 }
 
 export function AdvancedMarkdownPreview({
@@ -238,22 +353,65 @@ export function AdvancedMarkdownPreview({
       continue;
     }
 
-    // Center-aligned HTML block (<p align="center">...</p>)
-    const centerBlockStart = trimmed.match(/^<p\s+align=["']center["']>$/i);
-    const centerSingleLine = trimmed.match(
-      /^<p\s+align=["']center["']>([\s\S]*)<\/p>$/i
+    // HTML Heading (<h1..4 align="left|center|right">...</h1..4>)
+    const htmlHeading = trimmed.match(
+      /^<h([1-4])(?:\s+[^>]*align=["'](left|center|right)["'][^>]*)?>([\s\S]*)<\/h\1>$/i
     );
-    if (centerSingleLine) {
+    if (htmlHeading) {
       flushLists();
+      const lvl = htmlHeading[1];
+      const alignCls = getAlignClass(htmlHeading[2]);
+      const content = htmlHeading[3].trim();
+      const borderCls = isDark ? "border-[#30363d]" : "border-[#d0d7de]";
+      if (lvl === "1") {
+        blocks.push(
+          <h1 key={key++} className={`border-b pb-2 text-2xl font-bold ${borderCls} ${alignCls}`}>
+            {renderInlineMarkdown(content)}
+          </h1>
+        );
+      } else if (lvl === "2") {
+        blocks.push(
+          <h2 key={key++} className={`border-b pb-2 text-xl font-semibold ${borderCls} ${alignCls}`}>
+            {renderInlineMarkdown(content)}
+          </h2>
+        );
+      } else if (lvl === "3") {
+        blocks.push(
+          <h3 key={key++} className={`text-lg font-semibold ${alignCls}`}>
+            {renderInlineMarkdown(content)}
+          </h3>
+        );
+      } else {
+        blocks.push(
+          <h4 key={key++} className={`text-sm font-semibold ${alignCls}`}>
+            {renderInlineMarkdown(content)}
+          </h4>
+        );
+      }
+      continue;
+    }
+
+    // Aligned HTML paragraph (<p align="left|center|right">...</p>)
+    const paraSingle = trimmed.match(
+      /^<p(?:\s+[^>]*align=["'](left|center|right)["'][^>]*)?>([\s\S]*)<\/p>$/i
+    );
+    if (paraSingle) {
+      flushLists();
+      const alignCls = getAlignClass(paraSingle[1]);
       blocks.push(
-        <div key={key++} className="text-center text-sm leading-relaxed">
-          {renderInlineMarkdown(centerSingleLine[1].trim())}
-        </div>
+        <p key={key++} className={`text-sm leading-relaxed opacity-95 ${alignCls}`}>
+          {renderInlineMarkdown(paraSingle[2].trim())}
+        </p>
       );
       continue;
     }
-    if (centerBlockStart) {
+
+    const paraStart = trimmed.match(
+      /^<p(?:\s+[^>]*align=["'](left|center|right)["'][^>]*)?>$/i
+    );
+    if (paraStart) {
       flushLists();
+      const alignCls = getAlignClass(paraStart[1]);
       const innerLines: string[] = [];
       let j = i + 1;
       while (j < lines.length && !/<\/p>/i.test(lines[j])) {
@@ -261,7 +419,7 @@ export function AdvancedMarkdownPreview({
         j++;
       }
       blocks.push(
-        <div key={key++} className="space-y-1 text-center text-sm leading-relaxed">
+        <div key={key++} className={`flex flex-col gap-1 text-sm leading-relaxed ${alignCls}`}>
           {innerLines
             .filter(Boolean)
             .map((lineText, idx) => (
@@ -367,7 +525,7 @@ export function AdvancedMarkdownPreview({
       blocks.push(
         <h1
           key={key++}
-          className={`border-b pb-2 text-2xl font-bold ${
+          className={`border-b pb-2 text-left text-2xl font-bold ${
             isDark ? "border-[#30363d]" : "border-[#d0d7de]"
           }`}
         >
@@ -378,7 +536,7 @@ export function AdvancedMarkdownPreview({
       blocks.push(
         <h2
           key={key++}
-          className={`border-b pb-2 text-xl font-semibold ${
+          className={`border-b pb-2 text-left text-xl font-semibold ${
             isDark ? "border-[#30363d]" : "border-[#d0d7de]"
           }`}
         >
@@ -387,17 +545,23 @@ export function AdvancedMarkdownPreview({
       );
     } else if (trimmed.startsWith("### ")) {
       blocks.push(
-        <h3 key={key++} className="text-base font-semibold">
+        <h3 key={key++} className="text-left text-lg font-semibold">
           {renderInlineMarkdown(trimmed.slice(4))}
         </h3>
       );
     } else if (trimmed.startsWith("#### ")) {
       blocks.push(
-        <h4 key={key++} className="text-sm font-semibold">
+        <h4 key={key++} className="text-left text-sm font-semibold">
           {renderInlineMarkdown(trimmed.slice(5))}
         </h4>
       );
-    } else if (trimmed.startsWith("> ")) {
+    } else if (trimmed.startsWith(">")) {
+      const quoteLines: string[] = [trimmed.replace(/^>\s?/, "")];
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim().startsWith(">")) {
+        quoteLines.push(lines[j].trim().replace(/^>\s?/, ""));
+        j++;
+      }
       blocks.push(
         <blockquote
           key={key++}
@@ -405,12 +569,15 @@ export function AdvancedMarkdownPreview({
             isDark ? "border-[#30363d]" : "border-[#d0d7de]"
           }`}
         >
-          {renderInlineMarkdown(trimmed.slice(2))}
+          {quoteLines.map((ql, qIdx) => (
+            <p key={qIdx}>{renderInlineMarkdown(ql)}</p>
+          ))}
         </blockquote>
       );
+      i = j - 1;
     } else {
       blocks.push(
-        <p key={key++} className="text-sm leading-relaxed opacity-95">
+        <p key={key++} className="text-left text-sm leading-relaxed opacity-95">
           {renderInlineMarkdown(trimmed)}
         </p>
       );
@@ -418,5 +585,5 @@ export function AdvancedMarkdownPreview({
   }
 
   flushLists();
-  return <div className="flex flex-col gap-2.5">{blocks}</div>;
+  return <div className="flex flex-col gap-2.5 text-left">{blocks}</div>;
 }

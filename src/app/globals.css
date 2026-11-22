@@ -146,3 +146,226 @@
     linear-gradient(45deg, transparent 75%, #1d2129 75%),
     linear-gradient(-45deg, transparent 75%, #1d2129 75%);
 }
+
+/* GitHub Primer-matched light canvas styling for the WYSIWYG profile editor */
+.github-wysiwyg {
+  color: #1f2328;
+  background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.github-wysiwyg .ProseMirror {
+  outline: none;
+  min-height: inherit;
+}
+
+.github-wysiwyg .ProseMirror > *:first-child {
+  margin-top: 0;
+}
+
+.github-wysiwyg h1 {
+  font-size: 2em;
+  font-weight: 600;
+  line-height: 1.25;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #d1d9e0;
+  margin: 0.75em 0 0.5em;
+}
+
+.github-wysiwyg h2 {
+  font-size: 1.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #d1d9e0;
+  margin: 0.75em 0 0.5em;
+}
+
+.github-wysiwyg h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.25;
+  border-bottom: none;
+  margin: 0.65em 0 0.4em;
+}
+
+.github-wysiwyg h4 {
+  font-size: 1em;
+  font-weight: 600;
+  line-height: 1.25;
+  border-bottom: none;
+  margin: 0.5em 0 0.35em;
+}
+
+.github-wysiwyg p {
+  margin: 0 0 0.75em;
+}
+
+.github-wysiwyg strong {
+  font-weight: 600;
+}
+
+.github-wysiwyg u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.github-wysiwyg del,
+.github-wysiwyg s {
+  text-decoration: line-through;
+}
+
+.github-wysiwyg a {
+  color: #0969da;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.github-wysiwyg code {
+  background-color: #eff1f3;
+  color: #1f2328;
+  border-radius: 6px;
+  padding: 0.15em 0.4em;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+  font-size: 85%;
+}
+
+.github-wysiwyg pre {
+  background-color: #f6f8fa;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  margin: 0 0 0.85em;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, monospace;
+  font-size: 13.6px;
+  line-height: 1.45;
+}
+
+.github-wysiwyg pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+.github-wysiwyg blockquote {
+  border-left: 0.25em solid #d1d9e0;
+  color: #59636e;
+  padding: 0 1em;
+  margin: 0 0 0.75em;
+}
+
+.github-wysiwyg blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.github-wysiwyg hr {
+  height: 0.25em;
+  padding: 0;
+  margin: 16px 0;
+  background-color: #d1d9e0;
+  border: 0;
+  cursor: pointer;
+}
+
+.github-wysiwyg hr.ProseMirror-selectednode {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
+.github-wysiwyg ul:not([data-type="taskList"]) {
+  list-style-type: disc;
+  padding-left: 1.75em;
+  margin: 0 0 0.75em;
+}
+
+.github-wysiwyg ol {
+  list-style-type: decimal;
+  padding-left: 1.75em;
+  margin: 0 0 0.75em;
+}
+
+.github-wysiwyg li > p {
+  margin-bottom: 0.25em;
+}
+
+.github-wysiwyg ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25em;
+  margin: 0 0 0.75em;
+}
+
+.github-wysiwyg ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.25em;
+}
+
+.github-wysiwyg ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.28em;
+  user-select: none;
+}
+
+.github-wysiwyg ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #0969da;
+  cursor: pointer;
+}
+
+.github-wysiwyg ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.github-wysiwyg table {
+  border-collapse: collapse;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 0 0.85em;
+  display: block;
+  overflow-x: auto;
+}
+
+.github-wysiwyg th,
+.github-wysiwyg td {
+  border: 1px solid #d1d9e0;
+  padding: 6px 13px;
+  vertical-align: top;
+  min-width: 96px;
+}
+
+.github-wysiwyg th {
+  background-color: #f6f8fa;
+  font-weight: 600;
+}
+
+.github-wysiwyg th p,
+.github-wysiwyg td p {
+  margin: 0;
+}
+
+.github-wysiwyg img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.github-wysiwyg img.ProseMirror-selectednode {
+  outline: 2px solid #0969da;
+}
+
+.github-wysiwyg p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #8c959f;
+  pointer-events: none;
+  height: 0;
+}

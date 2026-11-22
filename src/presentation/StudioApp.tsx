@@ -172,7 +172,6 @@ export function StudioApp() {
             onCombineStackCards={controller.combineStackCards}
             onUndoCombineStackCards={controller.undoCombineStackCards}
             onAddCustomBadgeToCard={controller.addCustomBadgeToCard}
-            onReorderTags={controller.reorderSubtitleTags}
             onOpenAutoEvolve={() => setAutoEvolveOpen(true)}
             onBackToRepoGuide={() => setScreen("repo-guide")}
             onNextToPublish={() => setScreen("publish")}

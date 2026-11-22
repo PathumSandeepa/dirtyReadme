@@ -36,11 +36,11 @@ import {
 import {
   addBadgeToStackCard,
   buildMarkerSection,
+  buildStructuredProfileMarkdown,
   combineAllStackCards,
   getEffectiveReadmeMarkdown,
   moveBadgeBetweenStackCards,
   removeBadgeFromStackCard,
-  reorderItems,
   reorderStackCards,
   restoreOrganizedStackCards,
 } from "@/domain/profile/readmeService";
@@ -385,14 +385,6 @@ export function useStudioController() {
     }));
   }
 
-  function reorderSubtitleTags(fromIdx: number, toIdx: number) {
-    setReadmeConfig((prev) => ({
-      ...prev,
-      rawOverride: null,
-      subtitleTags: reorderItems(prev.subtitleTags, fromIdx, toIdx),
-    }));
-  }
-
   async function syncFromGitHub(targetUsername: string, authToken?: string) {
     const parsedUsername = parseGitHubUsername(targetUsername);
     if (!parsedUsername) {
@@ -415,8 +407,18 @@ export function useStudioController() {
           DEFAULT_CREATURE_CONFIG,
           DEFAULT_README_CONFIG
         );
+        const restoredMarkdown =
+          hydrated.readmeConfig.advancedProfileMarkdown.trim() ||
+          buildStructuredProfileMarkdown(
+            hydrated.creatureConfig,
+            hydrated.readmeConfig
+          );
         setCreatureConfig(hydrated.creatureConfig);
-        setReadmeConfig(hydrated.readmeConfig);
+        setReadmeConfig({
+          ...hydrated.readmeConfig,
+          profileTextMode: "advanced",
+          advancedProfileMarkdown: restoredMarkdown,
+        });
         setCustomBgHex(hydrated.customBgHex);
         setRestoredNotice(
           `Restored your saved creature & README customizations from ${snap.username}/${snap.username}.`
@@ -430,6 +432,27 @@ export function useStudioController() {
           DEFAULT_CREATURE_CONFIG,
           DEFAULT_README_CONFIG
         );
+        const mergedCreatureSnapshot: CreatureConfig = {
+          ...creatureConfig,
+          ...parsed.creaturePatch,
+          username: snap.username,
+          commits:
+            creatureConfig.windowMode === "all-time"
+              ? snap.allTimeCommits
+              : snap.annualCommits,
+          languages: ensureLanguageSlots(
+            snap.languages,
+            creatureConfig.languageCount
+          ),
+        };
+        const parsedMarkdown =
+          parsed.readmeConfig.advancedProfileMarkdown.trim() ||
+          (parsed.readmeConfig.templateId === "auto-evolve-block"
+            ? ""
+            : buildStructuredProfileMarkdown(
+                mergedCreatureSnapshot,
+                parsed.readmeConfig
+              ));
         setCreatureConfig((prev) => {
           const mergedCreature: CreatureConfig = {
             ...prev,
@@ -445,7 +468,11 @@ export function useStudioController() {
             ? applyLanguageColors(mergedCreature, mergedCreature.languages)
             : mergedCreature;
         });
-        setReadmeConfig(parsed.readmeConfig);
+        setReadmeConfig({
+          ...parsed.readmeConfig,
+          profileTextMode: "advanced",
+          advancedProfileMarkdown: parsedMarkdown,
+        });
         setRestoredNotice(
           `Loaded your previous README customizations from ${snap.username}/${snap.username}.`
         );
@@ -532,17 +559,32 @@ export function useStudioController() {
             : []),
         ];
 
-        return {
+        const syncedHeadline = `${snap.displayName} | <Occupation here>`;
+        const syncedBio = DEFAULT_DUMMY_INTRO.replaceAll(
+          "{{USERNAME}}",
+          snap.username
+        );
+        const syncedBase: ReadmeConfig = {
           ...prev,
+          headline: syncedHeadline,
+          bio: syncedBio,
+        };
+        const syncedCreature: CreatureConfig = {
+          ...creatureConfig,
+          username: snap.username,
+        };
+        return {
+          ...syncedBase,
           profileDisplayName: snap.displayName,
           profileStatusBio: snap.bio || prev.profileStatusBio,
           profileLocation: snap.location || prev.profileLocation,
           profileCompany: snap.company || prev.profileCompany,
           profileWebsite: snap.website || `https://github.com/${snap.username}`,
-          profileTextMode: "structured",
-          advancedProfileMarkdown: "",
-          headline: `${snap.displayName} | <Occupation here>`,
-          bio: DEFAULT_DUMMY_INTRO.replaceAll("{{USERNAME}}", snap.username),
+          profileTextMode: "advanced",
+          advancedProfileMarkdown: buildStructuredProfileMarkdown(
+            syncedCreature,
+            syncedBase
+          ),
           actionLinks: nextLinks,
           stackCards: nextCards,
         };
@@ -604,7 +646,6 @@ export function useStudioController() {
     combineStackCards,
     undoCombineStackCards,
     addCustomBadgeToCard,
-    reorderSubtitleTags,
     syncFromGitHub,
     resetAll,
   };

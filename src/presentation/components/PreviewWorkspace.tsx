@@ -166,7 +166,6 @@ export function PreviewWorkspace({
   const isMinimal = readmeConfig.templateId === "minimal-header";
   const isMarkerOnly = readmeConfig.templateId === "auto-evolve-block";
   const isAlignedLeft = readmeConfig.align === "left";
-  const isAdvancedText = readmeConfig.profileTextMode === "advanced";
 
   return (
     <div className="flex flex-col gap-4">
@@ -446,71 +445,17 @@ export function PreviewWorkspace({
                         {readmeConfig.rawOverride}
                       </pre>
                     ) : (
-                      <div
-                        className={`flex flex-col gap-4 ${
-                          isAlignedLeft ? "text-left" : "text-center"
-                        }`}
-                      >
+                      <div className="flex flex-col gap-4">
                         {!isMarkerOnly && (
                           <>
-                            {isAdvancedText ? (
-                              readmeConfig.advancedProfileMarkdown.trim() && (
-                                <AdvancedMarkdownPreview
-                                  markdown={resolveDynamicTokens(
-                                    readmeConfig.advancedProfileMarkdown,
-                                    creatureConfig
-                                  )}
-                                  isDark={githubTheme === "dark"}
-                                />
-                              )
-                            ) : (
-                              <>
-                                {readmeConfig.headline.trim() && (
-                                  <h2
-                                    className={`border-b pb-2.5 text-xl font-semibold ${
-                                      githubTheme === "dark"
-                                        ? "border-[#30363d]"
-                                        : "border-[#d0d7de]"
-                                    }`}
-                                  >
-                                    {resolveDynamicTokens(
-                                      readmeConfig.headline,
-                                      creatureConfig
-                                    )}
-                                  </h2>
+                            {readmeConfig.advancedProfileMarkdown.trim() && (
+                              <AdvancedMarkdownPreview
+                                markdown={resolveDynamicTokens(
+                                  readmeConfig.advancedProfileMarkdown,
+                                  creatureConfig
                                 )}
-
-                                {!isMinimal &&
-                                  readmeConfig.subtitleTags.length > 0 && (
-                                    <p
-                                      className={`text-xs font-semibold uppercase tracking-wide ${
-                                        githubTheme === "dark"
-                                          ? "text-[#8b949e]"
-                                          : "text-[#656d76]"
-                                      }`}
-                                    >
-                                      {readmeConfig.subtitleTags.join(" | ")}
-                                    </p>
-                                  )}
-
-                                {readmeConfig.bio.trim() && (
-                                  <p className="text-sm leading-relaxed opacity-90">
-                                    {resolveDynamicTokens(
-                                      readmeConfig.bio,
-                                      creatureConfig
-                                    )}
-                                  </p>
-                                )}
-
-                                {!isMinimal && readmeConfig.ctaLine.trim() && (
-                                  <p className="text-sm font-medium opacity-95">
-                                    {resolveDynamicTokens(
-                                      readmeConfig.ctaLine,
-                                      creatureConfig
-                                    )}
-                                  </p>
-                                )}
-                              </>
+                                isDark={githubTheme === "dark"}
+                              />
                             )}
 
                             {!isMinimal && (
@@ -525,7 +470,11 @@ export function PreviewWorkspace({
                                   return (
                                     <div key={card.id} className="flex flex-col gap-1.5">
                                       {card.title.trim() && (
-                                        <h4 className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                                        <h4
+                                          className={`text-xs font-semibold uppercase tracking-wide opacity-80 ${
+                                            isAlignedLeft ? "text-left" : "text-center"
+                                          }`}
+                                        >
                                           {card.title}
                                         </h4>
                                       )}
@@ -710,7 +659,7 @@ export function PreviewWorkspace({
                           );
                         })()}
 
-                        {!isAdvancedText &&
+                        {readmeConfig.profileTextMode !== "advanced" &&
                           !isMarkerOnly &&
                           readmeConfig.customFooterMarkdown.trim() && (
                             <div
