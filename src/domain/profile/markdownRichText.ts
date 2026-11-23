@@ -11,102 +11,102 @@ export interface EditorTemplateItem {
 export const PROFILE_EDITOR_TEMPLATES: EditorTemplateItem[] = [
   {
     id: "clean-dev",
-    name: "Clean Developer Intro",
+    name: "Clean developer intro",
     category: "Balanced",
-    description: "Clean heading without divider, role tagline, intro bio & 3 bullets",
+    description: "Clean heading without divider, role line, intro bio and three bullets.",
     markdown: [
-      "### Hi there, I'm @{{USERNAME}} 👋",
+      "### Hi, I am @{{USERNAME}}",
       "",
-      "**FULL-STACK DEVELOPER | SYSTEMS ARCHITECTURE | OPEN SOURCE**",
+      "**Full-stack developer, systems architecture, open source**",
       "",
-      "I build fast, reliable software with `{{LANGUAGES}}` and share open-source tools on GitHub. Currently evolving my Stage {{STAGE}} **{{CREATURE}}** (`{{COMMITS}}` contributions).",
+      "I build fast, reliable software with `{{LANGUAGES}}` and share open source tools on GitHub. Currently growing Stage {{STAGE}} **{{CREATURE}}** with `{{COMMITS}}` commits.",
       "",
-      "- 🔭 Building scalable web applications and developer tooling",
-      "- ⚡ Interested in clean architecture, UI craft, and automation",
-      "- 📫 Connect with me through the links below",
+      "- Building scalable web applications and developer tooling",
+      "- Focused on clean architecture, interface craft and automation",
+      "- Connect with me through the links below",
     ].join("\n"),
   },
   {
     id: "centered-hero",
-    name: "Centered Hero Banner",
+    name: "Centered hero banner",
     category: "Centered",
-    description: "Centered title, subtitle tagline & crisp hero summary",
+    description: "Centered title, subtitle tagline and crisp hero summary.",
     markdown: [
-      '<h3 align="center">Hi there, I\'m @{{USERNAME}} 👋</h3>',
+      '<h3 align="center">Hi, I am @{{USERNAME}}</h3>',
       "",
       '<p align="center">',
-      "  <strong>SOFTWARE ENGINEER · OPEN-SOURCE BUILDER · UI CRAFTSMAN</strong>",
+      "  <strong>Software engineer, open source builder, UI craftsman</strong>",
       "</p>",
       "",
       '<p align="center">',
-      "  Crafting resilient web apps, developer tools, and automated workflows with <code>{{LANGUAGES}}</code>.",
+      "  Crafting resilient web apps, developer tools and automated workflows with <code>{{LANGUAGES}}</code>.",
       "</p>",
       "",
       "---",
       "",
       '<p align="center">',
-      "  Stage {{STAGE}} <strong>{{CREATURE}}</strong> · Rank: <strong>{{RANK}}</strong> · <code>{{COMMITS}}</code> contributions",
+      "  Stage {{STAGE}} <strong>{{CREATURE}}</strong>, {{RANK}} tier, <code>{{COMMITS}}</code> commits",
       "</p>",
     ].join("\n"),
   },
   {
     id: "fullstack-eng",
-    name: "Full-Stack Engineer",
+    name: "Full-stack engineer",
     category: "Engineering",
-    description: "Clear engineering stack overview with core focus table",
+    description: "Engineering overview with a clear stack summary table.",
     markdown: [
-      "### @{{USERNAME}} — Full-Stack Software Engineer 💻",
+      "### @{{USERNAME}}, Full-stack software engineer",
       "",
-      "Designing end-to-end products from pixel-accurate frontends to fault-tolerant APIs.",
+      "Designing products from calm frontends to dependable backend APIs.",
       "",
-      "- 🌐 **Frontend**: Component systems, accessibility, state machines, WebGL/Canvas",
-      "- ⚙️ **Backend**: REST/GraphQL services, relational data modeling, queues & caching",
-      "- 🛠️ **Tooling**: CI/CD pipelines, static analysis, container workflows",
+      "- **Frontend**: Component systems, accessibility, state machines and canvas graphics",
+      "- **Backend**: HTTP and GraphQL services, relational data modeling, queues and caching",
+      "- **Tooling**: Continuous integration pipelines, static checks and container workflows",
       "",
-      "| Domain | Primary Tools | Focus |",
+      "| Domain | Primary tools | Focus |",
       "| --- | --- | --- |",
-      "| Product UI | TypeScript · React · Next.js | Fast & accessible UX |",
-      "| Services | Node.js · PostgreSQL · Docker | Reliable APIs |",
+      "| Product UI | TypeScript, React, Next.js | Fast accessible UX |",
+      "| Services | Node.js, PostgreSQL, Docker | Reliable APIs |",
     ].join("\n"),
   },
   {
     id: "oss-maintainer",
-    name: "Open-Source Maintainer",
-    category: "Open Source",
-    description: "Mission quote, project health table & maintainer checklist",
+    name: "Open source maintainer",
+    category: "Open source",
+    description: "Mission quote, project table and maintainer checklist.",
     markdown: [
-      "### @{{USERNAME}} · Open-Source Maintainer 🛠️",
+      "### @{{USERNAME}}, Open source maintainer",
       "",
-      "> Shipping composable packages, clean abstractions, and thorough documentation.",
+      "> Shipping composable packages, clean APIs and clear documentation.",
       "",
       "| Area | Focus | Status |",
       "| --- | --- | --- |",
-      "| Libraries | Developer DX & Zero-Dependency Core | Active |",
-      "| Automation | GitHub Actions & Release Pipelines | Maintained |",
-      "| Primary Stack | `{{LANGUAGES}}` | Growing |",
+      "| Libraries | Developer tooling and zero bloat cores | Active |",
+      "| Automation | GitHub Actions and release pipelines | Maintained |",
+      "| Primary stack | `{{LANGUAGES}}` | Growing |",
       "",
-      "- [x] Automated profile creature evolution (`{{RANK}}`)",
-      "- [x] Open to pull requests, code reviews & collaborations",
+      "- [x] Automated {{CREATURE}} profile banner (`{{RANK}}`)",
+      "- [x] Open to pull requests, code reviews and bug reports",
     ].join("\n"),
   },
   {
     id: "ai-data",
-    name: "AI & Data Engineer",
-    category: "AI / ML",
-    description: "Research & evaluation workflow with code snippet block",
+    name: "AI and data engineer",
+    category: "AI and ML",
+    description: "Research and evaluation workflow with Python code block.",
     markdown: [
-      "### @{{USERNAME}} · AI & Systems Engineer 🧠",
+      "### @{{USERNAME}}, AI and systems engineer",
       "",
-      "Exploring LLM evaluation pipelines, retrieval architecture, and high-throughput data workflows.",
+      "Exploring model evaluation pipelines, retrieval architecture and high-throughput data flows.",
       "",
-      "1. Benchmarking agent tool-use reliability and latency budgets",
-      "2. Building structured evaluation harnesses in `{{LANGUAGES}}`",
-      "3. Packaging reproducible notebooks & production inference APIs",
+      "1. Benchmarking agent tool reliability and latency budgets",
+      "2. Building reproducible evaluation harnesses in `{{LANGUAGES}}`",
+      "3. Packaging inference APIs for production workloads",
       "",
       "```python",
       "profile = {",
       '    "handle": "@{{USERNAME}}",',
-      '    "guardian": "{{CREATURE}} (Stage {{STAGE}})",',
+      '    "companion": "{{CREATURE}} Stage {{STAGE}}",',
       '    "commits": "{{COMMITS}}",',
       "}",
       "```",
@@ -114,91 +114,424 @@ export const PROFILE_EDITOR_TEMPLATES: EditorTemplateItem[] = [
   },
   {
     id: "student-learner",
-    name: "Student & Learner",
+    name: "Student and learner",
     category: "Learning",
-    description: "Friendly bio with interactive learning roadmap checkboxes",
+    description: "Friendly bio with interactive learning roadmap checkboxes.",
     markdown: [
-      "### Hey! I'm @{{USERNAME}} 🌱",
+      "### Hello, I am @{{USERNAME}}",
       "",
-      "Computer science student passionate about software engineering, problem solving, and shipping real projects every week.",
+      "Computer science student focused on software engineering, problem solving and shipping real projects each week.",
       "",
-      "#### Learning Roadmap",
+      "#### Learning roadmap",
       "",
-      "- [x] Core algorithms, Git workflows & TypeScript fundamentals",
-      "- [x] Building full-stack apps with modern frameworks",
-      "- [ ] Deep diving into distributed systems and compiler design",
+      "- [x] Core algorithms, Git workflows and TypeScript fundamentals",
+      "- [x] Building full-stack applications with modern frameworks",
+      "- [ ] Studying distributed systems and compiler design",
       "",
-      "Always excited to team up on hackathons and open-source beginner issues!",
+      "Always glad to team up on hackathons and beginner friendly open source issues.",
     ].join("\n"),
   },
   {
     id: "minimalist-zen",
-    name: "Minimalist Zen",
+    name: "Minimalist zen",
     category: "Minimal",
-    description: "Short, airy 3-line signature intro with zero clutter",
+    description: "Short airy signature intro with zero clutter.",
     markdown: [
       '<h3 align="center">@{{USERNAME}}</h3>',
       "",
       '<p align="center">',
-      "  Software Engineer crafting calm, dependable software in <code>{{LANGUAGES}}</code>.",
+      "  Software engineer building calm, dependable tools in <code>{{LANGUAGES}}</code>.",
       "</p>",
     ].join("\n"),
   },
   {
     id: "design-engineer",
-    name: "UI & Design Engineer",
+    name: "UI and design engineer",
     category: "Design",
-    description: "Design systems craft philosophy & key focus highlights",
+    description: "Design systems craft philosophy and motion focus highlights.",
     markdown: [
-      "### @{{USERNAME}} — Design Engineer ✨",
+      "### @{{USERNAME}}, Design engineer",
       "",
-      "> Bridging design tokens, crisp typography, and 60fps interaction engineering.",
+      "> Bridging design tokens, crisp typography and 60fps interaction engineering.",
       "",
-      "- 🎨 **Design Systems**: Composable primitives, accessible states, semantic tokens",
-      "- 🖼️ **Graphics & Motion**: Procedural canvas rendering, micro-interactions, WebP pipelines",
-      "- 📦 **Everyday Stack**: `{{LANGUAGES}}`",
+      "- **Design systems**: Composable primitives, keyboard states and semantic tokens",
+      "- **Graphics and motion**: Procedural canvas rendering, micro-motion and WebP encoding",
+      "- **Everyday stack**: `{{LANGUAGES}}`",
     ].join("\n"),
   },
   {
     id: "terminal-bio",
-    name: "Developer Terminal Card",
+    name: "Developer terminal card",
     category: "Code",
-    description: "Clean code-block developer card showing live creature stats",
+    description: "Code block developer card displaying live creature values.",
     markdown: [
-      "### whoami :: @{{USERNAME}} ⚡",
+      "### whoami @{{USERNAME}}",
       "",
       "```ts",
       "export const developer = {",
       '  username: "@{{USERNAME}}",',
       '  stack: "{{LANGUAGES}}",',
       '  companion: "{{CREATURE}}",',
-      '  stage: "Stage {{STAGE}} ({{RANK}})",',
-      '  contributions: "{{COMMITS}}",',
+      '  stage: "Stage {{STAGE}} {{RANK}}",',
+      '  commits: "{{COMMITS}}",',
       "};",
       "```",
       "",
-      "Feel free to explore pinned repositories or reach out below.",
+      "Explore my pinned repositories or reach out below.",
     ].join("\n"),
   },
   {
     id: "freelancer-pro",
-    name: "Freelancer & Consultant",
+    name: "Freelancer and consultant",
     category: "Work",
-    description: "Services table, availability checklist & project contact CTA",
+    description: "Services table, availability checklist and project contact callout.",
     markdown: [
-      "### @{{USERNAME}} · Independent Software Consultant 🚀",
+      "### @{{USERNAME}}, Independent software consultant",
       "",
-      "Helping startups and engineering teams go from architecture to production launch cleanly.",
+      "Helping startups and product teams move from architecture to production launch.",
       "",
       "| Engagement | Deliverable | Stack |",
       "| --- | --- | --- |",
-      "| MVP Build | Production web app + CI/CD | `{{LANGUAGES}}` |",
-      "| Architecture Audit | Performance & code health report | Full-Stack |",
+      "| MVP build | Production web app and CI automation | `{{LANGUAGES}}` |",
+      "| Architecture audit | Performance and code health report | Full-stack |",
       "",
       "- [x] Available for select product engineering contracts",
-      "- [x] Direct technical advisory & UI modernization",
+      "- [x] Direct technical advisory and UI modernization",
       "",
-      "Reach out via **Portfolio** or **Email** below to discuss a project!",
+      "Reach out through Portfolio or Email below to discuss a project.",
+    ].join("\n"),
+  },
+  {
+    id: "terminal-minimal",
+    name: "Terminal minimal prompt",
+    category: "Code",
+    description: "Command prompt style summary for CLI and systems developers.",
+    markdown: [
+      "### Terminal session for @{{USERNAME}}",
+      "",
+      "```sh",
+      "$ whoami",
+      "@{{USERNAME}}",
+      "$ stack --top",
+      "{{LANGUAGES}}",
+      "$ companion --status",
+      "{{CREATURE}} Stage {{STAGE}} ({{COMMITS}} commits)",
+      "```",
+      "",
+      "Shipping small, fast command line tools and libraries.",
+    ].join("\n"),
+  },
+  {
+    id: "devops-cloud",
+    name: "DevOps and cloud engineer",
+    category: "Cloud",
+    description: "Infrastructure principles, automation table and reliability focus.",
+    markdown: [
+      "### @{{USERNAME}}, Cloud and DevOps engineer",
+      "",
+      "**Infrastructure as code, containers, observability**",
+      "",
+      "Automating deployments, tightening feedback loops and keeping production services calm.",
+      "",
+      "| Layer | Approach | Outcome |",
+      "| --- | --- | --- |",
+      "| Provisioning | Declarative modules and policy checks | Repeatable environments |",
+      "| Delivery | Automated builds and canary rollouts | Zero downtime deploys |",
+      "| Telemetry | Structured logs and OpenTelemetry traces | Fast root cause discovery |",
+    ].join("\n"),
+  },
+  {
+    id: "mobile-developer",
+    name: "Mobile developer",
+    category: "Mobile",
+    description: "Cross platform and native mobile app engineering overview.",
+    markdown: [
+      "### @{{USERNAME}}, Mobile app developer",
+      "",
+      "**Native feel, offline resilience, smooth frame pacing**",
+      "",
+      "Building iOS and Android apps with `{{LANGUAGES}}`.",
+      "",
+      "- Gesture driven navigation and platform native controls",
+      "- Local first sync engines and background task scheduling",
+      "- Automated UI snapshot testing on real device matrices",
+    ].join("\n"),
+  },
+  {
+    id: "game-developer",
+    name: "Game developer",
+    category: "Games",
+    description: "Graphics programming, engine tooling and interactive worlds.",
+    markdown: [
+      "### @{{USERNAME}}, Game developer and graphics tinkerer",
+      "",
+      "> Turning shader math, pixel art and frame budgets into playable experiences.",
+      "",
+      "- Custom 2D sprite pipelines and procedural animation curves",
+      "- Entity component systems written in `{{LANGUAGES}}`",
+      "- Showcasing {{CREATURE}} (`{{VIEW}}` view) animated in WebP below",
+    ].join("\n"),
+  },
+  {
+    id: "technical-writer",
+    name: "Technical writer and blogger",
+    category: "Writing",
+    description: "Editorial focus, guide index table and publication links.",
+    markdown: [
+      "### @{{USERNAME}}, Software engineer and technical writer",
+      "",
+      "Writing deep dive guides on `{{LANGUAGES}}`, software architecture and real production trade-offs.",
+      "",
+      "| Topic | Format | Cadence |",
+      "| --- | --- | --- |",
+      "| Engineering deep dives | Annotated articles with runnable code | Weekly |",
+      "| Developer guides | Reference walkthroughs and diagrams | Biweekly |",
+      "",
+      "Read recent posts through the blog links below.",
+    ].join("\n"),
+  },
+  {
+    id: "backend-architecture",
+    name: "Backend architecture notes",
+    category: "Engineering",
+    description: "Distributed services, storage engines and API contract notes.",
+    markdown: [
+      "### @{{USERNAME}}, Backend systems engineer",
+      "",
+      "**High throughput APIs, event streams, data integrity**",
+      "",
+      "Designing low-latency services and predictable storage schemas with `{{LANGUAGES}}`.",
+      "",
+      "- Explicit idempotency keys and bounded retries on network calls",
+      "- Append-only event logs paired with indexed read projections",
+      "- Clear schema migrations and zero lock database rollouts",
+    ].join("\n"),
+  },
+  {
+    id: "research-academic",
+    name: "Research and academic",
+    category: "Research",
+    description: "Research interests, reproducible artifact checklist and citations.",
+    markdown: [
+      "### @{{USERNAME}}, Computing researcher",
+      "",
+      "*Systems, program verification and machine learning methods*",
+      "",
+      "Publishing open datasets, reproducible benchmarks and reference implementations in `{{LANGUAGES}}`.",
+      "",
+      "- [x] Reproducible artifact scripts included in every repository",
+      "- [x] Open source benchmark suites with pinned environments",
+      "- [ ] Writing upcoming workshop paper and evaluation notes",
+    ].join("\n"),
+  },
+  {
+    id: "security-engineer",
+    name: "Security engineer",
+    category: "Security",
+    description: "AppSec posture, threat modeling and supply chain hardening.",
+    markdown: [
+      "### @{{USERNAME}}, Security engineer",
+      "",
+      "> Secure defaults reduce risk before code reaches production.",
+      "",
+      "- Automated dependency auditing, SBOM generation and signed commits",
+      "- Threat modeling for browser applications and OAuth flows",
+      "- Building zero-server static tools that keep tokens strictly in memory",
+    ].join("\n"),
+  },
+  {
+    id: "embedded-hardware",
+    name: "Embedded and firmware",
+    category: "Systems",
+    description: "Microcontrollers, real-time constraints and hardware debugging.",
+    markdown: [
+      "### @{{USERNAME}}, Embedded and firmware engineer",
+      "",
+      "Writing deterministic firmware, protocol drivers and test benches close to the hardware.",
+      "",
+      "```c",
+      "const char *owner = \"@{{USERNAME}}\";",
+      "const int yearly_commits = 1990;",
+      "```",
+      "",
+      "Working across serial protocols, power profiling and real-time loops.",
+    ].join("\n"),
+  },
+  {
+    id: "data-scientist",
+    name: "Data analyst and scientist",
+    category: "AI and ML",
+    description: "Experiment design, feature pipelines and visual storytelling.",
+    markdown: [
+      "### @{{USERNAME}}, Data scientist",
+      "",
+      "**Statistical modeling, experiment analysis, visual notebooks**",
+      "",
+      "Turning messy event streams into clear decisions using `{{LANGUAGES}}`.",
+      "",
+      "1. Framing clear hypotheses before training models",
+      "2. Checking calibration, drift and slice metrics in automated runs",
+      "3. Publishing crisp charts alongside open datasets",
+    ].join("\n"),
+  },
+  {
+    id: "indie-maker",
+    name: "Indie software maker",
+    category: "Work",
+    description: "Small profitable tools, public changelog habits and shipping fast.",
+    markdown: [
+      "### Built by @{{USERNAME}}",
+      "",
+      "**Independent maker, small software, public roadmap**",
+      "",
+      "Shipping focused utilities for developers with `{{LANGUAGES}}`. Backed by `{{COMMITS}}` commits and Stage {{STAGE}} {{CREATURE}}.",
+      "",
+      "- Small team of one from research to support",
+      "- Fast static exports that run directly in your browser",
+      "- Open source code whenever possible",
+    ].join("\n"),
+  },
+  {
+    id: "developer-advocate",
+    name: "Developer advocate",
+    category: "Open source",
+    description: "Workshops, starter kits and community office hours.",
+    markdown: [
+      "### @{{USERNAME}}, Developer advocate",
+      "",
+      "Helping developers adopt modern tooling through starter templates, live talks and sample repositories.",
+      "",
+      "- Hands-on workshops and recorded walkthroughs",
+      "- Minimal starter kits written in `{{LANGUAGES}}`",
+      "- Open community office hours for feedback and triage",
+    ].join("\n"),
+  },
+  {
+    id: "creative-coder",
+    name: "Creative coder and shaders",
+    category: "Design",
+    description: "Generative geometry, pixel shaders and procedural canvas art.",
+    markdown: [
+      '<h3 align="center">@{{USERNAME}} builds generative graphics</h3>',
+      "",
+      '<p align="center">',
+      "  Exploring cellular automata, signed distance fields and procedural pixel animation in <code>{{LANGUAGES}}</code>.",
+      "</p>",
+      "",
+      '<p align="center">',
+      "  Live {{CREATURE}} in {{VIEW}} view reacting to <code>{{COMMITS}}</code> contributions.",
+      "</p>",
+    ].join("\n"),
+  },
+  {
+    id: "sre-reliability",
+    name: "Site reliability engineer",
+    category: "Cloud",
+    description: "Error budgets, incident response playbooks and load testing.",
+    markdown: [
+      "### @{{USERNAME}}, Site reliability engineer",
+      "",
+      "> Reliability comes from clear failure boundaries, not heroic paging.",
+      "",
+      "| Practice | Metric | Goal |",
+      "| --- | --- | --- |",
+      "| Latency budgets | p99 response time | Under 120 ms |",
+      "| Deployments | Canary rollback time | Under 60 seconds |",
+      "| Automation | Toil eliminated per quarter | Measured weekly |",
+    ].join("\n"),
+  },
+  {
+    id: "quality-automation",
+    name: "Quality and test engineer",
+    category: "Engineering",
+    description: "End to end browser suites, contract tests and accessibility audits.",
+    markdown: [
+      "### @{{USERNAME}}, Quality engineering lead",
+      "",
+      "**Browser automation, visual diffs, contract tests**",
+      "",
+      "Catching regressions early in CI with deterministic test suites built in `{{LANGUAGES}}`.",
+      "",
+      "- Cross viewport layout verification from 390px mobile to desktop",
+      "- Accessible keyboard and focus checks built into every run",
+      "- Fast visual diff artifacts on every pull request",
+    ].join("\n"),
+  },
+  {
+    id: "protocol-crypto",
+    name: "Protocol and networking engineer",
+    category: "Systems",
+    description: "Peer to peer transports, binary framing and consensus primitives.",
+    markdown: [
+      "### @{{USERNAME}}, Network protocol engineer",
+      "",
+      "Building fault tolerant messaging protocols, wire formats and compact binary encoders in `{{LANGUAGES}}`.",
+      "",
+      "- Zero copy framing parsers with property based fuzz testing",
+      "- End to end authenticated channels and peer discovery",
+      "- Reproducible network simulations under packet loss",
+    ].join("\n"),
+  },
+  {
+    id: "engineering-lead",
+    name: "Engineering manager and builder",
+    category: "Balanced",
+    description: "Calm engineering culture, architectural mentorship and hands-on PRs.",
+    markdown: [
+      "### @{{USERNAME}}, Engineering lead",
+      "",
+      "Growing high-trust product teams while staying close to architecture, code review and shipping software in `{{LANGUAGES}}`.",
+      "",
+      "- Writing clear technical RFCs before large migrations",
+      "- Protecting deep focus time for engineers",
+      "- Mentoring staff and senior contributors across stacks",
+    ].join("\n"),
+  },
+  {
+    id: "compiler-pl",
+    name: "Compilers and language tooling",
+    category: "Code",
+    description: "Parsers, type checkers, AST transforms and language servers.",
+    markdown: [
+      "### @{{USERNAME}}, Compilers and developer tools",
+      "",
+      "Obsessed with fast parsers, helpful type error messages and snappy editor language servers.",
+      "",
+      "```txt",
+      "source -> lexer -> parser -> typecheck -> ir -> codegen",
+      "```",
+      "",
+      "Currently hacking with `{{LANGUAGES}}` (`{{COMMITS}}` commits).",
+    ].join("\n"),
+  },
+  {
+    id: "accessibility-web",
+    name: "Accessibility specialist",
+    category: "Design",
+    description: "Semantic HTML, WCAG contrast verification and screen reader QA.",
+    markdown: [
+      "### @{{USERNAME}}, Web accessibility engineer",
+      "",
+      "> Inclusive software works smoothly with keyboard, mouse, touch and assistive technology.",
+      "",
+      "- Keyboard navigation audits without visual clutter or focus traps",
+      "- High contrast semantic tokens tested in light and dark modes",
+      "- Reduced motion fallbacks for all animated canvas and CSS layers",
+    ].join("\n"),
+  },
+  {
+    id: "civic-open-data",
+    name: "Open data and civic tech",
+    category: "Open source",
+    description: "Public datasets, map visualizers and transparent community tools.",
+    markdown: [
+      "### @{{USERNAME}}, Civic software builder",
+      "",
+      "Opening public transit, climate and municipal datasets with accessible web apps written in `{{LANGUAGES}}`.",
+      "",
+      "- [x] Lightweight static maps that load quickly on slow connections",
+      "- [x] Open JSON exports documented for journalists and researchers",
+      "- [ ] Expanding neighborhood dataset coverage",
     ].join("\n"),
   },
 ];
@@ -241,6 +574,27 @@ function sanitizeImageSrc(rawUrl: string): string | null {
   return null;
 }
 
+export function resolveImageDisplaySrc(
+  rawSrc: string,
+  imageUrlMap?: Record<string, string>
+): { displaySrc: string; repoPath: string | null } | null {
+  const trimmed = rawSrc.trim();
+  if (imageUrlMap) {
+    const cleanRel = trimmed.replace(/^\.\//, "");
+    const mapped =
+      imageUrlMap[trimmed] ?? imageUrlMap[`./${cleanRel}`] ?? imageUrlMap[cleanRel];
+    if (mapped) {
+      return {
+        displaySrc: mapped,
+        repoPath: `./${cleanRel}`,
+      };
+    }
+  }
+  const safe = sanitizeImageSrc(trimmed);
+  if (!safe) return null;
+  return { displaySrc: safe, repoPath: null };
+}
+
 function parseTagAttr(attrText: string, attrName: string): string {
   const match = attrText.match(
     new RegExp(`${attrName}=["']([^"']*)["']`, "i")
@@ -248,7 +602,23 @@ function parseTagAttr(attrText: string, attrName: string): string {
   return match?.[1] ?? "";
 }
 
-function convertPlainInlineMarkdown(raw: string): string {
+function renderHtmlImgTag(
+  rawSrc: string,
+  alt: string,
+  imageUrlMap?: Record<string, string>
+): string | null {
+  const resolved = resolveImageDisplaySrc(rawSrc, imageUrlMap);
+  if (!resolved) return null;
+  const repoAttr = resolved.repoPath
+    ? ` data-repo-path="${escapeHtmlAttr(resolved.repoPath)}"`
+    : "";
+  return `<img src="${escapeHtmlAttr(resolved.displaySrc)}"${repoAttr} alt="${escapeHtmlAttr(alt)}" />`;
+}
+
+function convertPlainInlineMarkdown(
+  raw: string,
+  imageUrlMap?: Record<string, string>
+): string {
   let result = "";
   const tokenRegex =
     /(`[^`]+`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|~~[^~]+~~|\*[^*]+\*)/g;
@@ -265,25 +635,25 @@ function convertPlainInlineMarkdown(raw: string): string {
       result += `<code>${escapeHtmlText(token.slice(1, -1))}</code>`;
     } else if (token.startsWith("![")) {
       const m = token.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-      const safeSrc = m ? sanitizeImageSrc(m[2]) : null;
-      if (m && safeSrc) {
-        result += `<img src="${escapeHtmlAttr(safeSrc)}" alt="${escapeHtmlAttr(m[1])}" />`;
+      const imgTag = m ? renderHtmlImgTag(m[2], m[1], imageUrlMap) : null;
+      if (imgTag) {
+        result += imgTag;
       } else {
         result += escapeHtmlText(token);
       }
     } else if (token.startsWith("[")) {
       const m = token.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
       if (m) {
-        result += `<a href="${escapeHtmlAttr(sanitizeHref(m[2]))}">${convertPlainInlineMarkdown(m[1])}</a>`;
+        result += `<a href="${escapeHtmlAttr(sanitizeHref(m[2]))}">${convertPlainInlineMarkdown(m[1], imageUrlMap)}</a>`;
       } else {
         result += escapeHtmlText(token);
       }
     } else if (token.startsWith("**") && token.endsWith("**")) {
-      result += `<strong>${convertPlainInlineMarkdown(token.slice(2, -2))}</strong>`;
+      result += `<strong>${convertPlainInlineMarkdown(token.slice(2, -2), imageUrlMap)}</strong>`;
     } else if (token.startsWith("~~") && token.endsWith("~~")) {
-      result += `<del>${convertPlainInlineMarkdown(token.slice(2, -2))}</del>`;
+      result += `<del>${convertPlainInlineMarkdown(token.slice(2, -2), imageUrlMap)}</del>`;
     } else if (token.startsWith("*") && token.endsWith("*")) {
-      result += `<em>${convertPlainInlineMarkdown(token.slice(1, -1))}</em>`;
+      result += `<em>${convertPlainInlineMarkdown(token.slice(1, -1), imageUrlMap)}</em>`;
     } else {
       result += escapeHtmlText(token);
     }
@@ -296,7 +666,10 @@ function convertPlainInlineMarkdown(raw: string): string {
   return result;
 }
 
-function convertInlineMixedToHtml(raw: string): string {
+function convertInlineMixedToHtml(
+  raw: string,
+  imageUrlMap?: Record<string, string>
+): string {
   const htmlTokenRegex =
     /(<br\s*\/?>|<img\b[^>]*\/?>|<a\b([^>]*)>([\s\S]*?)<\/a>|<(strong|b|em|i|u|ins|del|s|code)>([\s\S]*?)<\/\4>)/gi;
   let out = "";
@@ -305,23 +678,23 @@ function convertInlineMixedToHtml(raw: string): string {
 
   while ((match = htmlTokenRegex.exec(raw)) !== null) {
     if (match.index > lastIdx) {
-      out += convertPlainInlineMarkdown(raw.slice(lastIdx, match.index));
+      out += convertPlainInlineMarkdown(raw.slice(lastIdx, match.index), imageUrlMap);
     }
 
     const full = match[0];
     if (/^<br/i.test(full)) {
       out += "<br />";
     } else if (/^<img/i.test(full)) {
-      const safeSrc = sanitizeImageSrc(parseTagAttr(full, "src"));
       const alt = parseTagAttr(full, "alt");
-      if (safeSrc) {
-        out += `<img src="${escapeHtmlAttr(safeSrc)}" alt="${escapeHtmlAttr(alt)}" />`;
+      const imgTag = renderHtmlImgTag(parseTagAttr(full, "src"), alt, imageUrlMap);
+      if (imgTag) {
+        out += imgTag;
       }
     } else if (/^<a\b/i.test(full)) {
       const attrs = match[2] || "";
       const inner = match[3] || "";
       const href = sanitizeHref(parseTagAttr(attrs, "href"));
-      out += `<a href="${escapeHtmlAttr(href)}">${convertInlineMixedToHtml(inner)}</a>`;
+      out += `<a href="${escapeHtmlAttr(href)}">${convertInlineMixedToHtml(inner, imageUrlMap)}</a>`;
     } else {
       const rawTag = (match[4] || "").toLowerCase();
       const inner = match[5] || "";
@@ -340,14 +713,14 @@ function convertInlineMixedToHtml(raw: string): string {
       out +=
         tag === "code"
           ? `<code>${escapeHtmlText(inner)}</code>`
-          : `<${tag}>${convertInlineMixedToHtml(inner)}</${tag}>`;
+          : `<${tag}>${convertInlineMixedToHtml(inner, imageUrlMap)}</${tag}>`;
     }
 
     lastIdx = match.index + full.length;
   }
 
   if (lastIdx < raw.length) {
-    out += convertPlainInlineMarkdown(raw.slice(lastIdx));
+    out += convertPlainInlineMarkdown(raw.slice(lastIdx), imageUrlMap);
   }
   return out;
 }
@@ -365,7 +738,10 @@ function isTableSeparator(line: string): boolean {
   return /^\|?(\s*:?-{3,}:?\s*\|)+(\s*:?-{3,}:?\s*)?\|?$/.test(line.trim());
 }
 
-export function markdownToEditorHtml(markdown: string): string {
+export function markdownToEditorHtml(
+  markdown: string,
+  imageUrlMap?: Record<string, string>
+): string {
   const source = (markdown || "").trim();
   if (!source) return "<p></p>";
 
@@ -402,7 +778,7 @@ export function markdownToEditorHtml(markdown: string): string {
       const inner = htmlHeadingSingle[3].trim();
       const style = align ? ` style="text-align: ${align}"` : "";
       blocks.push(
-        `<h${level}${style}>${convertInlineMixedToHtml(inner)}</h${level}>`
+        `<h${level}${style}>${convertInlineMixedToHtml(inner, imageUrlMap)}</h${level}>`
       );
       continue;
     }
@@ -415,7 +791,7 @@ export function markdownToEditorHtml(markdown: string): string {
       const align = htmlParaSingle[1]?.toLowerCase();
       const inner = htmlParaSingle[2].trim();
       const style = align ? ` style="text-align: ${align}"` : "";
-      blocks.push(`<p${style}>${convertInlineMixedToHtml(inner)}</p>`);
+      blocks.push(`<p${style}>${convertInlineMixedToHtml(inner, imageUrlMap)}</p>`);
       continue;
     }
 
@@ -433,7 +809,7 @@ export function markdownToEditorHtml(markdown: string): string {
       const style = align ? ` style="text-align: ${align}"` : "";
       const joined = innerLines
         .filter(Boolean)
-        .map((l) => convertInlineMixedToHtml(l))
+        .map((l) => convertInlineMixedToHtml(l, imageUrlMap))
         .join("<br />");
       blocks.push(`<p${style}>${joined}</p>`);
       i = j;
@@ -454,14 +830,14 @@ export function markdownToEditorHtml(markdown: string): string {
         j++;
       }
       const thHtml = headers
-        .map((h) => `<th><p>${convertInlineMixedToHtml(h)}</p></th>`)
+        .map((h) => `<th><p>${convertInlineMixedToHtml(h, imageUrlMap)}</p></th>`)
         .join("");
       const bodyHtml = bodyRows
         .map((cells) => {
           const tds = headers
             .map(
               (_, cIdx) =>
-                `<td><p>${convertInlineMixedToHtml(cells[cIdx] ?? "")}</p></td>`
+                `<td><p>${convertInlineMixedToHtml(cells[cIdx] ?? "", imageUrlMap)}</p></td>`
             )
             .join("");
           return `<tr>${tds}</tr>`;
@@ -485,7 +861,7 @@ export function markdownToEditorHtml(markdown: string): string {
     if (mdHeading) {
       const lvl = mdHeading[1].length;
       blocks.push(
-        `<h${lvl}>${convertInlineMixedToHtml(mdHeading[2].trim())}</h${lvl}>`
+        `<h${lvl}>${convertInlineMixedToHtml(mdHeading[2].trim(), imageUrlMap)}</h${lvl}>`
       );
       continue;
     }
@@ -499,7 +875,7 @@ export function markdownToEditorHtml(markdown: string): string {
         if (!m) break;
         const checked = m[1].toLowerCase() === "x";
         items.push(
-          `<li data-type="taskItem" data-checked="${checked}"><p>${convertInlineMixedToHtml(m[2])}</p></li>`
+          `<li data-type="taskItem" data-checked="${checked}"><p>${convertInlineMixedToHtml(m[2], imageUrlMap)}</p></li>`
         );
         j++;
       }
@@ -517,7 +893,7 @@ export function markdownToEditorHtml(markdown: string): string {
         if (/^[-*]\s+\[[ xX]\]\s+/.test(t)) break;
         const m = t.match(/^[-*]\s+(.*)$/);
         if (!m) break;
-        items.push(`<li><p>${convertInlineMixedToHtml(m[1])}</p></li>`);
+        items.push(`<li><p>${convertInlineMixedToHtml(m[1], imageUrlMap)}</p></li>`);
         j++;
       }
       blocks.push(`<ul>${items.join("")}</ul>`);
@@ -532,7 +908,7 @@ export function markdownToEditorHtml(markdown: string): string {
       while (j < lines.length) {
         const m = lines[j].trim().match(/^\d+\.\s+(.*)$/);
         if (!m) break;
-        items.push(`<li><p>${convertInlineMixedToHtml(m[1])}</p></li>`);
+        items.push(`<li><p>${convertInlineMixedToHtml(m[1], imageUrlMap)}</p></li>`);
         j++;
       }
       blocks.push(`<ol>${items.join("")}</ol>`);
@@ -549,14 +925,14 @@ export function markdownToEditorHtml(markdown: string): string {
         j++;
       }
       const qParagraphs = quoteLines
-        .map((q) => `<p>${convertInlineMixedToHtml(q)}</p>`)
+        .map((q) => `<p>${convertInlineMixedToHtml(q, imageUrlMap)}</p>`)
         .join("");
       blocks.push(`<blockquote>${qParagraphs}</blockquote>`);
       i = j - 1;
       continue;
     }
 
-    // Regular paragraph (consume plain text lines until blank line or block starter)
+    // Regular paragraph
     const paraLines: string[] = [trimmed];
     let j = i + 1;
     while (j < lines.length) {
@@ -580,7 +956,7 @@ export function markdownToEditorHtml(markdown: string): string {
       j++;
     }
     blocks.push(
-      `<p>${paraLines.map((l) => convertInlineMixedToHtml(l)).join(" ")}</p>`
+      `<p>${paraLines.map((l) => convertInlineMixedToHtml(l, imageUrlMap)).join(" ")}</p>`
     );
     i = j - 1;
   }
@@ -633,6 +1009,11 @@ function serializeTextWithMarks(
   return out;
 }
 
+function getSerializableImageSrc(node: JSONContent): string | null {
+  const preferred = node.attrs?.repoPath ?? node.attrs?.src ?? "";
+  return sanitizeImageSrc(String(preferred));
+}
+
 function serializeInlineContent(
   nodes: JSONContent[] | undefined,
   htmlMode: boolean
@@ -647,7 +1028,7 @@ function serializeInlineContent(
         return htmlMode ? "<br />" : "  \n";
       }
       if (child.type === "image") {
-        const src = sanitizeImageSrc(String(child.attrs?.src ?? ""));
+        const src = getSerializableImageSrc(child);
         const alt = String(child.attrs?.alt ?? "");
         if (!src) return "";
         return htmlMode
@@ -779,7 +1160,7 @@ function serializeBlockNode(node: JSONContent): string {
   }
 
   if (type === "image") {
-    const src = sanitizeImageSrc(String(node.attrs?.src ?? ""));
+    const src = getSerializableImageSrc(node);
     if (!src) return "";
     const alt = String(node.attrs?.alt ?? "");
     return `![${alt}](${src})`;

@@ -34,7 +34,7 @@ export function PlatformIconGlyph({
   className?: string;
 }) {
   if (iconId === "none") {
-    return <Ban className={`${className} text-[var(--text-muted)]`} />;
+    return <Ban className={`${className} text-[var(--text-2)]`} />;
   }
   const meta = findPlatformIconById(iconId) ?? DEFAULT_PLATFORM_ICON;
   if (!meta?.svgPath) {
@@ -87,7 +87,7 @@ export function PlatformIconPickerButton({
         aria-label={`Choose platform icon (${resolved ? resolved.label : "No icon"})`}
         title={`Choose platform icon (${resolved ? resolved.label : "No icon"})`}
         className={cn(
-          "inline-flex h-11 min-w-0 cursor-pointer items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[13px] font-medium text-[var(--text)] transition-[color,background-color,border-color] duration-150 hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)] sm:h-9",
+          "inline-flex h-10 min-w-0 cursor-pointer items-center gap-2 rounded-[8px] border-0 bg-[var(--surface-2)] px-2.5 text-[13px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)] sm:h-9",
           className
         )}
       >
@@ -103,7 +103,7 @@ export function PlatformIconPickerButton({
         open={open}
         onOpenChange={setOpen}
         title="Select platform icon"
-        description={`Choose from ${PLATFORM_ICON_CATALOG.length} supported platforms or select No icon.`}
+        description={`Choose from ${PLATFORM_ICON_CATALOG.length} supported platforms or pick No icon.`}
         maxWidthClass="sm:max-w-xl"
         footer={
           <StudioButton variant="secondary" onClick={() => setOpen(false)}>
@@ -114,13 +114,13 @@ export function PlatformIconPickerButton({
         <div className="flex flex-col gap-4">
           <StudioField label="Search platforms" htmlFor="platform-icon-search">
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--text-muted)]" />
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[var(--text-2)]" />
               <StudioInput
                 id="platform-icon-search"
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Medium, Hashnode, LinkedIn, YouTube, Dev.to..."
+                placeholder="Medium, Hashnode, LinkedIn, YouTube"
                 className="pl-9"
               />
             </div>
@@ -131,10 +131,10 @@ export function PlatformIconPickerButton({
               type="button"
               onClick={() => setCategory("all")}
               className={cn(
-                "cursor-pointer rounded-[6px] border px-2.5 py-1 text-[12px] font-medium transition-[color,background-color,border-color] duration-150",
+                "cursor-pointer rounded-[8px] border-0 px-2.5 py-1 text-[12px] font-medium transition-colors duration-150",
                 category === "all"
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)]"
+                  ? "bg-[var(--surface-3)] text-[var(--text)]"
+                  : "bg-[var(--surface-2)] text-[var(--text-2)] hover:text-[var(--text)]"
               )}
             >
               All ({PLATFORM_ICON_CATALOG.length})
@@ -145,10 +145,10 @@ export function PlatformIconPickerButton({
                 type="button"
                 onClick={() => setCategory(cat)}
                 className={cn(
-                  "cursor-pointer rounded-[6px] border px-2.5 py-1 text-[12px] font-medium transition-[color,background-color,border-color] duration-150",
+                  "cursor-pointer rounded-[8px] border-0 px-2.5 py-1 text-[12px] font-medium transition-colors duration-150",
                   category === cat
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)]"
+                    ? "bg-[var(--surface-3)] text-[var(--text)]"
+                    : "bg-[var(--surface-2)] text-[var(--text-2)] hover:text-[var(--text)]"
                 )}
               >
                 {PLATFORM_CATEGORY_LABELS[cat]}
@@ -164,10 +164,10 @@ export function PlatformIconPickerButton({
                 setOpen(false);
               }}
               className={cn(
-                "flex cursor-pointer items-center justify-between gap-2 rounded-[6px] border px-3 py-2 text-left text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+                "flex cursor-pointer items-center justify-between gap-2 rounded-[8px] border-0 px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150",
                 resolved?.id === DEFAULT_PLATFORM_ICON_ID && value !== "none"
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] hover:border-[var(--border-strong)]"
+                  ? "bg-[var(--surface-3)] text-[var(--text)]"
+                  : "bg-[var(--surface-2)] text-[var(--text-2)] hover:text-[var(--text)]"
               )}
             >
               <span className="flex items-center gap-2 truncate">
@@ -175,7 +175,9 @@ export function PlatformIconPickerButton({
                 <span className="truncate">Default website icon</span>
               </span>
               {resolved?.id === DEFAULT_PLATFORM_ICON_ID &&
-                value !== "none" && <Check className="size-3.5 shrink-0" />}
+                value !== "none" && (
+                  <Check className="size-3.5 shrink-0 text-[var(--tide)]" />
+                )}
             </button>
             <button
               type="button"
@@ -184,23 +186,25 @@ export function PlatformIconPickerButton({
                 setOpen(false);
               }}
               className={cn(
-                "flex cursor-pointer items-center justify-between gap-2 rounded-[6px] border px-3 py-2 text-left text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+                "flex cursor-pointer items-center justify-between gap-2 rounded-[8px] border-0 px-3 py-2 text-left text-[13px] font-medium transition-colors duration-150",
                 value === "none"
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                  : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--text)] hover:border-[var(--border-strong)]"
+                  ? "bg-[var(--surface-3)] text-[var(--text)]"
+                  : "bg-[var(--surface-2)] text-[var(--text-2)] hover:text-[var(--text)]"
               )}
             >
               <span className="flex items-center gap-2">
-                <Ban className="size-3.5 text-[var(--text-muted)]" />
+                <Ban className="size-3.5 text-[var(--text-2)]" />
                 <span>No icon</span>
               </span>
-              {value === "none" && <Check className="size-3.5 shrink-0" />}
+              {value === "none" && (
+                <Check className="size-3.5 shrink-0 text-[var(--tide)]" />
+              )}
             </button>
           </div>
 
-          <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] p-2.5 sm:grid-cols-3">
+          <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-[12px] bg-[var(--surface-2)] p-2.5 sm:grid-cols-3">
             {filteredIcons.length === 0 ? (
-              <div className="col-span-full py-6 text-center text-[13px] text-[var(--text-muted)]">
+              <div className="col-span-full py-6 text-center text-[13px] text-[var(--text-2)]">
                 No platform matched &ldquo;{query}&rdquo;.
               </div>
             ) : (
@@ -215,10 +219,10 @@ export function PlatformIconPickerButton({
                       setOpen(false);
                     }}
                     className={cn(
-                      "flex cursor-pointer items-center gap-2 rounded-[6px] border px-2.5 py-2 text-left text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+                      "flex cursor-pointer items-center gap-2 rounded-[8px] border-0 px-2.5 py-2 text-left text-[13px] font-medium transition-colors duration-150",
                       selected
-                        ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--border-strong)]"
+                        ? "bg-[var(--surface-3)] text-[var(--text)]"
+                        : "bg-[var(--surface)] text-[var(--text)] hover:bg-[var(--surface-3)]"
                     )}
                   >
                     <span

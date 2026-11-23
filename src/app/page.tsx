@@ -1,14 +1,22 @@
+import { BRAND } from "@/config/brand";
 import { StudioApp } from "@/presentation/StudioApp";
+import pkg from "../../package.json";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Dynamic Cybernetic Creature Studio",
+  name: BRAND.name,
   applicationCategory: "DeveloperApplication",
-  operatingSystem: "Any",
-  url: "https://pathumsandeepa.github.io/dynamic-readme-creature/",
-  description:
-    "Static web studio for generating animated SVG cybernetic creatures (Cyber-Tulkun, Cyber-Serpent, Cyber-Manta, Cyber-Jellyfish) and customizable GitHub profile READMEs.",
+  operatingSystem: "Web browser",
+  url: BRAND.siteUrl,
+  codeRepository: BRAND.repoUrl,
+  softwareVersion: pkg.version,
+  description: BRAND.description,
+  author: {
+    "@type": "Person",
+    name: BRAND.authorName,
+    url: BRAND.authorUrl,
+  },
   offers: {
     "@type": "Offer",
     price: "0",

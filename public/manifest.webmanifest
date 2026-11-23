@@ -1,11 +1,11 @@
 {
-  "name": "Dynamic Cybernetic Creature Studio",
-  "short_name": "Cyber Creature",
-  "description": "Design pure-CSS animated SVG creatures and build a customizable GitHub profile README with drag-and-drop tech badges.",
+  "name": "ReadmeForge",
+  "short_name": "ReadmeForge",
+  "description": "Build, edit and publish a GitHub profile README in your browser with live preview, starter templates, animated pixel creatures and custom images.",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#4f46e5",
+  "background_color": "#0C0E0F",
+  "theme_color": "#0C0E0F",
   "icons": [
     {
       "src": "favicon.svg",

@@ -16,7 +16,7 @@ interface StudioDialogProps {
   footer?: React.ReactNode;
 }
 
-/** Flat, accessible dialog scoped to [data-app="studio"] with Esc-to-close and soft shadow. */
+/** Accessible floating dialog scoped to [data-app="studio"] with soft layered shadow and 16px radius. */
 export function StudioDialog({
   open,
   onOpenChange,
@@ -29,21 +29,21 @@ export function StudioDialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/45 transition-opacity duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] transition-opacity duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup
           data-app="studio"
           className={cn(
-            "fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[8px] border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] shadow-[var(--studio-shadow-overlay)] outline-none",
+            "fixed top-1/2 left-1/2 z-50 flex max-h-[90vh] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[16px] border-0 bg-[var(--surface)] text-[var(--text)] shadow-[var(--shadow-float)] outline-none",
             maxWidthClass
           )}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-4">
+          <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4">
             <div className="flex flex-col gap-1">
-              <DialogPrimitive.Title className="text-[16px] leading-6 font-semibold text-[var(--text)]">
+              <DialogPrimitive.Title className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-[var(--text)]">
                 {title}
               </DialogPrimitive.Title>
               {description && (
-                <DialogPrimitive.Description className="text-[13px] leading-5 text-[var(--text-muted)]">
+                <DialogPrimitive.Description className="text-[13px] leading-5 text-[var(--text-2)]">
                   {description}
                 </DialogPrimitive.Description>
               )}
@@ -63,10 +63,10 @@ export function StudioDialog({
             </DialogPrimitive.Close>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+          <div className="flex-1 overflow-y-auto px-6 pb-5">{children}</div>
 
           {footer && (
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--border)] bg-[var(--surface-2)] px-6 py-3.5">
+            <div className="flex flex-wrap items-center justify-end gap-2 bg-[var(--surface-2)] px-6 py-3.5">
               {footer}
             </div>
           )}
@@ -87,7 +87,7 @@ interface StudioConfirmDialogProps {
   onConfirm: () => void;
 }
 
-/** Confirmation dialog replacing browser confirm() dialogs. */
+/** Confirmation dialog replacing native browser confirm() prompts. */
 export function StudioConfirmDialog({
   open,
   onOpenChange,
@@ -125,8 +125,8 @@ export function StudioConfirmDialog({
         </>
       }
     >
-      <p className="text-[14px] leading-5 text-[var(--text-muted)]">
-        This action updates your current studio session immediately.
+      <p className="text-[13px] leading-5 text-[var(--text-2)]">
+        This updates your current studio session right away.
       </p>
     </StudioDialog>
   );
@@ -139,7 +139,7 @@ interface StudioDrawerProps {
   children: React.ReactNode;
 }
 
-/** Full-height slide-over drawer used on viewports below 1200px for live preview. */
+/** Slide-over side drawer for secondary panels on smaller viewports. */
 export function StudioDrawer({
   open,
   onOpenChange,
@@ -149,13 +149,13 @@ export function StudioDrawer({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/45 transition-opacity duration-150" />
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] transition-opacity duration-150" />
         <DialogPrimitive.Popup
           data-app="studio"
-          className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[94vw] flex-col border-l border-[var(--border)] bg-[var(--bg)] text-[var(--text)] shadow-[var(--studio-shadow-overlay)] outline-none sm:max-w-2xl"
+          className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[94vw] flex-col rounded-l-[16px] border-0 bg-[var(--bg)] text-[var(--text)] shadow-[var(--shadow-float)] outline-none sm:max-w-2xl"
         >
-          <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface)] px-4">
-            <DialogPrimitive.Title className="text-[16px] font-semibold text-[var(--text)]">
+          <div className="flex h-14 shrink-0 items-center justify-between gap-3 bg-[var(--surface)] px-5">
+            <DialogPrimitive.Title className="text-[16px] font-semibold tracking-[-0.02em] text-[var(--text)]">
               {title}
             </DialogPrimitive.Title>
             <DialogPrimitive.Close
@@ -163,7 +163,7 @@ export function StudioDrawer({
                 <StudioButton
                   variant="ghost"
                   size="icon"
-                  aria-label="Close preview drawer"
+                  aria-label="Close drawer"
                 />
               }
             >
@@ -171,6 +171,80 @@ export function StudioDrawer({
             </DialogPrimitive.Close>
           </div>
           <div className="flex-1 overflow-y-auto p-4">{children}</div>
+        </DialogPrimitive.Popup>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
+interface StudioBottomSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}
+
+/** Mobile and tablet bottom sheet inspector shown below 1200px viewport width. */
+export function StudioBottomSheet({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  footer,
+}: StudioBottomSheetProps) {
+  return (
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] transition-opacity duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Popup
+          data-app="studio"
+          className="fixed inset-x-0 bottom-0 z-50 flex max-h-[84vh] flex-col overflow-hidden rounded-t-[16px] border-0 bg-[var(--surface)] text-[var(--text)] shadow-[var(--shadow-float)] outline-none"
+        >
+          <div className="flex justify-center pt-2.5 pb-1">
+            <span
+              aria-hidden="true"
+              className="h-1 w-9 rounded-full bg-[var(--surface-3)]"
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4 px-5 pt-1 pb-3">
+            <div className="flex flex-col gap-0.5">
+              <DialogPrimitive.Title className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-[var(--text)]">
+                {title}
+              </DialogPrimitive.Title>
+              {description && (
+                <DialogPrimitive.Description className="text-[13px] leading-5 text-[var(--text-2)]">
+                  {description}
+                </DialogPrimitive.Description>
+              )}
+            </div>
+
+            <DialogPrimitive.Close
+              render={
+                <StudioButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close inspector"
+                  className="-mt-1 -mr-1.5"
+                />
+              }
+            >
+              <X />
+            </DialogPrimitive.Close>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+            {children}
+          </div>
+
+          {footer && (
+            <div className="shrink-0 bg-[var(--surface-2)] px-5 py-3.5">
+              {footer}
+            </div>
+          )}
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

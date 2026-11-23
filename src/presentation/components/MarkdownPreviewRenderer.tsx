@@ -17,8 +17,17 @@ function sanitizeHref(rawUrl: string): string {
   return "#";
 }
 
-function sanitizeImageSrc(rawUrl: string): string | null {
+function resolvePreviewImageSrc(
+  rawUrl: string,
+  imageUrlMap?: Record<string, string>
+): string | null {
   const trimmed = rawUrl.trim();
+  if (imageUrlMap) {
+    const cleanRel = trimmed.replace(/^\.\//, "");
+    const mapped =
+      imageUrlMap[trimmed] ?? imageUrlMap[`./${cleanRel}`] ?? imageUrlMap[cleanRel];
+    if (mapped) return mapped;
+  }
   if (
     /^https?:\/\//i.test(trimmed) ||
     trimmed.startsWith("./") ||
@@ -36,7 +45,8 @@ function parseAttr(attrText: string, name: string): string {
 
 function renderMarkdownOnlyInline(
   text: string,
-  keyPrefix: string
+  keyPrefix: string,
+  imageUrlMap?: Record<string, string>
 ): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   const tokenRegex =
@@ -54,7 +64,9 @@ function renderMarkdownOnlyInline(
 
     if (token.startsWith("![")) {
       const imgMatch = token.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-      const safeSrc = imgMatch ? sanitizeImageSrc(imgMatch[2]) : null;
+      const safeSrc = imgMatch
+        ? resolvePreviewImageSrc(imgMatch[2], imageUrlMap)
+        : null;
       if (imgMatch && safeSrc) {
         nodes.push(
           <img
@@ -77,7 +89,7 @@ function renderMarkdownOnlyInline(
             target="_blank"
             rel="noreferrer"
           >
-            {renderInlineMarkdown(linkMatch[1])}
+            {renderInlineMarkdown(linkMatch[1], imageUrlMap)}
           </a>
         );
       } else {
@@ -87,14 +99,16 @@ function renderMarkdownOnlyInline(
       nodes.push(<code key={k}>{token.slice(1, -1)}</code>);
     } else if (token.startsWith("**") && token.endsWith("**")) {
       nodes.push(
-        <strong key={k}>{renderInlineMarkdown(token.slice(2, -2))}</strong>
+        <strong key={k}>{renderInlineMarkdown(token.slice(2, -2), imageUrlMap)}</strong>
       );
     } else if (token.startsWith("~~") && token.endsWith("~~")) {
       nodes.push(
-        <del key={k}>{renderInlineMarkdown(token.slice(2, -2))}</del>
+        <del key={k}>{renderInlineMarkdown(token.slice(2, -2), imageUrlMap)}</del>
       );
     } else if (token.startsWith("*") && token.endsWith("*")) {
-      nodes.push(<em key={k}>{renderInlineMarkdown(token.slice(1, -1))}</em>);
+      nodes.push(
+        <em key={k}>{renderInlineMarkdown(token.slice(1, -1), imageUrlMap)}</em>
+      );
     } else {
       nodes.push(token);
     }
@@ -108,7 +122,10 @@ function renderMarkdownOnlyInline(
   return nodes;
 }
 
-export function renderInlineMarkdown(text: string): React.ReactNode[] {
+export function renderInlineMarkdown(
+  text: string,
+  imageUrlMap?: Record<string, string>
+): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   const htmlRegex =
     /(<br\s*\/?>|<img\b[^>]*\/?>|<a\b([^>]*)>([\s\S]*?)<\/a>|<(strong|b|em|i|u|ins|del|s|code)>([\s\S]*?)<\/\4>)/gi;
@@ -121,7 +138,8 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
       nodes.push(
         ...renderMarkdownOnlyInline(
           text.slice(lastIndex, match.index),
-          `md-${key++}`
+          `md-${key++}`,
+          imageUrlMap
         )
       );
     }
@@ -131,7 +149,7 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
     if (/^<br/i.test(full)) {
       nodes.push(<br key={k} />);
     } else if (/^<img/i.test(full)) {
-      const safeSrc = sanitizeImageSrc(parseAttr(full, "src"));
+      const safeSrc = resolvePreviewImageSrc(parseAttr(full, "src"), imageUrlMap);
       const alt = parseAttr(full, "alt");
       if (safeSrc) {
         nodes.push(
@@ -153,20 +171,26 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
           target="_blank"
           rel="noreferrer"
         >
-          {renderInlineMarkdown(inner)}
+          {renderInlineMarkdown(inner, imageUrlMap)}
         </a>
       );
     } else {
       const tag = (match[4] || "").toLowerCase();
       const inner = match[5] || "";
       if (tag === "strong" || tag === "b") {
-        nodes.push(<strong key={k}>{renderInlineMarkdown(inner)}</strong>);
+        nodes.push(
+          <strong key={k}>{renderInlineMarkdown(inner, imageUrlMap)}</strong>
+        );
       } else if (tag === "em" || tag === "i") {
-        nodes.push(<em key={k}>{renderInlineMarkdown(inner)}</em>);
+        nodes.push(
+          <em key={k}>{renderInlineMarkdown(inner, imageUrlMap)}</em>
+        );
       } else if (tag === "u" || tag === "ins") {
-        nodes.push(<u key={k}>{renderInlineMarkdown(inner)}</u>);
+        nodes.push(<u key={k}>{renderInlineMarkdown(inner, imageUrlMap)}</u>);
       } else if (tag === "del" || tag === "s") {
-        nodes.push(<del key={k}>{renderInlineMarkdown(inner)}</del>);
+        nodes.push(
+          <del key={k}>{renderInlineMarkdown(inner, imageUrlMap)}</del>
+        );
       } else if (tag === "code") {
         nodes.push(<code key={k}>{inner}</code>);
       }
@@ -177,7 +201,11 @@ export function renderInlineMarkdown(text: string): React.ReactNode[] {
 
   if (lastIndex < text.length) {
     nodes.push(
-      ...renderMarkdownOnlyInline(text.slice(lastIndex), `md-${key++}`)
+      ...renderMarkdownOnlyInline(
+        text.slice(lastIndex),
+        `md-${key++}`,
+        imageUrlMap
+      )
     );
   }
   return nodes;
@@ -207,9 +235,11 @@ function getAlignStyle(align?: string): React.CSSProperties | undefined {
 export function AdvancedMarkdownPreview({
   markdown,
   isDark,
+  imageUrlMap,
 }: {
   markdown: string;
   isDark: boolean;
+  imageUrlMap?: Record<string, string>;
 }) {
   const lines = markdown.split(/\r?\n/);
   const blocks: React.ReactNode[] = [];
@@ -225,7 +255,6 @@ export function AdvancedMarkdownPreview({
         <ul
           key={key++}
           data-type={hasCheckboxes ? "taskList" : undefined}
-          className={hasCheckboxes ? undefined : undefined}
         >
           {ulItems.map((item, idx) =>
             item.checked !== null ? (
@@ -248,11 +277,11 @@ export function AdvancedMarkdownPreview({
                   </span>
                 </label>
                 <div style={{ opacity: item.checked ? 0.85 : 1 }}>
-                  {renderInlineMarkdown(item.text)}
+                  {renderInlineMarkdown(item.text, imageUrlMap)}
                 </div>
               </li>
             ) : (
-              <li key={idx}>{renderInlineMarkdown(item.text)}</li>
+              <li key={idx}>{renderInlineMarkdown(item.text, imageUrlMap)}</li>
             )
           )}
         </ul>
@@ -264,7 +293,7 @@ export function AdvancedMarkdownPreview({
       blocks.push(
         <ol key={key++}>
           {olItems.map((item, idx) => (
-            <li key={idx}>{renderInlineMarkdown(item)}</li>
+            <li key={idx}>{renderInlineMarkdown(item, imageUrlMap)}</li>
           ))}
         </ol>
       );
@@ -312,25 +341,25 @@ export function AdvancedMarkdownPreview({
       if (lvl === "1") {
         blocks.push(
           <h1 key={key++} style={alignStyle}>
-            {renderInlineMarkdown(content)}
+            {renderInlineMarkdown(content, imageUrlMap)}
           </h1>
         );
       } else if (lvl === "2") {
         blocks.push(
           <h2 key={key++} style={alignStyle}>
-            {renderInlineMarkdown(content)}
+            {renderInlineMarkdown(content, imageUrlMap)}
           </h2>
         );
       } else if (lvl === "3") {
         blocks.push(
           <h3 key={key++} style={alignStyle}>
-            {renderInlineMarkdown(content)}
+            {renderInlineMarkdown(content, imageUrlMap)}
           </h3>
         );
       } else {
         blocks.push(
           <h4 key={key++} style={alignStyle}>
-            {renderInlineMarkdown(content)}
+            {renderInlineMarkdown(content, imageUrlMap)}
           </h4>
         );
       }
@@ -345,7 +374,7 @@ export function AdvancedMarkdownPreview({
       flushLists();
       blocks.push(
         <p key={key++} style={getAlignStyle(paraSingle[1])}>
-          {renderInlineMarkdown(paraSingle[2].trim())}
+          {renderInlineMarkdown(paraSingle[2].trim(), imageUrlMap)}
         </p>
       );
       continue;
@@ -368,7 +397,7 @@ export function AdvancedMarkdownPreview({
           {innerLines
             .filter(Boolean)
             .map((lineText, idx) => (
-              <p key={idx}>{renderInlineMarkdown(lineText)}</p>
+              <p key={idx}>{renderInlineMarkdown(lineText, imageUrlMap)}</p>
             ))}
         </div>
       );
@@ -395,7 +424,7 @@ export function AdvancedMarkdownPreview({
           <thead>
             <tr>
               {headers.map((h, hIdx) => (
-                <th key={hIdx}>{renderInlineMarkdown(h)}</th>
+                <th key={hIdx}>{renderInlineMarkdown(h, imageUrlMap)}</th>
               ))}
             </tr>
           </thead>
@@ -403,7 +432,9 @@ export function AdvancedMarkdownPreview({
             {bodyRows.map((cells, rIdx) => (
               <tr key={rIdx}>
                 {headers.map((_, cIdx) => (
-                  <td key={cIdx}>{renderInlineMarkdown(cells[cIdx] ?? "")}</td>
+                  <td key={cIdx}>
+                    {renderInlineMarkdown(cells[cIdx] ?? "", imageUrlMap)}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -442,13 +473,21 @@ export function AdvancedMarkdownPreview({
     if (/^(---+|\*\*\*+)$/.test(trimmed)) {
       blocks.push(<hr key={key++} />);
     } else if (trimmed.startsWith("# ")) {
-      blocks.push(<h1 key={key++}>{renderInlineMarkdown(trimmed.slice(2))}</h1>);
+      blocks.push(
+        <h1 key={key++}>{renderInlineMarkdown(trimmed.slice(2), imageUrlMap)}</h1>
+      );
     } else if (trimmed.startsWith("## ")) {
-      blocks.push(<h2 key={key++}>{renderInlineMarkdown(trimmed.slice(3))}</h2>);
+      blocks.push(
+        <h2 key={key++}>{renderInlineMarkdown(trimmed.slice(3), imageUrlMap)}</h2>
+      );
     } else if (trimmed.startsWith("### ")) {
-      blocks.push(<h3 key={key++}>{renderInlineMarkdown(trimmed.slice(4))}</h3>);
+      blocks.push(
+        <h3 key={key++}>{renderInlineMarkdown(trimmed.slice(4), imageUrlMap)}</h3>
+      );
     } else if (trimmed.startsWith("#### ")) {
-      blocks.push(<h4 key={key++}>{renderInlineMarkdown(trimmed.slice(5))}</h4>);
+      blocks.push(
+        <h4 key={key++}>{renderInlineMarkdown(trimmed.slice(5), imageUrlMap)}</h4>
+      );
     } else if (trimmed.startsWith(">")) {
       const quoteLines: string[] = [trimmed.replace(/^>\s?/, "")];
       let j = i + 1;
@@ -459,13 +498,15 @@ export function AdvancedMarkdownPreview({
       blocks.push(
         <blockquote key={key++}>
           {quoteLines.map((ql, qIdx) => (
-            <p key={qIdx}>{renderInlineMarkdown(ql)}</p>
+            <p key={qIdx}>{renderInlineMarkdown(ql, imageUrlMap)}</p>
           ))}
         </blockquote>
       );
       i = j - 1;
     } else {
-      blocks.push(<p key={key++}>{renderInlineMarkdown(trimmed)}</p>);
+      blocks.push(
+        <p key={key++}>{renderInlineMarkdown(trimmed, imageUrlMap)}</p>
+      );
     }
   }
 

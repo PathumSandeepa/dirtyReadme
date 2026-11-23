@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { BRAND } from "@/config/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,38 +13,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
+  weight: ["700", "800"],
+  display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
-  subsets: ["latin"],
-});
+const THEME_INIT_SCRIPT = `(function(){try{var k="readmeforge-theme";var pref=localStorage.getItem(k);if(pref!=="light"&&pref!=="dark"&&pref!=="system"){pref="dark";}var resolved=pref==="system"?(window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):pref;var root=document.documentElement;root.setAttribute("data-theme",resolved);root.setAttribute("data-theme-pref",pref);if(resolved==="dark"){root.classList.add("dark");}else{root.classList.remove("dark");}root.style.colorScheme=resolved;document.addEventListener("pointerdown",function(){root.removeAttribute("data-keyboard-nav");},true);document.addEventListener("keydown",function(e){if(e.key==="Tab"){root.setAttribute("data-keyboard-nav","true");}},true);}catch(e){}})();`;
 
-const SITE_URL = "https://pathumsandeepa.github.io/dynamic-readme-creature/";
+export const viewport: Viewport = {
+  themeColor: "#0C0E0F",
+  colorScheme: "light dark",
+};
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title:
-    "Dynamic Cybernetic Creature Studio | Animated WebP/GIF & GitHub Profile README Generator",
-  description:
-    "Create S-curve animated pixel creatures (Pixel Tulkun in Top/Side views and Bioluminescent Jellyfish) as Animated WebP or GIF, customize your GitHub profile README with multi-card drag-and-drop tech badges, and publish directly from your browser.",
-  applicationName: "Dynamic Cybernetic Creature Studio",
+  metadataBase: new URL(BRAND.siteUrl),
+  title: `${BRAND.name}. ${BRAND.tagline}`,
+  description: BRAND.description,
+  applicationName: BRAND.name,
   keywords: [
-    "GitHub Profile README Generator",
-    "Animated SVG Creature",
-    "GitHub README SVG",
-    "Cyber Tulkun",
-    "Cyber Jellyfish",
-    "Dynamic GitHub Profile",
-    "GitHub Actions Auto Evolve",
-    "Tech Stack Badges",
-    "Markdown Profile Builder",
+    "ReadmeForge",
+    "GitHub profile README builder",
+    "GitHub profile README editor",
+    "GitHub profile templates",
+    "Animated WebP creature",
+    "GitHub Actions auto evolve",
+    "Tech stack badges",
+    "Markdown profile studio",
   ],
   alternates: {
-    canonical: SITE_URL,
+    canonical: BRAND.siteUrl,
   },
   robots: {
     index: true,
@@ -57,28 +57,24 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: SITE_URL,
-    siteName: "Dynamic Cybernetic Creature Studio",
-    title:
-      "Dynamic Cybernetic Creature Studio | Animated WebP/GIF & GitHub Profile README Generator",
-    description:
-      "Design an S-curve animated pixel creature and customizable GitHub profile README with drag-and-drop tech stack cards and 12:00 AM daily evolution.",
+    url: BRAND.siteUrl,
+    siteName: BRAND.name,
+    title: `${BRAND.name}. ${BRAND.tagline}`,
+    description: BRAND.description,
     images: [
       {
-        url: "showcase/share-card.png",
-        width: 1280,
-        height: 640,
-        alt: "Dynamic Cybernetic Creature Studio Social Preview",
+        url: "og-image.png",
+        width: 1200,
+        height: 630,
+        alt: `${BRAND.name} GitHub profile README builder preview`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "Dynamic Cybernetic Creature Studio | Animated GitHub README Generator",
-    description:
-      "Design S-curve animated WebP/GIF pixel creatures and publish a custom GitHub profile README directly from your browser.",
-    images: ["showcase/share-card.png"],
+    title: `${BRAND.name}. ${BRAND.tagline}`,
+    description: BRAND.description,
+    images: ["og-image.png"],
   },
   icons: {
     icon: [{ url: "favicon.svg", type: "image/svg+xml" }],
@@ -95,9 +91,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      data-theme="dark"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${plusJakartaSans.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full bg-background font-sans text-foreground">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-full bg-[var(--bg)] font-sans text-[var(--text)]">
         {children}
       </body>
     </html>

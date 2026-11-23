@@ -11,6 +11,28 @@ export type ReadmeTemplateId =
 
 export type ProfileTextMode = "structured" | "advanced";
 
+export type BannerSource = "creature" | "custom-image";
+
+export interface CustomImageMetadata {
+  id: string;
+  filename: string;
+  repoPath: string;
+  alt: string;
+  width: number;
+  height: number;
+  originalSizeBytes: number;
+  webpSizeBytes: number;
+  isAnimated: boolean;
+}
+
+export interface CustomImageMemoryAsset extends CustomImageMetadata {
+  webpBlob: Blob;
+  previewUrl: string;
+  originalBlob: Blob;
+  originalFilename: string;
+  originalMimeType: string;
+}
+
 export type TechCategory =
   | "languages"
   | "frontend"
@@ -29,11 +51,11 @@ export const TECH_CATEGORY_LABELS: Record<TechCategory, string> = {
   frontend: "Frontend",
   backend: "Backend",
   databases: "Databases",
-  mobile: "Mobile & Desktop",
-  "cloud-devops": "Cloud & DevOps",
-  "ai-data": "AI & Data",
+  mobile: "Mobile and desktop",
+  "cloud-devops": "Cloud and DevOps",
+  "ai-data": "AI and data",
   testing: "Testing",
-  design: "Design & 3D",
+  design: "Design and 3D",
   tools: "Tools",
   skills: "Skills",
 };
@@ -108,43 +130,51 @@ export interface ReadmeConfig {
   profileCompany: string;
   profileWebsite: string;
   rawOverride: string | null;
+  bannerSource: BannerSource;
+  customBannerImagePath: string | null;
+  customBannerAlt: string;
+  customBannerAlign: "left" | "center" | "right";
+  customBannerWidth: number;
+  showLinksRow?: boolean;
+  showCreatureBanner?: boolean;
 }
 
 export const DEFAULT_DUMMY_INTRO =
-  "Hi, I'm @{{USERNAME}}, a passionate developer building modern web applications, developer tools, and open-source projects. I love clean architecture, creative UI engineering, and shipping reliable software.";
+  "Hi, I am @{{USERNAME}}, a developer building web applications, developer tools and open source projects. I care about clean architecture, calm interface design and reliable software.";
 
 export const README_TEMPLATES: {
   id: ReadmeTemplateId;
   name: string;
   description: string;
 }[] = [
-    {
-      id: "cyber-guardian",
-      name: "Full Developer Profile",
-      description:
-        "Headline, specialty tags, intro bio, multi-card tech stack, CTA links, and creature",
-    },
-    {
-      id: "minimal-header",
-      name: "Minimalist Header",
-      description: "Clean creature banner with headline and intro paragraph",
-    },
-    {
-      id: "auto-evolve-block",
-      name: "Auto-Evolve Block Only",
-      description: "Drop-in START/END marker block for an existing README.md",
-    },
-    {
-      id: "telemetry-stats",
-      name: "Telemetry & Share Card",
-      description: "Creature, live evolution stats table, and 1280x640 social card",
-    },
-  ];
+  {
+    id: "cyber-guardian",
+    name: "Full profile",
+    description:
+      "Title, specialty line, intro text, tech stack cards, links and creature banner.",
+  },
+  {
+    id: "minimal-header",
+    name: "Minimal header",
+    description: "Clean banner with profile title and a short intro paragraph.",
+  },
+  {
+    id: "auto-evolve-block",
+    name: "Auto evolve block only",
+    description: "Drop-in update markers for an existing README.md file.",
+  },
+  {
+    id: "telemetry-stats",
+    name: "Stats table and share card",
+    description:
+      "Banner, live commit stats table and 1280 by 640 social preview card.",
+  },
+];
 
 export const DYNAMIC_TOKENS = [
   { token: "{{USERNAME}}", description: "GitHub handle" },
   { token: "{{CREATURE}}", description: "Creature name" },
-  { token: "{{STAGE}}", description: "Evolution stage (1-5)" },
+  { token: "{{STAGE}}", description: "Evolution stage (1 to 5)" },
   { token: "{{RANK}}", description: "Stage rank" },
   { token: "{{COMMITS}}", description: "Formatted commit count" },
   { token: "{{VIEW}}", description: "Camera view" },
@@ -156,13 +186,13 @@ export const CTA_LOGO_PRESETS: {
   label: string;
   logo?: string;
 }[] = [
-    ...PLATFORM_ICON_CATALOG.map((item) => ({
-      id: item.id,
-      label: item.label,
-      logo: item.id,
-    })),
-    { id: "none", label: "No Icon", logo: undefined },
-  ];
+  ...PLATFORM_ICON_CATALOG.map((item) => ({
+    id: item.id,
+    label: item.label,
+    logo: item.id,
+  })),
+  { id: "none", label: "No icon", logo: undefined },
+];
 
 export const CTA_QUICK_TEMPLATES: Omit<ReadmeActionLink, "id" | "enabled">[] = [
   {
@@ -293,7 +323,7 @@ export const TECH_STACK_CATALOG: Omit<ReadmeBadge, "enabled">[] = [
   { id: "storybook", label: "Storybook", color: "FF4785", logo: "storybook", logoColor: "white", category: "frontend" },
   { id: "framer", label: "Motion", color: "0055FF", logo: "framer", logoColor: "white", category: "frontend" },
   { id: "threejs", label: "Three.js", color: "000000", logo: "threedotjs", logoColor: "white", category: "frontend" },
-  { id: "shadcnui", label: "shadcn/ui", color: "09090B", logo: "shadcnui", logoColor: "white", category: "frontend" },
+  { id: "shadcnui", label: "shadcn UI", color: "09090B", logo: "shadcnui", logoColor: "white", category: "frontend" },
   { id: "mui", label: "MUI", color: "007FFF", logo: "mui", logoColor: "white", category: "frontend" },
   { id: "chakraui", label: "Chakra UI", color: "319795", logo: "chakraui", logoColor: "white", category: "frontend" },
   { id: "reactrouter", label: "React Router", color: "CA4245", logo: "reactrouter", logoColor: "white", category: "frontend" },
@@ -348,7 +378,7 @@ export const TECH_STACK_CATALOG: Omit<ReadmeBadge, "enabled">[] = [
   { id: "reactnative", label: "React Native", color: "61DAFB", logo: "react", logoColor: "black", category: "mobile" },
   { id: "android", label: "Android", color: "3DDC84", logo: "android", logoColor: "black", category: "mobile" },
   { id: "ios", label: "iOS", color: "000000", logo: "ios", logoColor: "white", category: "mobile" },
-  { id: "apple", label: "macOS / Apple", color: "000000", logo: "apple", logoColor: "white", category: "mobile" },
+  { id: "apple", label: "macOS", color: "000000", logo: "apple", logoColor: "white", category: "mobile" },
   { id: "expo", label: "Expo", color: "1C2024", logo: "expo", logoColor: "white", category: "mobile" },
   { id: "ionic", label: "Ionic", color: "3880FF", logo: "ionic", logoColor: "white", category: "mobile" },
   { id: "electron", label: "Electron", color: "47848F", logo: "electron", logoColor: "white", category: "mobile" },
@@ -454,17 +484,17 @@ export const TECH_STACK_CATALOG: Omit<ReadmeBadge, "enabled">[] = [
   { id: "skill-microservices", label: "Microservices", color: "0EA5E9", category: "skills" },
   { id: "skill-rest-api", label: "REST APIs", color: "10B981", category: "skills" },
   { id: "skill-websockets", label: "WebSockets", color: "6366F1", category: "skills" },
-  { id: "skill-cicd", label: "CI/CD Pipelines", color: "2563EB", category: "skills" },
+  { id: "skill-cicd", label: "Continuous delivery", color: "2563EB", category: "skills" },
   { id: "skill-clean-arch", label: "Clean Architecture", color: "7C3AED", category: "skills" },
   { id: "skill-tdd", label: "TDD", color: "DC2626", category: "skills" },
-  { id: "skill-agile", label: "Agile / Scrum", color: "059669", category: "skills" },
-  { id: "skill-ui-ux", label: "UI / UX Design", color: "EC4899", category: "skills" },
-  { id: "skill-a11y", label: "Accessibility (a11y)", color: "0284C7", category: "skills" },
+  { id: "skill-agile", label: "Agile Scrum", color: "059669", category: "skills" },
+  { id: "skill-ui-ux", label: "Interface design", color: "EC4899", category: "skills" },
+  { id: "skill-a11y", label: "Accessibility", color: "0284C7", category: "skills" },
   { id: "skill-perf", label: "Web Performance", color: "F59E0B", category: "skills" },
   { id: "skill-security", label: "App Security", color: "B91C1C", category: "skills" },
-  { id: "skill-oauth", label: "OAuth 2.0 / JWT", color: "334155", category: "skills" },
+  { id: "skill-oauth", label: "OAuth and JWT", color: "334155", category: "skills" },
   { id: "skill-distributed", label: "Distributed Systems", color: "4338CA", category: "skills" },
-  { id: "skill-prompt-eng", label: "AI Agents & RAG", color: "8B5CF6", category: "skills" },
+  { id: "skill-prompt-eng", label: "AI Agents and RAG", color: "8B5CF6", category: "skills" },
   { id: "skill-devops", label: "Cloud Infrastructure", color: "0369A1", category: "skills" },
   { id: "skill-db-opt", label: "Database Modeling", color: "1D4ED8", category: "skills" },
   { id: "skill-open-source", label: "Open Source", color: "16A34A", category: "skills" },
@@ -473,17 +503,17 @@ export const TECH_STACK_CATALOG: Omit<ReadmeBadge, "enabled">[] = [
 export const DEFAULT_TECH_STACK_CARDS: TechStackCard[] = [
   {
     id: "card-frontend",
-    title: "Languages & Frontend",
+    title: "Languages and frontend",
     badgeIds: ["typescript", "javascript", "react", "nextjs", "tailwindcss"],
   },
   {
     id: "card-backend",
-    title: "Backend & Databases",
+    title: "Backend and databases",
     badgeIds: ["nodejs", "python", "postgresql", "mongodb", "graphql"],
   },
   {
     id: "card-devops",
-    title: "Cloud, DevOps & Design",
+    title: "Cloud, DevOps and design",
     badgeIds: ["docker", "git", "githubactions", "linux", "figma"],
   },
 ];
@@ -496,26 +526,27 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
   templateId: "cyber-guardian",
   profileTextMode: "advanced",
   advancedProfileMarkdown: [
-    "### Your Name | <Occupation here>",
+    "### Your Name, Software Developer",
     "",
-    "**FULL-STACK DEVELOPMENT | SYSTEMS ARCHITECTURE | OPEN SOURCE | UI ENGINEERING**",
+    "**Full-stack engineering and open source**",
+    "",
+    "*Systems architecture, developer tools and interface design*",
     "",
     DEFAULT_DUMMY_INTRO,
     "",
-    "Explore my tech stack and live cybernetic profile creature below.",
+    "Explore my tech stack and animated profile banner below.",
   ].join("\n"),
-  headline: "Your Name | <Occupation here>",
+  headline: "Your Name, Software Developer",
   subtitleTags: [
-    "FULL-STACK DEVELOPMENT",
-    "SYSTEMS ARCHITECTURE",
-    "OPEN SOURCE",
-    "UI ENGINEERING",
+    "Full-stack engineering",
+    "Systems architecture",
+    "Open source",
+    "Interface design",
   ],
   bio: DEFAULT_DUMMY_INTRO,
-  ctaLine:
-    "Explore my tech stack and live cybernetic profile creature below.",
+  ctaLine: "Explore my tech stack and animated profile banner below.",
   telemetryCaptionTemplate: "",
-  statsTableTitle: "Cybernetic Telemetry",
+  statsTableTitle: "Profile activity summary",
   align: "center",
   imageWidth: 760,
   useOutputBranchUrl: false,
@@ -547,7 +578,7 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
     {
       id: "portfolio",
       label: "PORTFOLIO",
-      valueText: "PROJECTS & DOCS",
+      valueText: "PROJECTS",
       url: "https://github.com/{{USERNAME}}?tab=repositories",
       color: "4F46E5",
       logo: DEFAULT_PLATFORM_ICON_ID,
@@ -555,9 +586,16 @@ export const DEFAULT_README_CONFIG: ReadmeConfig = {
     },
   ],
   profileDisplayName: "Your Name",
-  profileStatusBio: "Building clean software & open-source tools.",
+  profileStatusBio: "Building clean software and open source tools.",
   profileLocation: "Worldwide",
   profileCompany: "Independent Developer",
   profileWebsite: "https://github.com/{{USERNAME}}",
   rawOverride: null,
+  bannerSource: "creature",
+  customBannerImagePath: null,
+  customBannerAlt: "Profile banner",
+  customBannerAlign: "center",
+  customBannerWidth: 760,
+  showLinksRow: true,
+  showCreatureBanner: true,
 };

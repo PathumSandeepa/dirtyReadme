@@ -21,6 +21,9 @@ interface RepoSetupScreenProps {
   onNext: () => void;
 }
 
+/**
+ * Step 2 Repository screen guiding the creation of the special username profile repository.
+ */
 export function RepoSetupScreen({
   username,
   profileRepoExists,
@@ -37,172 +40,172 @@ export function RepoSetupScreen({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto flex w-full max-w-[760px] flex-col gap-8 px-4 py-10 sm:px-6 sm:py-12">
       <div className="flex flex-col gap-2">
-        <h1 className="text-[24px] leading-8 font-semibold tracking-tight text-[var(--text)]">
-          Create your public profile repository
+        <h1 className="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-[var(--text)] sm:text-[32px]">
+          Create your profile repository
         </h1>
-        <p className="text-[14px] leading-6 text-[var(--text-muted)]">
-          GitHub shows a profile README when a public repository has exactly the
-          same name as your username.
+        <p className="text-[15px] leading-6 text-[var(--text-2)]">
+          GitHub shows a profile README when a public repository has the same
+          name as your username.
         </p>
       </div>
 
-      {/* Status banner */}
+      {/* Status banner without borders */}
       {profileRepoExists ? (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-[8px] border border-[var(--success)]/35 bg-[var(--success-soft)] px-4 py-3.5 text-[14px] leading-5 text-[var(--text)]"
+          className="flex items-start gap-3 rounded-[12px] bg-[var(--tide-soft)] px-5 py-4 text-[14px] leading-6 text-[var(--text)]"
         >
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+          <CheckCircle2 className="mt-1 size-4 shrink-0 text-[var(--tide)]" />
           <span>
-            Repository{" "}
-            <code className="studio-mono font-medium">
-              {safeUsername}/{safeUsername}
-            </code>{" "}
-            found. Make sure its visibility is Public, then continue.
+            Repository for{" "}
+            <code className="studio-mono font-semibold">{safeUsername}</code> was
+            detected. Make sure its visibility is Public, then continue.
           </span>
         </div>
       ) : (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-[8px] border border-[var(--warning)]/35 bg-[var(--warning-soft)] px-4 py-3.5 text-[14px] leading-5 text-[var(--text)]"
+          className="flex items-start gap-3 rounded-[12px] bg-[var(--warning-soft)] px-5 py-4 text-[14px] leading-6 text-[var(--text)]"
         >
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+          <AlertTriangle className="mt-1 size-4 shrink-0 text-[var(--warning)]" />
           <span>
-            Repository{" "}
-            <code className="studio-mono font-medium">
-              {safeUsername}/{safeUsername}
-            </code>{" "}
-            was not detected yet. Follow the three steps below to create it on
-            GitHub, then continue.
+            Repository for{" "}
+            <code className="studio-mono font-semibold">{safeUsername}</code> was
+            not detected yet. Follow the three steps below to create a Public
+            repository on GitHub, then continue.
           </span>
         </div>
       )}
 
-      {/* 3 numbered steps with continuous vertical connecting line */}
-      <div className="rounded-[8px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
-        <ol className="relative flex flex-col gap-7">
-          <span
-            aria-hidden="true"
-            className="absolute top-7 bottom-7 left-[13px] w-px bg-[var(--border)]"
-          />
+      {/* Three borderless step cards connected by a background line */}
+      <ol className="relative flex flex-col gap-4">
+        <span
+          aria-hidden="true"
+          className="absolute top-12 bottom-12 left-[31px] w-[2px] bg-[var(--surface-3)] sm:left-[45px]"
+        />
 
-          {/* Step 1 */}
-          <li className="relative flex items-start gap-4">
-            <span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[13px] font-semibold text-[var(--text)]">
-              1
-            </span>
-            <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-4">
-              <div className="flex min-w-[200px] flex-1 flex-col gap-1">
-                <h2 className="text-[16px] leading-6 font-semibold text-[var(--text)]">
-                  Open GitHub&apos;s new repository page
-                </h2>
-                <p className="text-[13px] leading-5 text-[var(--text-muted)]">
-                  Make sure you are signed in as{" "}
-                  <span className="studio-mono text-[var(--text)]">
-                    @{safeUsername}
-                  </span>
-                  .
-                </p>
-              </div>
-
-              <a
-                href="https://github.com/new"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-3.5 text-[14px] font-medium whitespace-nowrap text-[var(--text)] transition-[color,background-color,border-color] duration-150 hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)] sm:h-9"
-              >
-                <span>Open GitHub new repo</span>
-                <ExternalLink className="size-4 text-[var(--text-muted)]" />
-              </a>
-            </div>
-          </li>
-
-          {/* Step 2 */}
-          <li className="relative flex items-start gap-4">
-            <span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[13px] font-semibold text-[var(--text)]">
-              2
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+        {/* Step 1 */}
+        <li className="relative flex items-start gap-4 rounded-[12px] bg-[var(--surface)] p-6 sm:gap-5 sm:p-8">
+          <span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)] text-[13px] font-semibold text-[var(--text)]">
+            1
+          </span>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-4">
+            <div className="flex min-w-[200px] flex-1 flex-col gap-1">
               <h2 className="text-[16px] leading-6 font-semibold text-[var(--text)]">
-                Name the repository exactly like your username
+                Open GitHub new repository
               </h2>
+              <p className="text-[14px] leading-6 text-[var(--text-2)]">
+                Make sure you are signed in as{" "}
+                <span className="studio-mono text-[var(--text)]">
+                  @{safeUsername}
+                </span>
+                .
+              </p>
+            </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="studio-mono inline-flex min-h-[40px] items-center rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-1.5 text-[14px]">
-                  <span className="text-[var(--text-muted)]">
-                    {safeUsername} /{" "}
-                  </span>
-                  <strong className="ml-1 font-semibold text-[var(--text)]">
+            <a
+              href="https://github.com/new"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[8px] bg-[var(--surface-2)] px-4 text-[14px] font-medium whitespace-nowrap text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)]"
+            >
+              <span>Open GitHub</span>
+              <ExternalLink className="size-4 text-[var(--text-2)]" />
+            </a>
+          </div>
+        </li>
+
+        {/* Step 2 */}
+        <li className="relative flex items-start gap-4 rounded-[12px] bg-[var(--surface)] p-6 sm:gap-5 sm:p-8">
+          <span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)] text-[13px] font-semibold text-[var(--text)]">
+            2
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <h2 className="text-[16px] leading-6 font-semibold text-[var(--text)]">
+              Name it exactly like your username
+            </h2>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="studio-mono inline-flex min-h-[40px] flex-wrap items-center gap-3 rounded-[8px] bg-[var(--surface-2)] px-4 py-2 text-[14px]">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-[var(--text-3)]">Owner</span>
+                  <span className="text-[var(--text-2)]">{safeUsername}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="text-[var(--text-3)]">Repository</span>
+                  <strong className="font-semibold text-[var(--text)]">
                     {safeUsername}
                   </strong>
-                </div>
-
-                <StudioButton
-                  variant="secondary"
-                  onClick={handleCopyRepoName}
-                  aria-label="Copy repository name"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="text-[var(--success)]" />
-                      <span>Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy />
-                      <span>Copy</span>
-                    </>
-                  )}
-                </StudioButton>
+                </span>
               </div>
 
-              <p className="text-[13px] leading-5 text-[var(--text-muted)]">
-                GitHub shows a special banner confirming this repository powers
-                your profile README.
-              </p>
+              <StudioButton
+                variant="secondary"
+                size="lg"
+                onClick={handleCopyRepoName}
+                aria-label="Copy repository name"
+              >
+                {copied ? (
+                  <>
+                    <Check className="text-[var(--tide)]" />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy />
+                    <span>Copy</span>
+                  </>
+                )}
+              </StudioButton>
             </div>
-          </li>
 
-          {/* Step 3 */}
-          <li className="relative flex items-start gap-4">
-            <span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[13px] font-semibold text-[var(--text)]">
-              3
-            </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-2.5">
-              <h2 className="text-[16px] leading-6 font-semibold text-[var(--text)]">
-                Set it to Public and add a README file
-              </h2>
+            <p className="text-[14px] leading-6 text-[var(--text-2)]">
+              GitHub shows a confirmation notice when the repository name
+              matches your username.
+            </p>
+          </div>
+        </li>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-[13px] font-medium text-[var(--text)]">
-                  <CheckSquare className="size-4 text-[var(--accent)]" />
-                  <span>Public</span>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1.5 text-[13px] font-medium text-[var(--text)]">
-                  <CheckSquare className="size-4 text-[var(--accent)]" />
-                  <span>Add a README file</span>
-                </div>
+        {/* Step 3 */}
+        <li className="relative flex items-start gap-4 rounded-[12px] bg-[var(--surface)] p-6 sm:gap-5 sm:p-8">
+          <span className="relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-3)] text-[13px] font-semibold text-[var(--text)]">
+            3
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            <h2 className="text-[16px] leading-6 font-semibold text-[var(--text)]">
+              Make it Public and add a README file
+            </h2>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--surface-2)] px-3.5 py-2 text-[13px] font-medium text-[var(--text)]">
+                <CheckSquare className="size-4 text-[var(--tide)]" />
+                <span>Public</span>
               </div>
-
-              <p className="text-[13px] leading-5 text-[var(--text-muted)]">
-                Then come back here and continue.
-              </p>
+              <div className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--surface-2)] px-3.5 py-2 text-[13px] font-medium text-[var(--text)]">
+                <CheckSquare className="size-4 text-[var(--tide)]" />
+                <span>Add a README file</span>
+              </div>
             </div>
-          </li>
-        </ol>
-      </div>
+
+            <p className="text-[14px] leading-6 text-[var(--text-2)]">
+              Create the repository on GitHub, then return here to customize
+              your README.
+            </p>
+          </div>
+        </li>
+      </ol>
 
       {/* Navigation row */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
         <StudioButton type="button" variant="ghost" onClick={onBack}>
           <ArrowLeft />
           <span>Back</span>
         </StudioButton>
 
         <StudioButton type="button" variant="primary" size="lg" onClick={onNext}>
-          <span>Customize creature &amp; README</span>
+          <span>Customize README</span>
           <ArrowRight />
         </StudioButton>
       </div>

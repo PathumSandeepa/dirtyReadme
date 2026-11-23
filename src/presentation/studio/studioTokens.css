@@ -1,99 +1,107 @@
-/* Scoped design tokens & GitHub markdown surface tokens for the Studio screens */
+/* Design tokens (Abyss dark default, Paper light) & GitHub markdown surface tokens */
+
+:root,
+:root[data-theme="dark"],
+.dark {
+  --bg: #0C0E0F;
+  --surface: #121517;
+  --surface-2: #171B1E;
+  --surface-3: #1D2226;
+  --line: #1F2427;
+
+  --text: #ECEFF1;
+  --text-2: #A4ADB3;
+  --text-3: #6F797F;
+
+  --primary: #ECEFF1;
+  --on-primary: #0C0E0F;
+  --primary-hover: #FFFFFF;
+
+  --tide: #58D6B0;
+  --tide-soft: rgba(88, 214, 176, 0.12);
+
+  --ember: #F28C4B;
+  --ember-soft: rgba(242, 140, 75, 0.14);
+
+  --danger: #F2605C;
+  --danger-soft: rgba(242, 96, 92, 0.12);
+  --warning: #E3B341;
+  --warning-soft: rgba(227, 179, 65, 0.12);
+
+  --shadow-float: 0 1px 2px rgba(0, 0, 0, 0.24), 0 12px 32px rgba(0, 0, 0, 0.32);
+  --segment-active-bg: var(--surface-3);
+  --segment-active-shadow: none;
+
+  --studio-font-sans: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --studio-font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+:root[data-theme="light"] {
+  --bg: #F6F5F1;
+  --surface: #FFFFFF;
+  --surface-2: #F0EEE9;
+  --surface-3: #E8E5DE;
+  --line: #E4E1DA;
+
+  --text: #14181A;
+  --text-2: #566066;
+  --text-3: #8A9399;
+
+  --primary: #14181A;
+  --on-primary: #FFFFFF;
+  --primary-hover: #000000;
+
+  --tide: #0A7D61;
+  --tide-soft: rgba(10, 125, 97, 0.10);
+
+  --ember: #B4500F;
+  --ember-soft: rgba(180, 80, 15, 0.10);
+
+  --danger: #C62F2B;
+  --danger-soft: rgba(198, 47, 43, 0.10);
+  --warning: #9A6700;
+  --warning-soft: rgba(154, 103, 0, 0.12);
+
+  --shadow-float: 0 1px 2px rgba(20, 24, 26, 0.06), 0 12px 32px rgba(20, 24, 26, 0.10);
+  --segment-active-bg: var(--surface);
+  --segment-active-shadow: 0 1px 2px rgba(20, 24, 26, 0.08);
+}
 
 [data-app="studio"] {
-  --bg: #f6f8fa;
-  --surface: #ffffff;
-  --surface-2: #f6f8fa;
-  --border: #d1d9e0;
-  --border-strong: #afb8c1;
-  --text: #1f2328;
-  --text-muted: #59636e;
-  --text-faint: #818b98;
-  --accent: #0f766e;
-  --accent-hover: #115e59;
-  --accent-soft: #e6f4f1;
-  --on-accent: #ffffff;
-  --warm: #c2410c;
-  --warm-soft: #fff1e8;
-  --success: #1a7f37;
-  --success-soft: #e7f6ec;
-  --danger: #cf222e;
-  --danger-soft: #fdecee;
-  --warning: #9a6700;
-  --warning-soft: #fff4d6;
-  --studio-shadow-overlay: 0 8px 24px rgba(31, 35, 40, 0.12);
-
-  /* Map shadcn semantic tokens inside studio scope & portals */
+  /* Token bridges so studio panels inherit Abyss and Paper cleanly */
+  --border: var(--line);
+  --border-strong: var(--surface-3);
+  --text-muted: var(--text-2);
+  --text-faint: var(--text-3);
+  --accent: var(--tide);
+  --accent-hover: var(--tide);
+  --accent-soft: var(--tide-soft);
+  --on-accent: var(--on-primary);
+  --warm: var(--ember);
+  --warm-soft: var(--ember-soft);
+  --success: var(--tide);
+  --success-soft: var(--tide-soft);
+  --studio-shadow-overlay: var(--shadow-float);
   --background: var(--bg);
   --foreground: var(--text);
   --card: var(--surface);
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary: var(--accent);
-  --primary-foreground: var(--on-accent);
+  --primary-foreground: var(--on-primary);
   --secondary: var(--surface-2);
   --secondary-foreground: var(--text);
   --muted: var(--surface-2);
-  --muted-foreground: var(--text-muted);
-  --accent-foreground: var(--on-accent);
+  --muted-foreground: var(--text-2);
+  --accent-foreground: var(--text);
   --destructive: var(--danger);
-  --input: var(--border);
-  --ring: var(--accent);
-  --radius: 6px;
-
-  --studio-font-sans:
-    var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  --studio-font-mono:
-    var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular,
-    Menlo, Consolas, monospace;
+  --input: var(--surface-2);
+  --ring: var(--text-2);
+  --radius: 8px;
 
   font-family: var(--studio-font-sans);
   font-size: 14px;
   color: var(--text);
-}
-
-.dark [data-app="studio"],
-[data-app="studio"].dark {
-  --bg: #0d1117;
-  --surface: #151b23;
-  --surface-2: #1b222c;
-  --border: #2f3742;
-  --border-strong: #444c56;
-  --text: #e6edf3;
-  --text-muted: #9aa4b0;
-  --text-faint: #768390;
-  --accent: #2db8a8;
-  --accent-hover: #4ccbbb;
-  --accent-soft: #11302d;
-  --on-accent: #04211d;
-  --warm: #f0883e;
-  --warm-soft: #2d1b0f;
-  --success: #3fb950;
-  --success-soft: #12261a;
-  --danger: #f85149;
-  --danger-soft: #2d1517;
-  --warning: #d29922;
-  --warning-soft: #2a2210;
-  --studio-shadow-overlay: 0 12px 32px rgba(0, 0, 0, 0.45);
-
-  --background: var(--bg);
-  --foreground: var(--text);
-  --card: var(--surface);
-  --card-foreground: var(--text);
-  --popover: var(--surface);
-  --popover-foreground: var(--text);
-  --primary: var(--accent);
-  --primary-foreground: var(--on-accent);
-  --secondary: var(--surface-2);
-  --secondary-foreground: var(--text);
-  --muted: var(--surface-2);
-  --muted-foreground: var(--text-muted);
-  --accent-foreground: var(--on-accent);
-  --destructive: var(--danger);
-  --input: var(--border);
-  --ring: var(--accent);
 }
 
 [data-app="studio"] .studio-mono {
@@ -103,8 +111,8 @@
 [data-app="studio"] .rcp-root {
   --rcp-background-color: var(--surface);
   --rcp-field-input-color: var(--text);
-  --rcp-field-input-border-color: var(--border);
-  --rcp-field-label-color: var(--text-muted);
+  --rcp-field-input-border-color: var(--line);
+  --rcp-field-label-color: var(--text-2);
 }
 
 [data-app="studio"] .rcp-field-input,
@@ -112,25 +120,56 @@
   font-family: var(--studio-font-mono);
 }
 
-[data-app="studio"] :is(
-  button,
+[data-app="studio"] :is(button,
   a,
-  input,
-  textarea,
-  select,
-  [tabindex],
+  [tabindex]:not([contenteditable="true"]),
   [role="switch"],
   [role="slider"],
   [role="checkbox"],
   [role="tab"],
-  [role="radio"]
-):focus-visible {
-  outline: 2px solid var(--accent);
+  [role="radio"]):focus-visible {
+  outline: 2px solid var(--text-2);
   outline-offset: 2px;
   box-shadow: none;
 }
 
+:root[data-keyboard-nav="true"] [data-app="studio"] :is(input,
+  textarea,
+  select,
+  [contenteditable="true"]):focus-visible {
+  outline: 2px solid var(--text-2);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+:root:not([data-keyboard-nav="true"]) [data-app="studio"] :is(input,
+  textarea,
+  select,
+  [contenteditable="true"]):is(:focus, :focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+@keyframes studio-step-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.studio-step-enter {
+  animation: studio-step-enter 160ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .studio-step-enter {
+    animation: none;
+  }
+
   [data-app="studio"] *,
   [data-app="studio"] *::before,
   [data-app="studio"] *::after {
@@ -142,14 +181,14 @@
 }
 
 .studio-preview-flash {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  border-radius: 6px;
+  background-color: var(--tide-soft);
+  border-radius: 8px;
 }
 
 .studio-no-scrollbar {
   scrollbar-width: none;
 }
+
 .studio-no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -194,13 +233,13 @@
   min-height: inherit;
 }
 
-.gh-markdown-body > *:first-child,
-.gh-markdown-body .ProseMirror > *:first-child {
+.gh-markdown-body>*:first-child,
+.gh-markdown-body .ProseMirror>*:first-child {
   margin-top: 0;
 }
 
-.gh-markdown-body > *:last-child,
-.gh-markdown-body .ProseMirror > *:last-child {
+.gh-markdown-body>*:last-child,
+.gh-markdown-body .ProseMirror>*:last-child {
   margin-bottom: 0;
 }
 
@@ -333,11 +372,11 @@
   margin: 0 0 16px;
 }
 
-.gh-markdown-body li + li {
+.gh-markdown-body li+li {
   margin-top: 0.25em;
 }
 
-.gh-markdown-body li > p {
+.gh-markdown-body li>p {
   margin-bottom: 0.25em;
 }
 
@@ -354,20 +393,20 @@
   margin-bottom: 0.25em;
 }
 
-.gh-markdown-body ul[data-type="taskList"] li > label {
+.gh-markdown-body ul[data-type="taskList"] li>label {
   flex: 0 0 auto;
   margin-top: 0.25em;
   user-select: none;
 }
 
-.gh-markdown-body ul[data-type="taskList"] li > label input[type="checkbox"] {
+.gh-markdown-body ul[data-type="taskList"] li>label input[type="checkbox"] {
   width: 14px;
   height: 14px;
   accent-color: var(--gh-link);
   cursor: pointer;
 }
 
-.gh-markdown-body ul[data-type="taskList"] li > div {
+.gh-markdown-body ul[data-type="taskList"] li>div {
   flex: 1 1 auto;
 }
 

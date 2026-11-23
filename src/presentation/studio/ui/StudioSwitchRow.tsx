@@ -14,7 +14,7 @@ interface StudioSwitchRowProps {
   className?: string;
 }
 
-/** Accessible on/off switch row with visible label and one-line description. */
+/** Borderless on and off switch row with visible label and short description. */
 export function StudioSwitchRow({
   id,
   checked,
@@ -30,7 +30,7 @@ export function StudioSwitchRow({
   return (
     <div
       className={cn(
-        "flex items-start justify-between gap-4 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-3",
+        "flex items-start justify-between gap-4 rounded-[8px] border-0 bg-[var(--surface-2)] px-3.5 py-3 transition-colors duration-150",
         disabled && "opacity-55",
         className
       )}
@@ -43,7 +43,7 @@ export function StudioSwitchRow({
           {label}
         </label>
         {description && (
-          <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+          <p className="text-[13px] leading-5 text-[var(--text-2)]">
             {description}
           </p>
         )}

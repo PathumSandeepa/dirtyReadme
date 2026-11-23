@@ -1,15 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Check,
-  Clock,
-  Copy,
-  Download,
-  FileCode2,
-  FileText,
-  FolderGit2,
-} from "lucide-react";
+import { Check, Copy, Download, FileCode2, FileText, FolderGit2 } from "lucide-react";
+import { cn } from "cn";
 import {
   generateCreatureConfigJson,
   generateEvolveScriptMjs,
@@ -20,17 +13,9 @@ import type { CreatureConfig } from "@/domain/creature/entities";
 import { getSpriteAssetPath, getSpriteKey } from "@/domain/creature/services";
 import type { ReadmeConfig } from "@/domain/profile/entities";
 import { copyToClipboard } from "@/infrastructure/browser/downloadAdapter";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioDialog } from "../studio/ui/StudioDialog";
+import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
 
 interface AutoEvolveDialogProps {
   open: boolean;
@@ -58,9 +43,9 @@ export function AutoEvolveDialog({
 
   const localTimezoneName = useMemo(() => {
     try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || "Local Time";
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "Local time";
     } catch {
-      return "Local Time";
+      return "Local time";
     }
   }, []);
 
@@ -94,130 +79,144 @@ export function AutoEvolveDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="flex max-h-[88vh] flex-col sm:max-w-4xl">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <Clock className="size-4 text-primary" />
-            <DialogTitle className="font-mono">
-              12:00 AM Daily Auto-Evolve GitHub Action
-            </DialogTitle>
-          </div>
-          <DialogDescription>
-            Regenerates animated <code>creature.webp</code> and updates{" "}
-            <code>README.md</code> markers every midnight. Works out of the box with
-            zero custom secrets (optional <code>PROFILE_PAT</code> secret counts private
-            commits).
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="font-mono text-xs text-muted-foreground">
+    <StudioDialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) onClose();
+      }}
+      title="12 AM daily GitHub Action"
+      description="Regenerates animated creature.webp and updates README.md markers every midnight. Works without custom secrets. An optional PROFILE_PAT secret counts private commits."
+      maxWidthClass="sm:max-w-4xl"
+      footer={
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
+          <span className="studio-mono text-[12px] text-[var(--text-2)] tabular-nums">
+            Stages 1 (0+) 2 (150+) 3 (500+) 4 (1,200+) 5 (2,500+)
+          </span>
+          <StudioButton variant="primary" onClick={onClose}>
+            Done
+          </StudioButton>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 rounded-[12px] bg-[var(--surface-2)] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="text-[13px] font-medium text-[var(--text-2)]">
               Schedule ({localTimezoneName})
             </span>
-            <ToggleGroup
-              value={[timezoneMode]}
-              onValueChange={(vals) => {
-                const v = vals[0] as "local" | "utc" | undefined;
-                if (v) setTimezoneMode(v);
-              }}
-              variant="outline"
-              size="sm"
-            >
-              <ToggleGroupItem value="local" className="font-mono text-xs">
-                12:00 AM Local ({localCron} UTC)
-              </ToggleGroupItem>
-              <ToggleGroupItem value="utc" className="font-mono text-xs">
-                12:00 AM UTC (0 0 * * *)
-              </ToggleGroupItem>
-            </ToggleGroup>
+            <div className="w-full sm:w-auto sm:min-w-[340px]">
+              <StudioSegmentedControl<"local" | "utc">
+                ariaLabel="Workflow schedule timezone"
+                size="sm"
+                value={timezoneMode}
+                onChange={setTimezoneMode}
+                options={[
+                  {
+                    value: "local",
+                    label: `12 AM local (${localCron} UTC)`,
+                  },
+                  {
+                    value: "utc",
+                    label: "12 AM UTC (0 0 * * *)",
+                  },
+                ]}
+              />
+            </div>
           </div>
 
-          <ol className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-            <li className="rounded-md border bg-card p-2.5">
-              <strong className="text-foreground">1.</strong> Push{" "}
-              <code>creature.webp</code> &amp; <code>README.md</code>.
+          <ol className="grid gap-2 text-[12px] text-[var(--text-2)] sm:grid-cols-4">
+            <li className="rounded-[8px] bg-[var(--surface)] p-2.5">
+              <strong className="text-[var(--text)]">1.</strong> Push{" "}
+              <code className="studio-mono text-[var(--text)]">creature.webp</code>{" "}
+              and{" "}
+              <code className="studio-mono text-[var(--text)]">README.md</code>.
             </li>
-            <li className="rounded-md border bg-card p-2.5">
-              <strong className="text-foreground">2.</strong> Add{" "}
-              <code>assets/creature-sprite.png</code>.
+            <li className="rounded-[8px] bg-[var(--surface)] p-2.5">
+              <strong className="text-[var(--text)]">2.</strong> Add{" "}
+              <code className="studio-mono text-[var(--text)]">
+                assets/creature-sprite.png
+              </code>
+              .
             </li>
-            <li className="rounded-md border bg-card p-2.5">
-              <strong className="text-foreground">3.</strong> Add{" "}
-              <code>creature-config.json</code>.
+            <li className="rounded-[8px] bg-[var(--surface)] p-2.5">
+              <strong className="text-[var(--text)]">3.</strong> Add{" "}
+              <code className="studio-mono text-[var(--text)]">
+                creature-config.json
+              </code>
+              .
             </li>
-            <li className="rounded-md border bg-card p-2.5">
-              <strong className="text-foreground">4.</strong> Add workflow &amp;{" "}
-              <code>scripts/evolve-creature.mjs</code>.
+            <li className="rounded-[8px] bg-[var(--surface)] p-2.5">
+              <strong className="text-[var(--text)]">4.</strong> Add workflow and{" "}
+              <code className="studio-mono text-[var(--text)]">
+                scripts/evolve-creature.mjs
+              </code>
+              .
             </li>
           </ol>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Tabs
-            value={activeTab}
-            onValueChange={(val) =>
-              setActiveTab(val as "workflow" | "script" | "config")
-            }
-          >
-            <TabsList>
-              <TabsTrigger value="workflow" className="gap-1.5 font-mono text-xs">
-                <FolderGit2 className="size-3.5" />
-                evolve-creature.yml
-              </TabsTrigger>
-              <TabsTrigger value="script" className="gap-1.5 font-mono text-xs">
-                <FileText className="size-3.5" />
-                evolve-creature.mjs
-              </TabsTrigger>
-              <TabsTrigger value="config" className="gap-1.5 font-mono text-xs">
-                <FileCode2 className="size-3.5" />
-                creature-config.json
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-wrap gap-1 rounded-[8px] bg-[var(--surface-2)] p-1">
+            {(
+              [
+                {
+                  id: "workflow",
+                  label: "evolve-creature.yml",
+                  icon: FolderGit2,
+                },
+                { id: "script", label: "evolve-creature.mjs", icon: FileText },
+                { id: "config", label: "creature-config.json", icon: FileCode2 },
+              ] as const
+            ).map((item) => {
+              const Icon = item.icon;
+              const selected = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "studio-mono inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-medium transition-colors duration-150",
+                    selected
+                      ? "bg-[var(--surface-3)] text-[var(--text)]"
+                      : "text-[var(--text-2)] hover:text-[var(--text)]"
+                  )}
+                >
+                  <Icon className="size-3.5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              render={<a href={spriteAssetUrl} download="creature-sprite.png" />}
+            <a
+              href={spriteAssetUrl}
+              download="creature-sprite.png"
+              className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-[var(--surface-2)] px-3 text-[13px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)]"
             >
-              <Download data-icon="inline-start" />
-              creature-sprite.png
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
+              <Download className="size-3.5" />
+              <span>creature-sprite.png</span>
+            </a>
+            <StudioButton
+              variant="secondary"
               size="sm"
               onClick={() => void handleCopy(activeTab)}
             >
-              {copiedTarget === activeTab ? (
-                <Check data-icon="inline-start" />
-              ) : (
-                <Copy data-icon="inline-start" />
-              )}
-              {copiedTarget === activeTab ? "Copied" : "Copy File"}
-            </Button>
+              {copiedTarget === activeTab ? <Check /> : <Copy />}
+              <span>
+                {copiedTarget === activeTab ? "Copied" : "Copy file"}
+              </span>
+            </StudioButton>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto rounded-lg border bg-[#0d1117] p-4">
-          <pre className="font-mono text-xs leading-relaxed text-slate-200">
+        <div className="max-h-[42vh] overflow-auto rounded-[12px] bg-[#0d1117] p-4">
+          <pre className="studio-mono text-[12px] leading-relaxed text-slate-200">
             <code>{currentCode}</code>
           </pre>
         </div>
-
-        <DialogFooter className="items-center sm:justify-between">
-          <span className="font-mono text-[11px] text-muted-foreground">
-            Stages: S1 (0+) · S2 (150+) · S3 (500+) · S4 (1,200+) · S5 (2,500+)
-          </span>
-          <Button type="button" onClick={onClose}>
-            Done
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </StudioDialog>
   );
 }

@@ -64,7 +64,7 @@ export function resolveDynamicTokens(
   ).toLocaleString("en-US");
   const langsText = getVisibleLanguages(creature)
     .map((l) => l.name)
-    .join(" · ");
+    .join(", ");
   const viewText = getViewDisplayLabel(creature.creature, creature.view);
 
   return text
@@ -265,6 +265,34 @@ export function buildMarkerSection(
   return lines.join("\n");
 }
 
+function escapeBannerAlt(alt: string): string {
+  return alt.replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+
+export function buildBannerSection(
+  creature: CreatureConfig,
+  readme: ReadmeConfig
+): string {
+  if (readme.showCreatureBanner === false) {
+    return "";
+  }
+  if (
+    readme.bannerSource === "custom-image" &&
+    readme.customBannerImagePath?.trim()
+  ) {
+    const cleanRel = readme.customBannerImagePath.trim().replace(/^\.\//, "");
+    const align = readme.customBannerAlign || "center";
+    const width = Math.min(848, Math.max(320, readme.customBannerWidth || 760));
+    const alt = escapeBannerAlt(readme.customBannerAlt.trim() || "Profile banner");
+    return [
+      `<p align="${align}">`,
+      `  <img src="./${cleanRel}" width="${width}" alt="${alt}" />`,
+      `</p>`,
+    ].join("\n");
+  }
+  return buildMarkerSection(creature, readme);
+}
+
 export function buildStatsTableSection(
   creature: CreatureConfig,
   readme: ReadmeConfig
@@ -278,23 +306,23 @@ export function buildStatsTableSection(
   const viewLabel = getViewDisplayLabel(creature.creature, creature.view);
   const langList = getVisibleLanguages(creature)
     .map((l) => `\`${l.name}\``)
-    .join(" · ");
+    .join(", ");
   const tableHeading =
     resolveDynamicTokens(readme.statsTableTitle, creature).trim() ||
-    "Cybernetic Telemetry";
+    "Profile activity summary";
   const periodLabel =
-    creature.windowMode === "all-time" ? "All Time" : "Current Year";
+    creature.windowMode === "all-time" ? "All time" : "Current year";
 
   const rows = [
     `### ${tableHeading}`,
     ``,
-    `| Metric | Active Value |`,
+    `| Metric | Value |`,
     `| --- | --- |`,
-    `| **Guardian Chassis** | ${meta.name} (\`${meta.designation}\`) |`,
-    `| **Evolution Stage** | Stage ${stage.stage} / 5 (**${stage.rank}**) |`,
-    `| **Contributions (${periodLabel})** | \`${commitsText}\` commits |`,
-    `| **Camera Angle** | \`${viewLabel}\` |`,
-    `| **Top Languages** | ${langList} |`,
+    `| **Creature** | ${meta.name} |`,
+    `| **Evolution stage** | Stage ${stage.stage} of 5 (${stage.rank}) |`,
+    `| **Commits (${periodLabel})** | \`${commitsText}\` commits |`,
+    `| **Camera view** | \`${viewLabel}\` |`,
+    `| **Top languages** | ${langList} |`,
   ];
 
   if (readme.includeMarkers) {
@@ -323,9 +351,9 @@ export function buildStructuredProfileMarkdown(
 
   if (readme.subtitleTags.length > 0 && !isMinimal) {
     const tagLine = readme.subtitleTags
-      .map((t) => resolveDynamicTokens(t, creature).trim().toUpperCase())
+      .map((t) => resolveDynamicTokens(t, creature).trim())
       .filter(Boolean)
-      .join(" | ");
+      .join(", ");
     if (tagLine) {
       parts.push(`**${tagLine}**`);
     }
@@ -359,9 +387,9 @@ export function buildGeneratedReadmeMarkdown(
   readme: ReadmeConfig
 ): string {
   const safeUser = creature.username.trim() || "your-username";
-  const markerBlock = buildMarkerSection(creature, readme);
+  const bannerBlock = buildBannerSection(creature, readme);
   if (readme.templateId === "auto-evolve-block") {
-    return markerBlock;
+    return bannerBlock || buildMarkerSection(creature, readme);
   }
 
   const parts: string[] = [];
@@ -415,7 +443,11 @@ export function buildGeneratedReadmeMarkdown(
   const activeLinks = readme.actionLinks.filter(
     (l) => l.enabled && l.label.trim()
   );
-  if (activeLinks.length > 0 && !isMinimal) {
+  if (
+    readme.showLinksRow !== false &&
+    activeLinks.length > 0 &&
+    !isMinimal
+  ) {
     const linkImages = activeLinks
       .map((l) => {
         const href = resolveDynamicTokens(l.url, creature);
@@ -425,20 +457,26 @@ export function buildGeneratedReadmeMarkdown(
     parts.push(`<p align="${readme.align}">\n${linkImages}\n</p>`);
   }
 
-  parts.push(markerBlock);
+  if (bannerBlock) {
+    parts.push(bannerBlock);
+  }
 
   if (!isMinimal && readme.includeStatsTable) {
     parts.push(buildStatsTableSection(creature, readme));
   }
 
-  if (!isMinimal && readme.includeShareCard) {
+  if (
+    !isMinimal &&
+    readme.includeShareCard &&
+    readme.bannerSource !== "custom-image"
+  ) {
     const shareSrc = getCreatureImageSrc(creature, readme, "share-card.png");
     parts.push(
       [
-        `### Annual Share Card`,
+        `### Annual share card`,
         ``,
         `<p align="center">`,
-        `  <img src="${shareSrc}" width="${readme.imageWidth}" alt="@${safeUser} Cyber Creature Share Card" />`,
+        `  <img src="${shareSrc}" width="${readme.imageWidth}" alt="@${safeUser} profile share card" />`,
         `</p>`,
       ].join("\n")
     );

@@ -207,7 +207,7 @@ export async function fetchGitHubProfileSnapshot(
   }
   if (userRes.status === 403) {
     throw new Error(
-      "GitHub API rate limit reached. Please wait a minute and try again."
+      "GitHub API rate limit reached. Wait a minute and try again, or try from a different network."
     );
   }
   if (!userRes.ok) {
@@ -324,7 +324,7 @@ export async function fetchGitHubProfileSnapshot(
 
   if (!hasCalendarTotals) {
     let commitFallback = Math.max(40, user.public_repos * 42 + totalStars * 15);
-    sourceNote = "Estimated from public repositories & stars";
+    sourceNote = "Estimated from public repositories and stars";
     try {
       const commitRes = await fetch(
         `https://api.github.com/search/commits?q=author:${encodeURIComponent(user.login)}&per_page=1`,
@@ -337,11 +337,11 @@ export async function fetchGitHubProfileSnapshot(
           commitJson.total_count > 0
         ) {
           commitFallback = commitJson.total_count;
-          sourceNote = "All-time public commits via GitHub Search API";
+          sourceNote = "All time public commits via GitHub Search API";
         }
       }
     } catch {
-      sourceNote = "Estimated from public repositories & stars";
+      sourceNote = "Estimated from public repositories and stars";
     }
     annualCommits = commitFallback;
     allTimeCommits = commitFallback;
@@ -377,6 +377,7 @@ export async function fetchGitHubProfileSnapshot(
 
 export type PublishProgressStep =
   | "uploading-webp"
+  | "uploading-images"
   | "updating-readme"
   | "adding-workflow"
   | "committing";
@@ -396,8 +397,8 @@ function mapGitHubPushStatusError(
   }
   if (status === 403) {
     return context.includesWorkflow
-      ? "Missing permission to update repository files or GitHub Actions workflows. Check that your Classic token has 'repo' + 'workflow', or your Fine-grained token has 'Contents: Read and write' + 'Workflows: Read and write'."
-      : "Missing repository write permission. Check that your Classic token has 'repo', or your Fine-grained token has 'Contents: Read and write'.";
+      ? "Missing permission to update repository files or GitHub Actions workflows. Check that your Classic token has repo and workflow, or your Fine grained token has Contents read and write and Workflows read and write."
+      : "Missing repository write permission. Check that your Classic token has repo, or your Fine grained token has Contents read and write.";
   }
   if (status === 404) {
     return `Repository "${context.owner}/${context.repo}" was not found. Make sure it exists, is accessible to your token, and matches your username.`;
@@ -511,6 +512,8 @@ export async function publishFilesToProfileRepo(params: {
       for (const file of files) {
         if (file.path === "creature.webp") {
           onStep?.("uploading-webp");
+        } else if (file.path.startsWith("readme-assets/")) {
+          onStep?.("uploading-images");
         } else if (file.path === "README.md") {
           onStep?.("updating-readme");
         } else if (file.path.startsWith(".github/workflows/")) {
@@ -582,7 +585,7 @@ export async function publishFilesToProfileRepo(params: {
         method: "POST",
         headers,
         body: JSON.stringify({
-          message: "feat: update animated pixel creature & profile README",
+          message: "feat: update animated pixel creature and profile README",
           tree: treeJson.sha,
           parents: [headCommitSha],
         }),
@@ -646,6 +649,8 @@ export async function publishFilesToProfileRepo(params: {
   for (const file of files) {
     if (file.path === "creature.webp") {
       onStep?.("uploading-webp");
+    } else if (file.path.startsWith("readme-assets/")) {
+      onStep?.("uploading-images");
     } else if (file.path === "README.md") {
       onStep?.("updating-readme");
     } else if (file.path.startsWith(".github/workflows/")) {

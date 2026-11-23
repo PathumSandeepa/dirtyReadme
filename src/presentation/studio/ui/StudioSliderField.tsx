@@ -63,7 +63,7 @@ export function StudioSliderField({
       />
 
       {helper && (
-        <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+        <p className="text-[13px] leading-5 text-[var(--text-2)]">
           {helper}
         </p>
       )}

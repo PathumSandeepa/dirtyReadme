@@ -149,10 +149,10 @@ export function recolorSpriteRgba(
     config.colorMode === "languages" && langHsls.length > 0
       ? langHsls
       : [
-          rgbToHsl(...hexToRgb(config.colors.primary)),
-          rgbToHsl(...hexToRgb(config.colors.accent)),
-          rgbToHsl(...hexToRgb(config.colors.energy)),
-        ];
+        rgbToHsl(...hexToRgb(config.colors.primary)),
+        rgbToHsl(...hexToRgb(config.colors.accent)),
+        rgbToHsl(...hexToRgb(config.colors.energy)),
+      ];
 
   const zoneCount = zonePalette.length;
   const view = getEffectiveCameraView(config.creature, config.view);
@@ -212,8 +212,8 @@ export function recolorSpriteRgba(
         (view === "top"
           ? u >= 0.22 && u <= 0.46 && Math.abs(v) > 0.31
           : u >= 0.28 &&
-            u <= 0.54 &&
-            v > 0.11 - 0.35 * Math.max(0, u - 0.28))
+          u <= 0.54 &&
+          v > 0.11 - 0.35 * Math.max(0, u - 0.28))
       ) {
         zoneIdx = 3 % zoneCount;
       } else if (
@@ -351,7 +351,7 @@ function drawUnderwaterBackdrop(
       // Keep rays feathered well inside transparent aura
       const edgeFade = isTransparent
         ? smoothstep(20, 75, center) *
-          smoothstep(LOGICAL_WIDTH - 20, LOGICAL_WIDTH - 75, center)
+        smoothstep(LOGICAL_WIDTH - 20, LOGICAL_WIDTH - 75, center)
         : 1;
 
       for (let x = x0; x < x1; x++) {
@@ -641,8 +641,8 @@ export function computeHudLayout(
   const chipFontSize = Math.max(10, Math.round(fontSize * 0.86));
   const fontFamily: HudFontFamily =
     config.hudFontFamily === "mono" ||
-    config.hudFontFamily === "sans" ||
-    config.hudFontFamily === "serif"
+      config.hudFontFamily === "sans" ||
+      config.hudFontFamily === "serif"
       ? config.hudFontFamily
       : "pixel";
   const fontWeight: HudFontWeight =
@@ -1249,7 +1249,7 @@ export function renderShareCardToCanvas(
   ctx.font = `700 15px ${mono}`;
   ctx.fillStyle = "#E6EDF3";
   ctx.textAlign = "left";
-  ctx.fillText(`DYNAMIC-CREATURE // @${safeUser}`, 66, 57);
+  ctx.fillText(`READMEFORGE  @${safeUser}`, 66, 57);
 
   ctx.fillStyle = p.accentMain;
   ctx.textAlign = "right";
@@ -1295,7 +1295,7 @@ export function renderShareCardToCanvas(
   ctx.font = `600 14px ${mono}`;
   ctx.fillStyle = "#8B949E";
   ctx.fillText(
-    `CONTRIBUTIONS (${windowLabel}): ${formattedCommits}  •  VIEW: ${viewLabel}`,
+    `CONTRIBUTIONS (${windowLabel}): ${formattedCommits}   VIEW: ${viewLabel}`,
     44,
     568
   );

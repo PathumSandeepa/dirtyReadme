@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, Eye, Sliders, X } from "lucide-react";
-import { cn } from "cn";
+import { useRef, useState } from "react";
+import { ArrowRight, CheckCircle2, X } from "lucide-react";
 import type {
   BackgroundMode,
   CameraView,
@@ -12,34 +11,48 @@ import type {
   LanguageCount,
   WaterMode,
 } from "@/domain/creature/entities";
-import type {
-  ReadmeBadge,
-  ReadmeConfig,
-  ReadmeTemplateId,
-} from "@/domain/profile/entities";
-import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
-import type { CustomizeSubTab } from "../studio/layout/StudioStepper";
-import { type ReadmeZoomMode } from "../studio/ui/ScaledReadmeViewport";
-import { StudioButton } from "../studio/ui/StudioButton";
-import { StudioDrawer } from "../studio/ui/StudioDialog";
-import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
-import { CreatureStepPanel } from "./CreatureStepPanel";
 import {
-  PreviewWorkspace,
-  type PreviewRegion,
-  type PreviewScrollRequest,
-  type PreviewTab,
-} from "./PreviewWorkspace";
-import { ProfileReadmeStepPanel } from "./ProfileReadmeStepPanel";
+  type CustomImageMemoryAsset,
+  type ReadmeBadge,
+  type ReadmeConfig,
+  type ReadmeTemplateId,
+} from "@/domain/profile/entities";
+import { PROFILE_EDITOR_TEMPLATES } from "@/domain/profile/markdownRichText";
+import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
+import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioBottomSheet } from "../studio/ui/StudioDialog";
+import { ImageStudioDialog } from "./ImageStudioDialog";
+import {
+  getNextPartId,
+  getPartMeta,
+  InspectorPanel,
+} from "./customize/InspectorPanel";
+import {
+  LiveProfileCanvas,
+  type LiveProfileCanvasHandle,
+} from "./customize/LiveProfileCanvas";
+import {
+  ReadmeMapSidebar,
+  ReadmeMapTopStrip,
+} from "./customize/ReadmeMapSidebar";
+import type { CustomizePartId } from "./customize/customizeTypes";
+import { AboutInspector } from "./customize/inspectors/AboutInspector";
+import { CreatureInspector } from "./customize/inspectors/CreatureInspector";
+import { HeaderInspector } from "./customize/inspectors/HeaderInspector";
+import { LinksInspector } from "./customize/inspectors/LinksInspector";
+import { TechStackInspector } from "./customize/inspectors/TechStackInspector";
 
 interface CustomizeWorkspaceProps {
-  activeTab: CustomizeSubTab;
-  onChangeTab: (tab: CustomizeSubTab) => void;
+  activePart: CustomizePartId;
+  onChangePart: (part: CustomizePartId) => void;
+  onContinueToPublish: () => void;
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
   customBgHex: string;
   snapshot: GitHubProfileSnapshot | null;
   readmeMarkdown: string;
+  customImages: Record<string, CustomImageMemoryAsset>;
+  imageUrlMap: Record<string, string>;
   restoredNotice?: string | null;
   onDismissRestoredNotice?: () => void;
   onSelectCreature: (creature: CreatureId) => void;
@@ -86,17 +99,25 @@ interface CustomizeWorkspaceProps {
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
   ) => void;
+  onRegisterCustomImage: (asset: CustomImageMemoryAsset) => void;
+  onSetCustomBannerImage: (asset: CustomImageMemoryAsset) => void;
+  onClearCustomBannerImage: () => void;
+  onUpdateBannerAlt: (alt: string) => void;
+  onSyncFromForm: () => void;
   onOpenAutoEvolve: () => void;
 }
 
 export function CustomizeWorkspace({
-  activeTab,
-  onChangeTab,
+  activePart,
+  onChangePart,
+  onContinueToPublish,
   creatureConfig,
   readmeConfig,
   customBgHex,
   snapshot,
   readmeMarkdown,
+  customImages,
+  imageUrlMap,
   restoredNotice,
   onDismissRestoredNotice,
   onSelectCreature,
@@ -126,75 +147,156 @@ export function CustomizeWorkspace({
   onCombineStackCards,
   onUndoCombineStackCards,
   onAddCustomBadgeToCard,
+  onRegisterCustomImage,
+  onSetCustomBannerImage,
+  onClearCustomBannerImage,
+  onUpdateBannerAlt,
+  onSyncFromForm,
   onOpenAutoEvolve,
 }: CustomizeWorkspaceProps) {
-  const [previewTab, setPreviewTab] = useState<PreviewTab>("profile");
+  const canvasRef = useRef<LiveProfileCanvasHandle | null>(null);
+  const [mapCollapsed, setMapCollapsed] = useState(false);
   const [githubTheme, setGithubTheme] = useState<"light" | "dark">("dark");
-  const [zoomMode, setZoomMode] = useState<ReadmeZoomMode>("fit");
-  const [followEdits, setFollowEdits] = useState(true);
-  const [mobilePane, setMobilePane] = useState<"edit" | "preview">("edit");
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [selectedStackCardId, setSelectedStackCardId] = useState<string>(
+    readmeConfig.stackCards[0]?.id ?? ""
+  );
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-  const [editorFitZoom, setEditorFitZoom] = useState(1);
-  const [previewFitZoom, setPreviewFitZoom] = useState(1);
-  const sharedFitZoom = Math.min(editorFitZoom, previewFitZoom);
+  const [bannerDialogOpen, setBannerDialogOpen] = useState(false);
+  const [bannerDialogStep, setBannerDialogStep] = useState<"input" | "crop">(
+    "input"
+  );
 
-  const [scrollRequest, setScrollRequest] =
-    useState<PreviewScrollRequest | null>(null);
+  const activeCustomBannerAsset =
+    readmeConfig.customBannerImagePath &&
+    customImages[readmeConfig.customBannerImagePath]
+      ? customImages[readmeConfig.customBannerImagePath]
+      : null;
 
-  const triggerPreviewScroll = (
-    region: PreviewRegion,
-    forceScroll: boolean
+  const handleSelectPart = (
+    part: CustomizePartId,
+    stackCardId?: string
   ) => {
-    setScrollRequest((prev) => ({
-      region,
-      seq: (prev?.seq ?? 0) + 1,
-      forceScroll,
-    }));
+    onChangePart(part);
+    if (stackCardId) {
+      setSelectedStackCardId(stackCardId);
+    }
+    canvasRef.current?.scrollToPart(part);
   };
 
-  const handleEditReadme = () => {
-    setMobilePane("edit");
-    onChangeTab("readme");
+  const handleAdvancePart = () => {
+    const next = getNextPartId(activePart);
+    if (next) {
+      handleSelectPart(next);
+    } else {
+      setMobileSheetOpen(false);
+      onContinueToPublish();
+    }
   };
 
-  const previewNode = (
-    <PreviewWorkspace
-      editorTab={activeTab}
-      previewTab={previewTab}
-      onPreviewTabChange={setPreviewTab}
-      creatureConfig={creatureConfig}
-      readmeConfig={readmeConfig}
-      readmeMarkdown={readmeMarkdown}
-      snapshot={snapshot}
-      githubTheme={githubTheme}
-      onGithubThemeChange={setGithubTheme}
-      zoomMode={zoomMode}
-      onZoomModeChange={setZoomMode}
-      sharedFitZoom={activeTab === "readme" ? sharedFitZoom : undefined}
-      onMeasureFitZoom={setPreviewFitZoom}
-      followEdits={followEdits}
-      onFollowEditsChange={setFollowEdits}
-      scrollRequest={scrollRequest}
-      onEditReadme={handleEditReadme}
-      onOpenAutoEvolve={onOpenAutoEvolve}
-      onSelectView={onSelectView}
-    />
+  const handleOpenBannerDialog = (step: "input" | "crop" = "input") => {
+    setBannerDialogStep(step);
+    setBannerDialogOpen(true);
+  };
+
+  const activeMeta = getPartMeta(activePart);
+
+  const inspectorBody = (
+    <>
+      {activePart === "header" && (
+        <HeaderInspector
+          markdown={readmeConfig.advancedProfileMarkdown}
+          onChangeMarkdown={(next) =>
+            onUpdateReadmeField("advancedProfileMarkdown", next)
+          }
+          onSyncFromForm={onSyncFromForm}
+        />
+      )}
+
+      {activePart === "about" && (
+        <AboutInspector
+          creatureConfig={creatureConfig}
+          markdown={readmeConfig.advancedProfileMarkdown}
+          templateCount={PROFILE_EDITOR_TEMPLATES.length}
+          onInsertToken={(token) => canvasRef.current?.insertToken(token)}
+          onInsertSnippet={(snippet) =>
+            canvasRef.current?.insertSnippet(snippet)
+          }
+          onOpenTemplates={() => {
+            setMobileSheetOpen(false);
+            canvasRef.current?.openTemplates();
+          }}
+          onOpenImageStudio={() => {
+            setMobileSheetOpen(false);
+            canvasRef.current?.openEditorImageStudio();
+          }}
+          onClearIntro={() => onUpdateReadmeField("advancedProfileMarkdown", "")}
+        />
+      )}
+
+      {activePart === "stack" && (
+        <TechStackInspector
+          readmeConfig={readmeConfig}
+          selectedCardId={selectedStackCardId}
+          onSelectCardId={setSelectedStackCardId}
+          onAddBadgeToCard={onAddBadgeToCard}
+          onRemoveBadgeFromCard={onRemoveBadgeFromCard}
+          onMoveBadgeAcrossCards={onMoveBadgeAcrossCards}
+          onAddStackCard={onAddStackCard}
+          onRenameStackCard={onRenameStackCard}
+          onToggleStackCardVisibility={onToggleStackCardVisibility}
+          onDeleteStackCard={onDeleteStackCard}
+          onReorderStackCards={onReorderStackCards}
+          onCombineStackCards={onCombineStackCards}
+          onUndoCombineStackCards={onUndoCombineStackCards}
+          onAddCustomBadgeToCard={onAddCustomBadgeToCard}
+        />
+      )}
+
+      {activePart === "links" && (
+        <LinksInspector
+          creatureConfig={creatureConfig}
+          readmeConfig={readmeConfig}
+          onUpdateField={onUpdateReadmeField}
+        />
+      )}
+
+      {activePart === "creature" && (
+        <CreatureInspector
+          creatureConfig={creatureConfig}
+          readmeConfig={readmeConfig}
+          customBgHex={customBgHex}
+          snapshot={snapshot}
+          activeCustomBannerAsset={activeCustomBannerAsset}
+          onSelectCreature={onSelectCreature}
+          onSelectView={onSelectView}
+          onSelectWindow={onSelectWindow}
+          onApplyOriginalColors={onApplyOriginalColors}
+          onApplyAutoLanguageColors={onApplyAutoLanguageColors}
+          onSetLanguageCount={onSetLanguageCount}
+          onUpdateLanguageColor={onUpdateLanguageColor}
+          onUpdateLanguageName={onUpdateLanguageName}
+          onResetLanguageColors={onResetLanguageColors}
+          onSetWaterMode={onSetWaterMode}
+          onSetBackgroundMode={onSetBackgroundMode}
+          onUpdateCustomBg={onUpdateCustomBg}
+          onUpdateCreatureConfig={onUpdateCreatureConfig}
+          onUpdateReadmeField={onUpdateReadmeField}
+          onSelectTemplate={onSelectTemplate}
+          onOpenBannerImageStudio={handleOpenBannerDialog}
+          onRemoveBannerImage={onClearCustomBannerImage}
+          onUpdateBannerAlt={onUpdateBannerAlt}
+        />
+      )}
+    </>
   );
 
   return (
-    <div
-      className={cn(
-        "mx-auto w-full px-4 py-6 sm:px-6",
-        activeTab === "readme"
-          ? "max-w-[1784px] min-[1800px]:px-0"
-          : "max-w-[1784px]"
-      )}
-    >
+    <div className="mx-auto w-full max-w-[1860px] px-4 py-5 sm:px-6">
       {restoredNotice && (
-        <div className="mb-5 flex items-center justify-between gap-3 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--text)]">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-[12px] bg-[var(--surface)] px-4 py-3 text-[13px] text-[var(--text)]">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="size-4 shrink-0 text-[var(--accent)]" />
+            <CheckCircle2 className="size-4 shrink-0 text-[var(--tide)]" />
             <span>{restoredNotice}</span>
           </div>
           {onDismissRestoredNotice && (
@@ -210,138 +312,99 @@ export function CustomizeWorkspace({
         </div>
       )}
 
-      {/* Below 1200px: Edit | Live preview toggle */}
-      <div className="mb-5 min-[1200px]:hidden">
-        <StudioSegmentedControl<"edit" | "preview">
-          ariaLabel="Mobile pane switch"
-          value={mobilePane}
-          onChange={setMobilePane}
-          options={[
-            { value: "edit", label: "Edit", icon: <Sliders /> },
-            { value: "preview", label: "Live preview", icon: <Eye /> },
-          ]}
+      {/* Responsive (<1200px) Top Map Bar */}
+      <ReadmeMapTopStrip
+        activePart={activePart}
+        onSelectPart={(part) => handleSelectPart(part)}
+        onOpenInspectorSheet={() => setMobileSheetOpen(true)}
+      />
+
+      {/* Desktop Three-Zone Spatial Workspace */}
+      <div className="flex min-w-0 items-start gap-5">
+        <ReadmeMapSidebar
+          activePart={activePart}
+          collapsed={mapCollapsed}
+          onToggleCollapsed={() => setMapCollapsed((c) => !c)}
+          onSelectPart={(part) => handleSelectPart(part)}
+          creatureConfig={creatureConfig}
+          readmeConfig={readmeConfig}
+          activeCustomBannerAsset={activeCustomBannerAsset}
         />
+
+        <LiveProfileCanvas
+          ref={canvasRef}
+          activePart={activePart}
+          selectedStackCardId={selectedStackCardId}
+          onSelectPart={handleSelectPart}
+          creatureConfig={creatureConfig}
+          readmeConfig={readmeConfig}
+          readmeMarkdown={readmeMarkdown}
+          snapshot={snapshot}
+          imageUrlMap={imageUrlMap}
+          activeCustomBannerAsset={activeCustomBannerAsset}
+          githubTheme={githubTheme}
+          onGithubThemeChange={setGithubTheme}
+          onUpdateReadmeField={onUpdateReadmeField}
+          onChangeRawMarkdown={onChangeRawMarkdown}
+          onAddStackCard={onAddStackCard}
+          onToggleStackCardVisibility={onToggleStackCardVisibility}
+          onReorderStackCards={onReorderStackCards}
+          onSyncFromForm={onSyncFromForm}
+          onRegisterCustomImage={onRegisterCustomImage}
+          onSelectView={onSelectView}
+          onOpenAutoEvolve={onOpenAutoEvolve}
+        />
+
+        <InspectorPanel
+          activePart={activePart}
+          onAdvancePart={handleAdvancePart}
+        >
+          {inspectorBody}
+        </InspectorPanel>
       </div>
 
-      {/* Screen A: 1. Creature & Style */}
-      {activeTab === "creature" ? (
-        <div className="flex flex-col gap-6 min-[1200px]:flex-row min-[1200px]:items-start">
-          <div
-            className={cn(
-              "min-w-0 min-[1200px]:w-[clamp(440px,36vw,560px)] min-[1200px]:shrink-0",
-              mobilePane === "preview"
-                ? "hidden min-[1200px]:block"
-                : "block"
-            )}
-          >
-            <CreatureStepPanel
-              config={creatureConfig}
-              customBgHex={customBgHex}
-              snapshot={snapshot}
-              onSelectCreature={onSelectCreature}
-              onSelectView={onSelectView}
-              onSelectWindow={onSelectWindow}
-              onApplyOriginalColors={onApplyOriginalColors}
-              onApplyAutoLanguageColors={onApplyAutoLanguageColors}
-              onSetLanguageCount={onSetLanguageCount}
-              onUpdateLanguageColor={onUpdateLanguageColor}
-              onUpdateLanguageName={onUpdateLanguageName}
-              onResetLanguageColors={onResetLanguageColors}
-              onSetWaterMode={onSetWaterMode}
-              onSetBackgroundMode={onSetBackgroundMode}
-              onUpdateCustomBg={onUpdateCustomBg}
-              onUpdateConfig={onUpdateCreatureConfig}
-            />
-          </div>
-
-          <div
-            className={cn(
-              "min-w-0 flex-1 min-[1200px]:sticky min-[1200px]:top-[120px] min-[1200px]:max-h-[calc(100vh-192px)] min-[1200px]:overflow-y-auto",
-              mobilePane === "edit"
-                ? "hidden min-[1200px]:block"
-                : "block"
-            )}
-          >
-            {previewNode}
-          </div>
-        </div>
-      ) : (
-        /* Screen B: 2. README Text & Stack */
-        <div className="grid items-start gap-6 min-[1200px]:grid-cols-2 min-[1800px]:grid-cols-[882px_882px] min-[1800px]:justify-center">
-          <div
-            className={cn(
-              "flex min-w-0 flex-col gap-2",
-              mobilePane === "preview"
-                ? "hidden min-[1200px]:flex"
-                : "flex"
-            )}
-          >
-            <span className="text-[13px] font-medium text-[var(--text-muted)]">
-              Editing
-            </span>
-            <ProfileReadmeStepPanel
-              creatureConfig={creatureConfig}
-              readmeConfig={readmeConfig}
-              githubTheme={githubTheme}
-              zoomMode={zoomMode}
-              sharedFitZoom={sharedFitZoom}
-              onMeasureFitZoom={setEditorFitZoom}
-              onSectionFocus={(region) => triggerPreviewScroll(region, true)}
-              onFieldEdited={(region) => triggerPreviewScroll(region, false)}
-              onUpdateField={onUpdateReadmeField}
-              onSelectTemplate={onSelectTemplate}
-              onChangeRawMarkdown={onChangeRawMarkdown}
-              onAddBadgeToCard={onAddBadgeToCard}
-              onRemoveBadgeFromCard={onRemoveBadgeFromCard}
-              onMoveBadgeAcrossCards={onMoveBadgeAcrossCards}
-              onAddStackCard={onAddStackCard}
-              onRenameStackCard={onRenameStackCard}
-              onToggleStackCardVisibility={onToggleStackCardVisibility}
-              onDeleteStackCard={onDeleteStackCard}
-              onReorderStackCards={onReorderStackCards}
-              onCombineStackCards={onCombineStackCards}
-              onUndoCombineStackCards={onUndoCombineStackCards}
-              onAddCustomBadgeToCard={onAddCustomBadgeToCard}
-            />
-          </div>
-
-          <div
-            className={cn(
-              "flex min-w-0 flex-col gap-2 min-[1200px]:sticky min-[1200px]:top-[120px] min-[1200px]:max-h-[calc(100vh-192px)] min-[1200px]:overflow-y-auto",
-              mobilePane === "edit"
-                ? "hidden min-[1200px]:flex"
-                : "flex"
-            )}
-          >
-            <span className="text-[13px] font-medium text-[var(--text-muted)]">
-              Live preview (read-only)
-            </span>
-            {previewNode}
-          </div>
-        </div>
-      )}
-
-      {/* Below 1200px: Floating Live preview drawer button */}
-      {mobilePane === "edit" && !mobileDrawerOpen && (
-        <div className="fixed right-4 bottom-[76px] z-20 min-[1200px]:hidden">
+      {/* Responsive (<1200px) Bottom Sheet Inspector */}
+      <StudioBottomSheet
+        open={mobileSheetOpen}
+        onOpenChange={setMobileSheetOpen}
+        title={activeMeta.label}
+        description={activeMeta.description}
+        footer={
           <StudioButton
             variant="primary"
-            onClick={() => setMobileDrawerOpen(true)}
-            className="shadow-[var(--studio-shadow-overlay)]"
+            className="w-full justify-between"
+            onClick={handleAdvancePart}
           >
-            <Eye />
-            <span>Live preview</span>
+            <span>{activeMeta.nextLabel}</span>
+            <ArrowRight />
           </StudioButton>
-        </div>
-      )}
-
-      <StudioDrawer
-        open={mobileDrawerOpen}
-        onOpenChange={setMobileDrawerOpen}
-        title="Live preview"
+        }
       >
-        {previewNode}
-      </StudioDrawer>
+        {inspectorBody}
+      </StudioBottomSheet>
+
+      {/* Shared Custom Banner Image Studio Dialog */}
+      <ImageStudioDialog
+        open={bannerDialogOpen}
+        onOpenChange={setBannerDialogOpen}
+        mode="banner"
+        username={creatureConfig.username}
+        githubTheme={githubTheme}
+        initialAsset={
+          bannerDialogStep === "crop" ? activeCustomBannerAsset : null
+        }
+        initialStep={bannerDialogStep}
+        onConfirmAsset={(asset) => {
+          onSetCustomBannerImage(asset);
+        }}
+        onRemoveExisting={
+          activeCustomBannerAsset
+            ? () => {
+                onClearCustomBannerImage();
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

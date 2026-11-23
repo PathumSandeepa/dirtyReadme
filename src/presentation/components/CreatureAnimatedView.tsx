@@ -118,7 +118,7 @@ export function CreatureAnimatedView({
   if (error) {
     return (
       <div
-        className={`flex aspect-2/1 items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground ${className}`}
+        className={`flex aspect-2/1 items-center justify-center rounded-lg bg-[var(--danger-soft)] px-4 text-xs text-[var(--danger)] ${className}`}
       >
         {error}
       </div>

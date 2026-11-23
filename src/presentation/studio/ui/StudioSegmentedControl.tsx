@@ -16,16 +16,18 @@ interface StudioSegmentedControlProps<T extends string> {
   options: readonly SegmentedOption<T>[];
   ariaLabel: string;
   size?: "default" | "sm";
+  layout?: "equal" | "auto";
   className?: string;
 }
 
-/** Equal-width segmented control for 2 to 4 exclusive options. */
+/** Borderless segmented control where active state uses a filled surface without colored rings. */
 export function StudioSegmentedControl<T extends string>({
   value,
   onChange,
   options,
   ariaLabel,
   size = "default",
+  layout = "equal",
   className,
 }: StudioSegmentedControlProps<T>) {
   const colsClass =
@@ -40,8 +42,10 @@ export function StudioSegmentedControl<T extends string>({
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        "grid w-full gap-0.5 rounded-[6px] border border-[var(--border)] bg-[var(--surface-2)] p-0.5",
-        colsClass,
+        "gap-1 rounded-[8px] border-0 bg-[var(--surface-2)] p-1",
+        layout === "auto"
+          ? "inline-flex flex-wrap items-center"
+          : cn("grid w-full", colsClass),
         className
       )}
     >
@@ -56,17 +60,19 @@ export function StudioSegmentedControl<T extends string>({
             disabled={opt.disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[5px] border px-2.5 font-medium whitespace-nowrap transition-[color,background-color,border-color] duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:size-3.5 [&_svg]:shrink-0",
+              "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-[6px] border-0 font-medium whitespace-nowrap transition-[color,background-color] duration-150 select-none disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:size-3.5 [&_svg]:shrink-0",
               size === "sm"
-                ? "min-h-[36px] text-[13px] sm:min-h-0 sm:h-[26px]"
-                : "min-h-[40px] text-[13px] sm:min-h-0 sm:h-[30px]",
+                ? "min-h-[34px] px-2 text-[12px] sm:min-h-0 sm:h-7 sm:px-2.5 sm:text-[13px]"
+                : "min-h-[38px] px-2.5 text-[13px] sm:min-h-0 sm:h-8",
               selected
-                ? "border-[var(--border)] bg-[var(--surface)] text-[var(--accent)]"
-                : "border-transparent bg-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+                ? "bg-[var(--segment-active-bg)] text-[var(--text)] shadow-[var(--segment-active-shadow)]"
+                : "bg-transparent text-[var(--text-2)] hover:text-[var(--text)]"
             )}
           >
             {opt.icon}
-            <span className="truncate">{opt.label}</span>
+            <span className={layout === "auto" ? undefined : "truncate"}>
+              {opt.label}
+            </span>
           </button>
         );
       })}

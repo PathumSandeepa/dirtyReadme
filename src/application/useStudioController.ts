@@ -23,6 +23,7 @@ import {
 import {
   DEFAULT_DUMMY_INTRO,
   DEFAULT_README_CONFIG,
+  type CustomImageMemoryAsset,
   type ReadmeBadge,
   type ReadmeConfig,
   type ReadmeTemplateId,
@@ -70,10 +71,26 @@ export function useStudioController() {
   );
   const [customBgHex, setCustomBgHex] = useState("#0D1117");
   const [snapshot, setSnapshot] = useState<GitHubProfileSnapshot | null>(null);
+  const [customImages, setCustomImages] = useState<
+    Record<string, CustomImageMemoryAsset>
+  >({});
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
   const storageReadyRef = useRef(false);
+  const customImagesRef = useRef(customImages);
+
+  useEffect(() => {
+    customImagesRef.current = customImages;
+  }, [customImages]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(customImagesRef.current).forEach((asset) => {
+        URL.revokeObjectURL(asset.previewUrl);
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,6 +166,29 @@ export function useStudioController() {
     () => getEffectiveReadmeMarkdown(creatureConfig, readmeConfig),
     [creatureConfig, readmeConfig]
   );
+
+  const imageUrlMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const asset of Object.values(customImages)) {
+      map[asset.repoPath] = asset.previewUrl;
+      map[`./${asset.repoPath}`] = asset.previewUrl;
+    }
+    return map;
+  }, [customImages]);
+
+  const referencedCustomImages = useMemo(() => {
+    return Object.values(customImages).filter(
+      (asset) =>
+        fullReadmeMarkdown.includes(asset.repoPath) ||
+        (readmeConfig.bannerSource === "custom-image" &&
+          readmeConfig.customBannerImagePath === asset.repoPath)
+    );
+  }, [
+    customImages,
+    fullReadmeMarkdown,
+    readmeConfig.bannerSource,
+    readmeConfig.customBannerImagePath,
+  ]);
 
   function selectCreature(creature: CreatureId) {
     setCreatureConfig((prev) => {
@@ -473,7 +513,87 @@ export function useStudioController() {
     }));
   }
 
-  async function syncFromGitHub(targetUsername: string, authToken?: string) {
+  function registerCustomImage(asset: CustomImageMemoryAsset) {
+    setCustomImages((prev) => {
+      const existing = prev[asset.repoPath];
+      if (existing && existing.previewUrl !== asset.previewUrl) {
+        URL.revokeObjectURL(existing.previewUrl);
+      }
+      return {
+        ...prev,
+        [asset.repoPath]: asset,
+      };
+    });
+  }
+
+  function setCustomBannerImage(asset: CustomImageMemoryAsset) {
+    registerCustomImage(asset);
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      bannerSource: "custom-image",
+      customBannerImagePath: asset.repoPath,
+      customBannerAlt: asset.alt,
+      showCreatureBanner: true,
+    }));
+  }
+
+  function clearCustomBannerImage() {
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      bannerSource: "creature",
+      customBannerImagePath: null,
+    }));
+  }
+
+  function updateCustomBannerAlt(alt: string) {
+    const activePath = readmeConfig.customBannerImagePath;
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      customBannerAlt: alt,
+    }));
+    if (activePath) {
+      setCustomImages((prev) => {
+        const existing = prev[activePath];
+        if (!existing) return prev;
+        return {
+          ...prev,
+          [activePath]: { ...existing, alt },
+        };
+      });
+    }
+  }
+
+  function removeCustomImage(repoPath: string) {
+    const clean = repoPath.replace(/^\.\//, "");
+    setCustomImages((prev) => {
+      const target = prev[clean];
+      if (target) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      const next = { ...prev };
+      delete next[clean];
+      return next;
+    });
+    setReadmeConfig((prev) =>
+      prev.customBannerImagePath === clean
+        ? {
+            ...prev,
+            rawOverride: null,
+            bannerSource: "creature",
+            customBannerImagePath: null,
+          }
+        : prev
+    );
+  }
+
+  async function syncFromGitHub(
+    targetUsername: string,
+    authToken?: string,
+    preloadedSnapshot?: GitHubProfileSnapshot | null
+  ) {
     const parsedUsername = parseGitHubUsername(targetUsername);
     if (!parsedUsername) {
       setSyncError("Please enter a valid GitHub username or profile URL.");
@@ -481,11 +601,21 @@ export function useStudioController() {
     }
 
     setCreatureConfig((prev) => ({ ...prev, username: parsedUsername }));
-    setSyncLoading(true);
     setSyncError(null);
     setRestoredNotice(null);
+
+    const reusePreloaded =
+      preloadedSnapshot &&
+      preloadedSnapshot.username.toLowerCase() === parsedUsername.toLowerCase();
+
+    if (!reusePreloaded) {
+      setSyncLoading(true);
+    }
+
     try {
-      const snap = await fetchGitHubProfileSnapshot(parsedUsername, authToken);
+      const snap = reusePreloaded
+        ? preloadedSnapshot
+        : await fetchGitHubProfileSnapshot(parsedUsername, authToken);
       setSnapshot(snap);
 
       if (snap.existingCreatureConfig) {
@@ -509,7 +639,7 @@ export function useStudioController() {
         });
         setCustomBgHex(hydrated.customBgHex);
         setRestoredNotice(
-          `Restored your saved creature & README customizations from ${snap.username}/${snap.username}.`
+          `Restored your saved creature and README customizations from ${snap.username}/${snap.username}.`
         );
         return snap;
       }
@@ -647,7 +777,7 @@ export function useStudioController() {
             : []),
         ];
 
-        const syncedHeadline = `${snap.displayName} | <Occupation here>`;
+        const syncedHeadline = `${snap.displayName}, Software developer`;
         const syncedBio = DEFAULT_DUMMY_INTRO.replaceAll(
           "{{USERNAME}}",
           snap.username
@@ -697,6 +827,12 @@ export function useStudioController() {
     setReadmeConfig(DEFAULT_README_CONFIG);
     setCustomBgHex("#0D1117");
     setSnapshot(null);
+    setCustomImages((prev) => {
+      Object.values(prev).forEach((asset) => {
+        URL.revokeObjectURL(asset.previewUrl);
+      });
+      return {};
+    });
     setSyncError(null);
     setRestoredNotice(null);
     try {
@@ -713,6 +849,9 @@ export function useStudioController() {
     setReadmeConfig,
     customBgHex,
     snapshot,
+    customImages,
+    imageUrlMap,
+    referencedCustomImages,
     syncLoading,
     syncError,
     clearSyncError: () => setSyncError(null),
@@ -745,6 +884,11 @@ export function useStudioController() {
     combineStackCards,
     undoCombineStackCards,
     addCustomBadgeToCard,
+    registerCustomImage,
+    setCustomBannerImage,
+    clearCustomBannerImage,
+    updateCustomBannerAlt,
+    removeCustomImage,
     syncFromGitHub,
     resetAll,
   };

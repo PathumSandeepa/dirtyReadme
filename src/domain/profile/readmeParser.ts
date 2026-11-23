@@ -464,7 +464,7 @@ export function hydrateFromCreatureConfigJson(
       : 3;
   const animationSpeed =
     typeof rawConfig.animationSpeed === "number" &&
-    Number.isFinite(rawConfig.animationSpeed)
+      Number.isFinite(rawConfig.animationSpeed)
       ? Math.min(2.5, Math.max(0.4, rawConfig.animationSpeed))
       : defaultCreature.animationSpeed;
   const showHud =
@@ -476,18 +476,18 @@ export function hydrateFromCreatureConfigJson(
 
   const hudFontSize =
     typeof rawConfig.hudFontSize === "number" &&
-    Number.isFinite(rawConfig.hudFontSize)
+      Number.isFinite(rawConfig.hudFontSize)
       ? Math.min(22, Math.max(12, Math.round(rawConfig.hudFontSize)))
       : defaultCreature.hudFontSize;
   const hudFontFamily: HudFontFamily =
     rawConfig.hudFontFamily === "mono" ||
-    rawConfig.hudFontFamily === "sans" ||
-    rawConfig.hudFontFamily === "serif"
+      rawConfig.hudFontFamily === "sans" ||
+      rawConfig.hudFontFamily === "serif"
       ? rawConfig.hudFontFamily
       : "pixel";
   const hudFontWeight: HudFontWeight =
     rawConfig.hudFontWeight === "normal" ||
-    rawConfig.hudFontWeight === "semibold"
+      rawConfig.hudFontWeight === "semibold"
       ? rawConfig.hudFontWeight
       : "bold";
   const hudFontColor =
@@ -511,15 +511,15 @@ export function hydrateFromCreatureConfigJson(
 
   const savedLangs = Array.isArray(rawConfig.languages)
     ? (rawConfig.languages as { name?: unknown; color?: unknown; share?: unknown }[])
-        .filter((l) => l && typeof l.name === "string" && l.name.trim())
-        .map((l, idx) => ({
-          name: String(l.name),
-          color:
-            typeof l.color === "string"
-              ? normalizeHex(l.color, DEFAULT_LANGUAGES[idx % 7].color)
-              : DEFAULT_LANGUAGES[idx % 7].color,
-          ...(typeof l.share === "number" ? { share: l.share } : {}),
-        }))
+      .filter((l) => l && typeof l.name === "string" && l.name.trim())
+      .map((l, idx) => ({
+        name: String(l.name),
+        color:
+          typeof l.color === "string"
+            ? normalizeHex(l.color, DEFAULT_LANGUAGES[idx % 7].color)
+            : DEFAULT_LANGUAGES[idx % 7].color,
+        ...(typeof l.share === "number" ? { share: l.share } : {}),
+      }))
     : [];
 
   const mergedLangs = ensureLanguageSlots(
@@ -583,10 +583,10 @@ export function hydrateFromCreatureConfigJson(
       : {};
   const fallbackParsed = isDynamicCreatureReadme(liveSnapshot.existingProfileReadme)
     ? parseExistingDynamicReadme(
-        liveSnapshot.existingProfileReadme!,
-        creatureConfig,
-        defaultReadme
-      ).readmeConfig
+      liveSnapshot.existingProfileReadme!,
+      creatureConfig,
+      defaultReadme
+    ).readmeConfig
     : defaultReadme;
 
   const customBadgesRaw = Array.isArray(rawRm.customBadges)
@@ -602,14 +602,14 @@ export function hydrateFromCreatureConfigJson(
     ...fallbackParsed,
     templateId:
       rawRm.templateId === "minimal-header" ||
-      rawRm.templateId === "auto-evolve-block" ||
-      rawRm.templateId === "telemetry-stats" ||
-      rawRm.templateId === "cyber-guardian"
+        rawRm.templateId === "auto-evolve-block" ||
+        rawRm.templateId === "telemetry-stats" ||
+        rawRm.templateId === "cyber-guardian"
         ? rawRm.templateId
         : fallbackParsed.templateId,
     profileTextMode:
       rawRm.profileTextMode === "advanced" ||
-      rawRm.profileTextMode === "structured"
+        rawRm.profileTextMode === "structured"
         ? rawRm.profileTextMode
         : fallbackParsed.profileTextMode,
     advancedProfileMarkdown:
@@ -670,7 +670,7 @@ export function hydrateFromCreatureConfigJson(
       : fallbackParsed.stackCards,
     savedOrganizedCards:
       Array.isArray(rawRm.savedOrganizedCards) ||
-      rawRm.savedOrganizedCards === null
+        rawRm.savedOrganizedCards === null
         ? (rawRm.savedOrganizedCards as TechStackCard[] | null)
         : null,
     actionLinks: Array.isArray(rawRm.actionLinks)
@@ -680,6 +680,31 @@ export function hydrateFromCreatureConfigJson(
       typeof rawRm.rawOverride === "string" || rawRm.rawOverride === null
         ? rawRm.rawOverride
         : null,
+    bannerSource:
+      rawRm.bannerSource === "custom-image" ? "custom-image" : "creature",
+    customBannerImagePath:
+      typeof rawRm.customBannerImagePath === "string"
+        ? rawRm.customBannerImagePath
+        : null,
+    customBannerAlt:
+      typeof rawRm.customBannerAlt === "string"
+        ? rawRm.customBannerAlt
+        : defaultReadme.customBannerAlt,
+    customBannerAlign:
+      rawRm.customBannerAlign === "left" || rawRm.customBannerAlign === "right"
+        ? rawRm.customBannerAlign
+        : "center",
+    customBannerWidth:
+      typeof rawRm.customBannerWidth === "number" &&
+      Number.isFinite(rawRm.customBannerWidth)
+        ? Math.min(848, Math.max(320, rawRm.customBannerWidth))
+        : defaultReadme.customBannerWidth,
+    showLinksRow:
+      typeof rawRm.showLinksRow === "boolean" ? rawRm.showLinksRow : true,
+    showCreatureBanner:
+      typeof rawRm.showCreatureBanner === "boolean"
+        ? rawRm.showCreatureBanner
+        : true,
   };
 
   return { creatureConfig, readmeConfig, customBgHex: bgHex };

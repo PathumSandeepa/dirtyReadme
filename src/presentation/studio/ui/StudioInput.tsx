@@ -13,7 +13,7 @@ interface StudioFieldProps {
   children: React.ReactNode;
 }
 
-/** Labeled field container with optional right slot, helper text, and inline danger validation. */
+/** Labeled field container with optional trailing slot, helper text, and inline validation message. */
 export function StudioField({
   label,
   htmlFor,
@@ -28,7 +28,7 @@ export function StudioField({
       <div className="flex items-center justify-between gap-2">
         <label
           htmlFor={htmlFor}
-          className="text-[14px] leading-5 font-medium text-[var(--text)]"
+          className="text-[13px] leading-5 font-medium text-[var(--text)]"
         >
           {label}
         </label>
@@ -40,7 +40,7 @@ export function StudioField({
           {error}
         </p>
       ) : helper ? (
-        <p className="text-[13px] leading-5 text-[var(--text-muted)]">
+        <p className="text-[13px] leading-5 text-[var(--text-2)]">
           {helper}
         </p>
       ) : null}
@@ -55,7 +55,7 @@ export interface StudioInputProps
   inputSize?: "default" | "lg";
 }
 
-/** Hairline 36px/40px input (44px touch target on mobile) using scoped studio tokens. */
+/** Borderless surface-stepped input without colored focus rings or outlines. */
 export const StudioInput = React.forwardRef<HTMLInputElement, StudioInputProps>(
   function StudioInput(
     {
@@ -72,11 +72,11 @@ export const StudioInput = React.forwardRef<HTMLInputElement, StudioInputProps>(
         ref={ref}
         aria-invalid={invalid || undefined}
         className={cn(
-          "h-11 w-full min-w-0 rounded-[6px] border bg-[var(--surface)] px-3 text-[14px] text-[var(--text)] transition-[color,background-color,border-color] duration-150 placeholder:text-[var(--text-faint)] disabled:cursor-not-allowed disabled:opacity-50",
+          "h-10 w-full min-w-0 rounded-[8px] border-0 px-3 text-[14px] text-[var(--text)] transition-colors duration-150 placeholder:text-[var(--text-3)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
           inputSize === "lg" ? "sm:h-10" : "sm:h-9",
           invalid
-            ? "border-[var(--danger)]"
-            : "border-[var(--border)] hover:border-[var(--border-strong)] focus:border-[var(--accent)]",
+            ? "bg-[var(--danger-soft)] text-[var(--text)]"
+            : "bg-[var(--surface-2)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]",
           monospace && "studio-mono text-[13px]",
           className
         )}
@@ -92,7 +92,7 @@ export interface StudioTextareaProps
   monospace?: boolean;
 }
 
-/** Hairline textarea using scoped studio tokens. */
+/** Borderless textarea using Abyss and Paper surface elevation. */
 export const StudioTextarea = React.forwardRef<
   HTMLTextAreaElement,
   StudioTextareaProps
@@ -105,10 +105,10 @@ export const StudioTextarea = React.forwardRef<
       ref={ref}
       aria-invalid={invalid || undefined}
       className={cn(
-        "w-full min-w-0 rounded-[6px] border bg-[var(--surface)] px-3 py-2 text-[14px] text-[var(--text)] transition-[color,background-color,border-color] duration-150 placeholder:text-[var(--text-faint)] disabled:cursor-not-allowed disabled:opacity-50",
+        "w-full min-w-0 rounded-[8px] border-0 px-3 py-2 text-[14px] text-[var(--text)] transition-colors duration-150 placeholder:text-[var(--text-3)] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         invalid
-          ? "border-[var(--danger)]"
-          : "border-[var(--border)] hover:border-[var(--border-strong)] focus:border-[var(--accent)]",
+          ? "bg-[var(--danger-soft)] text-[var(--text)]"
+          : "bg-[var(--surface-2)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]",
         monospace && "studio-mono text-[13px]",
         className
       )}
@@ -122,7 +122,7 @@ export interface StudioSelectProps
   invalid?: boolean;
 }
 
-/** Native accessible select styled to match 36px studio controls. */
+/** Accessible native select styled as a borderless 36px surface control. */
 export const StudioSelect = React.forwardRef<
   HTMLSelectElement,
   StudioSelectProps
@@ -132,10 +132,10 @@ export const StudioSelect = React.forwardRef<
       ref={ref}
       aria-invalid={invalid || undefined}
       className={cn(
-        "h-11 w-full min-w-0 cursor-pointer rounded-[6px] border bg-[var(--surface)] px-3 text-[14px] text-[var(--text)] transition-[color,background-color,border-color] duration-150 disabled:cursor-not-allowed disabled:opacity-50 sm:h-9",
+        "h-10 w-full min-w-0 cursor-pointer rounded-[8px] border-0 px-3 text-[14px] text-[var(--text)] transition-colors duration-150 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:h-9",
         invalid
-          ? "border-[var(--danger)]"
-          : "border-[var(--border)] hover:border-[var(--border-strong)] focus:border-[var(--accent)]",
+          ? "bg-[var(--danger-soft)] text-[var(--text)]"
+          : "bg-[var(--surface-2)] hover:bg-[var(--surface-3)] focus:bg-[var(--surface-3)]",
         className
       )}
       {...props}

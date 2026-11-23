@@ -33,7 +33,7 @@ interface StudioColorSwatchProps {
   className?: string;
 }
 
-/** Swatch popover with live hex input and validation, anchored cleanly without backdrop blur. */
+/** Borderless color swatch popover with live hex input and inline validation. */
 export function StudioColorSwatch({
   value,
   onChange,
@@ -42,7 +42,7 @@ export function StudioColorSwatch({
   hideInput = false,
   className,
 }: StudioColorSwatchProps) {
-  const safeHex = normalizeHex(value, "#0F766E");
+  const safeHex = normalizeHex(value, "#58D6B0");
   const [open, setOpen] = useState(false);
   const [hexDraft, setHexDraft] = useState<string | null>(null);
   const [hexError, setHexError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export function StudioColorSwatch({
       setHexError(null);
       onChange(formatHexDraft(prefixed));
     } else {
-      setHexError("Enter a 6-digit hex color like #0F766E.");
+      setHexError("Enter a 6-digit hex color like #58D6B0.");
     }
   };
 
@@ -77,16 +77,16 @@ export function StudioColorSwatch({
                 type="button"
                 aria-label={ariaLabel ?? `Pick ${label}`}
                 title={`${label}: ${safeHex}`}
-                className="inline-flex h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--surface)] px-2.5 text-[13px] text-[var(--text)] transition-[color,background-color,border-color] duration-150 hover:border-[var(--border-strong)] sm:h-9 sm:min-w-9"
+                className="inline-flex h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[8px] border-0 bg-[var(--surface-2)] px-2.5 text-[13px] text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)] sm:h-9 sm:min-w-9"
               />
             }
           >
             <span
-              className="size-4 shrink-0 rounded-[4px] border border-[var(--border)]"
+              className="size-4 shrink-0 rounded-[4px]"
               style={{ backgroundColor: safeHex }}
             />
             {hideInput && (
-              <span className="studio-mono text-[12px] text-[var(--text-muted)]">
+              <span className="studio-mono text-[12px] text-[var(--text-2)]">
                 {safeHex}
               </span>
             )}
@@ -95,14 +95,14 @@ export function StudioColorSwatch({
             data-app="studio"
             align="start"
             sideOffset={6}
-            className="w-72 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--text)] ring-0 shadow-[var(--studio-shadow-overlay)]"
+            className="w-72 rounded-[12px] border-0 bg-[var(--surface)] p-3 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
           >
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[13px] font-medium text-[var(--text)]">
                   {label}
                 </span>
-                <span className="studio-mono text-[12px] text-[var(--text-muted)]">
+                <span className="studio-mono text-[12px] text-[var(--text-2)]">
                   {safeHex}
                 </span>
               </div>
@@ -125,7 +125,7 @@ export function StudioColorSwatch({
                   invalid={Boolean(hexError)}
                   onChange={(e) => handleHexInputChange(e.target.value)}
                   onBlur={handleHexBlur}
-                  placeholder="#0F766E"
+                  placeholder="#58D6B0"
                 />
               </StudioField>
 
@@ -151,7 +151,7 @@ export function StudioColorSwatch({
             aria-label={`${label} hex value`}
             onChange={(e) => handleHexInputChange(e.target.value)}
             onBlur={handleHexBlur}
-            placeholder="#0F766E"
+            placeholder="#58D6B0"
             className="w-28"
           />
         )}
@@ -174,7 +174,7 @@ interface StudioChipColorPopoverProps {
   index: number;
 }
 
-/** Editable language chip with anchored swatch + hex + language label popover. */
+/** Editable language chip with anchored color picker popover using surface fill selection. */
 export function StudioChipColorPopover({
   name,
   color,
@@ -210,20 +210,20 @@ export function StudioChipColorPopover({
             type="button"
             aria-label={`Edit ${name || `Language ${index + 1}`} color (${safeHex})`}
             className={cn(
-              "inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-[6px] border px-2.5 py-1.5 text-[13px] font-medium transition-[color,background-color,border-color] duration-150",
+              "inline-flex min-h-[34px] cursor-pointer items-center gap-2 rounded-[8px] border-0 px-2.5 py-1.5 text-[13px] font-medium transition-colors duration-150",
               open
-                ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                : "border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]"
+                ? "bg-[var(--surface-3)] text-[var(--text)]"
+                : "bg-[var(--surface-2)] text-[var(--text)] hover:bg-[var(--surface-3)]"
             )}
           />
         }
       >
         <span
-          className="size-3 shrink-0 rounded-full border border-black/15"
+          className="size-3 shrink-0 rounded-full"
           style={{ backgroundColor: safeHex }}
         />
         <span>{name || `Language ${index + 1}`}</span>
-        <span className="studio-mono text-[12px] text-[var(--text-muted)]">
+        <span className="studio-mono text-[12px] text-[var(--text-2)]">
           {safeHex}
         </span>
       </PopoverTrigger>
@@ -232,7 +232,7 @@ export function StudioChipColorPopover({
         data-app="studio"
         align="start"
         sideOffset={6}
-        className="w-72 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] p-3 text-[var(--text)] ring-0 shadow-[var(--studio-shadow-overlay)]"
+        className="w-72 rounded-[12px] border-0 bg-[var(--surface)] p-3 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
       >
         <div className="flex flex-col gap-3">
           <StudioField label="Language name" htmlFor={`lang-name-${index}`}>

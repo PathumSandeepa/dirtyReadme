@@ -47,7 +47,7 @@ function Slider({
             data-slot="slider-thumb"
             index={index}
             key={index}
-            className="relative block size-4 shrink-0 cursor-pointer rounded-full border-2 border-primary bg-background shadow-xs ring-ring/50 transition-[color,box-shadow] select-none after:absolute after:-inset-2 hover:ring-3 focus-visible:ring-3 focus-visible:outline-hidden active:ring-3 disabled:pointer-events-none disabled:opacity-50"
+            className="relative block size-4 shrink-0 cursor-pointer rounded-full border-0 bg-[var(--primary)] shadow-sm transition-transform select-none after:absolute after:-inset-2 hover:scale-110 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}
       </SliderPrimitive.Control>
