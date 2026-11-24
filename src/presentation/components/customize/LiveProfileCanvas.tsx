@@ -671,6 +671,9 @@ export const LiveProfileCanvas = forwardRef<
     onSelectionUpdate: ({ editor: activeEditor }) => {
       const { state, view } = activeEditor;
       const { $from, empty } = state.selection;
+      if (!empty) {
+        onEditorFocus?.();
+      }
       if (!empty || $from.parent.type.spec.code) {
         setSlashState(null);
         return;
@@ -1050,16 +1053,40 @@ export const LiveProfileCanvas = forwardRef<
         }
         setViewMode("visual");
         if (!editor) return;
+        const applyHeading = (level: 1 | 2 | 3 | 4) => {
+          const { from, to, empty, $from, $to } = editor.state.selection;
+          if (
+            !empty &&
+            $from.sameParent($to) &&
+            (from > $from.start() || to < $to.end())
+          ) {
+            const splitStart = from > $from.start();
+            const splitEnd = to < $to.end();
+            editor
+              .chain()
+              .focus()
+              .command(({ tr }) => {
+                if (splitEnd) tr.split(to);
+                if (splitStart) tr.split(from);
+                return true;
+              })
+              .setTextSelection(splitStart ? from + 2 : from)
+              .setHeading({ level })
+              .run();
+            return;
+          }
+          editor.chain().focus().toggleHeading({ level }).run();
+        };
         const chain = editor.chain().focus();
         switch (action) {
           case "h1":
-            chain.toggleHeading({ level: 1 }).run();
+            applyHeading(1);
             break;
           case "h2":
-            chain.toggleHeading({ level: 2 }).run();
+            applyHeading(2);
             break;
           case "h3":
-            chain.toggleHeading({ level: 3 }).run();
+            applyHeading(3);
             break;
           case "paragraph":
             chain.setParagraph().run();
@@ -1101,8 +1128,31 @@ export const LiveProfileCanvas = forwardRef<
       exportGif: handleExportGif,
       getFormatActions: () => ({
         setParagraph: () => editor?.chain().focus().setParagraph().run(),
-        toggleHeading: (level: 1 | 2 | 3 | 4) =>
-          editor?.chain().focus().toggleHeading({ level }).run(),
+        toggleHeading: (level: 1 | 2 | 3 | 4) => {
+          if (!editor) return;
+          const { from, to, empty, $from, $to } = editor.state.selection;
+          if (
+            !empty &&
+            $from.sameParent($to) &&
+            (from > $from.start() || to < $to.end())
+          ) {
+            const splitStart = from > $from.start();
+            const splitEnd = to < $to.end();
+            editor
+              .chain()
+              .focus()
+              .command(({ tr }) => {
+                if (splitEnd) tr.split(to);
+                if (splitStart) tr.split(from);
+                return true;
+              })
+              .setTextSelection(splitStart ? from + 2 : from)
+              .setHeading({ level })
+              .run();
+            return;
+          }
+          editor.chain().focus().toggleHeading({ level }).run();
+        },
         toggleHeadingUnderline: handleToggleHeadingUnderline,
         toggleBold: () => editor?.chain().focus().toggleBold().run(),
         toggleItalic: () => editor?.chain().focus().toggleItalic().run(),

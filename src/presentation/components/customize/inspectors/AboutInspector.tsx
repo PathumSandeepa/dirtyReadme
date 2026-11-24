@@ -31,29 +31,6 @@ export function AboutInspector({
           className="w-full rounded-[8px] border-0 bg-[var(--surface-2)] p-3 text-[13px] leading-relaxed text-[var(--text)] placeholder:text-[var(--text-3)] focus:bg-[var(--surface-3)] focus:outline-none"
         />
       </StudioField>
-
-      <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-medium text-[var(--text)]">
-          Quick starter
-        </span>
-
-        <StudioButton
-          variant="secondary"
-          className="w-full justify-start"
-          onClick={() =>
-            onInsertSnippet(
-              [
-                "- Currently building open source web tools",
-                "- Learning distributed systems",
-                "- Reach me through GitHub or Email",
-              ].join("\n")
-            )
-          }
-        >
-          <Sparkles />
-          <span>Insert developer status bullets</span>
-        </StudioButton>
-      </div>
     </div>
   );
 }

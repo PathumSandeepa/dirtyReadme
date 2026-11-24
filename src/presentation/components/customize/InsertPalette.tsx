@@ -21,13 +21,6 @@ import {
   Wand2,
 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -248,35 +241,11 @@ export function InsertPalette({
             label="Code block"
             onClick={() => onInsertBlock("codeBlock")}
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex cursor-pointer items-center gap-2 rounded-[8px] bg-[var(--surface-2)] px-2.5 py-2 text-left text-[12px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)]"
-                />
-              }
-            >
-              <Wand2 className="size-3.5 shrink-0 text-[var(--text-2)]" />
-              <span className="truncate">Snippets</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              data-app="studio"
-              className="w-56 rounded-[12px] border-0 bg-[var(--surface)] p-1 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
-            >
-              <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => onInsertSnippet("status")}>
-                  Developer status bullets
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onInsertSnippet("roadmap")}>
-                  Roadmap checklist
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onInsertSnippet("visitors")}>
-                  Profile visitor counter
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <PaletteButton
+            icon={Wand2}
+            label="Visitor counter"
+            onClick={() => onInsertSnippet("visitors")}
+          />
         </div>
       </div>
 
