@@ -1239,7 +1239,7 @@ export const LiveProfileCanvas = forwardRef<
             </span>
           </div>
 
-          <div className="px-4 py-6">
+          <div className="px-2.5 py-4">
             <div
               className={cn(
                 "flex flex-col gap-5",
@@ -1743,7 +1743,7 @@ export const LiveProfileCanvas = forwardRef<
         {/* Main Canvas Viewport (scrolls inside its own column) */}
         <div
           ref={canvasScrollRef}
-          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[12px] bg-[var(--surface)] px-1.5 py-2 sm:px-2 sm:py-2.5"
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[12px] bg-[var(--surface)] px-1 py-1.5"
         >
           {viewMode === "visual" && !fullscreen && (
             <>

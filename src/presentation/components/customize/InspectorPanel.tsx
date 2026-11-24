@@ -111,7 +111,7 @@ export function InspectorPanel({
         aria-label="Settings"
         className={cn(
           "hidden h-full shrink-0 flex-col gap-2.5 transition-[width] duration-150 min-[1280px]:flex",
-          collapsed ? "w-[44px]" : "w-[380px] min-[1536px]:w-[400px]"
+          collapsed ? "w-[44px]" : "w-[400px] min-[1440px]:w-[432px]"
         )}
       >
         <div className="flex items-center justify-between gap-2 px-1">

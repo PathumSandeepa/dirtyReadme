@@ -501,7 +501,7 @@ export function CustomizeWorkspace({
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-28 right-4 z-50 flex max-w-md items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-2)] px-4 py-3 text-[13px] text-[var(--text)] shadow-[var(--shadow-float)]"
+          className="fixed top-16 right-4 z-50 flex max-w-md items-center justify-between gap-3 rounded-[12px] bg-[var(--surface-2)] px-4 py-3 text-[13px] text-[var(--text)] shadow-[var(--shadow-float)]"
         >
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="size-4 shrink-0 text-[var(--tide)]" />

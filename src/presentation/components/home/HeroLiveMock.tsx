@@ -125,10 +125,16 @@ export function HeroLiveMock() {
   const [previewMode, setPreviewMode] = useState<"visual" | "markdown">(
     "visual"
   );
-  const [isGhDark, setIsGhDark] = useState(true);
+  const [isGhDark, setIsGhDark] = useState(false);
   const [windowState, setWindowState] = useState<WindowState>("open");
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePart, setActivePart] = useState<MapPartId>("header");
+  const [settingsTab, setSettingsTab] = useState<"part" | "format" | "page">(
+    "page"
+  );
+  const [structurePreset, setStructurePreset] = useState<"full" | "minimal">(
+    "full"
+  );
   const [openMenu, setOpenMenu] = useState<MenuId | null>(null);
   const [islandExpanded, setIslandExpanded] = useState(false);
   const [hoveredDockId, setHoveredDockId] = useState<DockId | null>(null);
@@ -870,83 +876,265 @@ export function HeroLiveMock() {
                   : "border-black/8 bg-[#F5F2EC] text-black/80"
               )}
             >
-              <div className="grid grid-cols-3 gap-1 rounded-[8px] bg-black/15 p-1 text-[10px] font-medium">
-                <span className="rounded-[6px] py-1 text-center opacity-65">
-                  Part
-                </span>
-                <span className="rounded-[6px] py-1 text-center opacity-65">
-                  Format
-                </span>
-                <span
-                  className={cn(
-                    "rounded-[6px] py-1 text-center font-semibold",
-                    isGhDark
-                      ? "bg-white/12 text-white"
-                      : "bg-white text-black shadow-xs"
-                  )}
-                >
-                  Page
-                </span>
+              <div
+                className={cn(
+                  "grid grid-cols-3 gap-1 rounded-[8px] p-1 text-[10px] font-medium",
+                  isGhDark ? "bg-black/25" : "bg-black/6"
+                )}
+              >
+                {(
+                  [
+                    { id: "part", label: "Part" },
+                    { id: "format", label: "Format" },
+                    { id: "page", label: "Page" },
+                  ] as const
+                ).map((tab) => {
+                  const isTabActive = settingsTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        stopIntro();
+                        setSettingsTab(tab.id);
+                      }}
+                      className={cn(
+                        "cursor-pointer rounded-[6px] py-1 text-center transition-colors",
+                        isTabActive
+                          ? isGhDark
+                            ? "bg-white/12 font-semibold text-white"
+                            : "bg-white font-semibold text-black shadow-xs"
+                          : "opacity-65 hover:opacity-100"
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-medium opacity-60">
-                  Structure preset
-                </span>
-                <div
-                  className={cn(
-                    "rounded-[8px] px-2.5 py-2 text-[11px] font-semibold",
-                    isGhDark ? "bg-white/10 text-white" : "bg-black/8 text-black"
-                  )}
-                >
-                  Full Developer Profile
-                </div>
-                <div className="rounded-[8px] px-2.5 py-1.5 text-[11px] opacity-65">
-                  Minimalist Header
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-medium opacity-60">
-                  Alignment
-                </span>
-                <div className="grid grid-cols-2 gap-1 rounded-[8px] bg-black/15 p-1 text-[11px]">
+              {settingsTab === "part" && (
+                <div className="flex flex-col gap-2">
+                  <span className="text-[10px] font-medium opacity-60">
+                    Active part: {activePart}
+                  </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      stopIntro();
-                      setLinksAlign("left");
-                    }}
+                    onClick={handleAddBadge}
                     className={cn(
-                      "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
-                      linksAlign === "left"
-                        ? isGhDark
-                          ? "bg-white/14 text-white"
-                          : "bg-white text-black shadow-xs"
-                        : "opacity-65 hover:opacity-100"
+                      "cursor-pointer rounded-[8px] px-2.5 py-2 text-left text-[11px] font-medium transition-colors",
+                      isGhDark
+                        ? "bg-white/10 text-white hover:bg-white/15"
+                        : "bg-black/6 text-black hover:bg-black/10"
                     )}
                   >
-                    Left
+                    Add tech badge
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      stopIntro();
-                      setLinksAlign("center");
-                    }}
+                    onClick={handleInsertImage}
                     className={cn(
-                      "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
-                      linksAlign === "center"
-                        ? isGhDark
-                          ? "bg-white/14 text-white"
-                          : "bg-white text-black shadow-xs"
-                        : "opacity-65 hover:opacity-100"
+                      "cursor-pointer rounded-[8px] px-2.5 py-2 text-left text-[11px] font-medium transition-colors",
+                      isGhDark
+                        ? "bg-white/10 text-white hover:bg-white/15"
+                        : "bg-black/6 text-black hover:bg-black/10"
                     )}
                   >
-                    Center
+                    {bannerVisible ? "Hide banner" : "Show banner"}
                   </button>
                 </div>
-              </div>
+              )}
+
+              {settingsTab === "format" && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-medium opacity-60">
+                      Preview mode
+                    </span>
+                    <div
+                      className={cn(
+                        "grid grid-cols-2 gap-1 rounded-[8px] p-1 text-[11px]",
+                        isGhDark ? "bg-black/25" : "bg-black/6"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          stopIntro();
+                          setPreviewMode("visual");
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                          previewMode === "visual"
+                            ? isGhDark
+                              ? "bg-white/14 text-white"
+                              : "bg-white text-black shadow-xs"
+                            : "opacity-65 hover:opacity-100"
+                        )}
+                      >
+                        Visual
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          stopIntro();
+                          setPreviewMode("markdown");
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                          previewMode === "markdown"
+                            ? isGhDark
+                              ? "bg-white/14 text-white"
+                              : "bg-white text-black shadow-xs"
+                            : "opacity-65 hover:opacity-100"
+                        )}
+                      >
+                        Code
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-medium opacity-60">
+                      Surface
+                    </span>
+                    <div
+                      className={cn(
+                        "grid grid-cols-2 gap-1 rounded-[8px] p-1 text-[11px]",
+                        isGhDark ? "bg-black/25" : "bg-black/6"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          stopIntro();
+                          setIsGhDark(false);
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                          !isGhDark
+                            ? "bg-white text-black shadow-xs"
+                            : "opacity-65 hover:opacity-100"
+                        )}
+                      >
+                        Light
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          stopIntro();
+                          setIsGhDark(true);
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                          isGhDark
+                            ? "bg-white/14 text-white"
+                            : "opacity-65 hover:opacity-100"
+                        )}
+                      >
+                        Dark
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === "page" && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-medium opacity-60">
+                      Structure preset
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopIntro();
+                        setStructurePreset("full");
+                        setProfileIndex(0);
+                        setBadgeIds(HERO_MOCK_PROFILES[0].badgeIds);
+                        setBannerVisible(true);
+                      }}
+                      className={cn(
+                        "cursor-pointer rounded-[8px] px-2.5 py-2 text-left text-[11px] transition-colors",
+                        structurePreset === "full"
+                          ? isGhDark
+                            ? "bg-white/10 font-semibold text-white"
+                            : "bg-black/8 font-semibold text-black"
+                          : "opacity-65 hover:opacity-100"
+                      )}
+                    >
+                      Full Developer Profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopIntro();
+                        setStructurePreset("minimal");
+                        setProfileIndex(1);
+                        setBadgeIds(HERO_MOCK_PROFILES[1].badgeIds);
+                        setBannerVisible(false);
+                      }}
+                      className={cn(
+                        "cursor-pointer rounded-[8px] px-2.5 py-1.5 text-left text-[11px] transition-colors",
+                        structurePreset === "minimal"
+                          ? isGhDark
+                            ? "bg-white/10 font-semibold text-white"
+                            : "bg-black/8 font-semibold text-black"
+                          : "opacity-65 hover:opacity-100"
+                      )}
+                    >
+                      Minimalist Header
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-medium opacity-60">
+                      Alignment
+                    </span>
+                    <div
+                      className={cn(
+                        "grid grid-cols-2 gap-1 rounded-[8px] p-1 text-[11px]",
+                        isGhDark ? "bg-black/25" : "bg-black/6"
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          stopIntro();
+                          setLinksAlign("left");
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                          linksAlign === "left"
+                            ? isGhDark
+                              ? "bg-white/14 text-white"
+                              : "bg-white text-black shadow-xs"
+                            : "opacity-65 hover:opacity-100"
+                        )}
+                      >
+                        Left
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          stopIntro();
+                          setLinksAlign("center");
+                        }}
+                        className={cn(
+                          "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                          linksAlign === "center"
+                            ? isGhDark
+                              ? "bg-white/14 text-white"
+                              : "bg-white text-black shadow-xs"
+                            : "opacity-65 hover:opacity-100"
+                        )}
+                      >
+                        Center
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

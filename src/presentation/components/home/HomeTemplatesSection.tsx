@@ -84,19 +84,20 @@ export function HomeTemplatesSection({
   return (
     <section
       id="templates"
-      className="home-section-below py-24 sm:py-32"
+      className="home-section-below py-20 sm:py-24"
     >
-      <div className="mx-auto max-w-[1160px] px-4 sm:px-6">
-        <Reveal className="flex flex-col items-center text-center">
-          <div className="home-section-label">Templates</div>
-          <h2 className="home-h2 home-gradient-text mt-3">
-            Never start from blank.
-          </h2>
-        </Reveal>
-      </div>
+      <div className="w-full">
+        <div className="mx-auto max-w-[1160px] px-4 sm:px-6">
+          <Reveal className="flex flex-col items-center text-center">
+            <div className="home-section-label">Templates</div>
+            <h2 className="home-h2 home-gradient-text mt-3">
+              Never start from blank.
+            </h2>
+          </Reveal>
+        </div>
 
-      {/* Dual opposite-direction marquee rows with black edge fades */}
-      <div className="relative mt-14 space-y-4 overflow-hidden">
+        {/* Dual opposite-direction marquee rows with black edge fades */}
+        <div className="relative mt-10 space-y-4 overflow-hidden">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#050505] to-transparent sm:w-28"
@@ -176,6 +177,7 @@ export function HomeTemplatesSection({
           <ArrowRight className="size-4" />
         </button>
       </Reveal>
+      </div>
     </section>
   );
 }

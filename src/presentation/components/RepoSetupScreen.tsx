@@ -65,20 +65,20 @@ export function RepoSetupScreen({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-10 sm:px-6 sm:py-12">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-10 sm:px-6 sm:py-12">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-[var(--text)] sm:text-[32px]">
+          Set up your profile repository
+        </h1>
+        <p className="text-[15px] leading-6 text-[var(--text-2)]">
+          GitHub shows a profile README when a public repository has the same
+          name as your username.
+        </p>
+      </div>
+
       <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-10">
         {/* Left Column */}
         <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-[var(--text)] sm:text-[32px]">
-              Set up your profile repository
-            </h1>
-            <p className="text-[15px] leading-6 text-[var(--text-2)]">
-              GitHub shows a profile README when a public repository has the
-              same name as your username.
-            </p>
-          </div>
-
           {/* Status banner without borders */}
           {repoExists ? (
             <div

@@ -423,7 +423,7 @@ export function ReadmeMapSidebar({
         aria-label="Parts and blocks"
         className={cn(
           "studio-no-scrollbar hidden h-full shrink-0 flex-col gap-2.5 overflow-y-auto transition-[width] duration-150 min-[1280px]:flex",
-          collapsed ? "w-[56px]" : "w-[308px] min-[1536px]:w-[324px]"
+          collapsed ? "w-[56px]" : "w-[324px] min-[1440px]:w-[348px]"
         )}
       >
         <div className="flex items-center justify-between gap-2 px-1">
