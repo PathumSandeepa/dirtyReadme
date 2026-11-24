@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pathumsandeepa.github.io/dynamic-readme-creature/sitemap.xml
+Sitemap: https://pathumsandeepa.github.io/DirtyReadme/sitemap.xml

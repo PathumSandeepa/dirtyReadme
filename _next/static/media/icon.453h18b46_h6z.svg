@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">
+  <defs>
+    <linearGradient id="dr-amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFB84A" />
+      <stop offset="100%" stop-color="#F07A0F" />
+    </linearGradient>
+  </defs>
+  <rect width="28" height="28" rx="8" fill="url(#dr-amber)" />
+  <g fill="#1A0D00">
+    <rect x="9.5" y="6.5" width="2.8" height="15" rx="1" />
+    <rect x="15.7" y="6.5" width="2.8" height="15" rx="1" />
+    <rect x="6.5" y="10" width="15" height="2.6" rx="1" />
+    <rect x="6.5" y="15.4" width="15" height="2.6" rx="1" />
+  </g>
+</svg>
