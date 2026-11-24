@@ -417,13 +417,21 @@
   flex: 1 1 auto;
 }
 
+.gh-markdown-body .tableWrapper {
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+
 .gh-markdown-body table {
   border-collapse: collapse;
-  width: max-content;
+  table-layout: fixed;
+  width: auto;
   max-width: 100%;
   margin: 0 0 16px;
-  display: block;
-  overflow-x: auto;
+}
+
+.gh-markdown-body .tableWrapper table {
+  margin: 0;
 }
 
 .gh-markdown-body th,

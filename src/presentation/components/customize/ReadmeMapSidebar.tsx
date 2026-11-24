@@ -175,15 +175,6 @@ export function LeftSidebarContent({
   };
 
   const statuses = getPartStatuses(creatureConfig, readmeConfig);
-  const textParts = CUSTOMIZE_PARTS.filter((p) => p.group === "text-stack");
-  const creatureParts = CUSTOMIZE_PARTS.filter((p) => p.group === "creature");
-
-  const thumbUrl =
-    readmeConfig.bannerSource === "custom-image" && activeCustomBannerAsset
-      ? activeCustomBannerAsset.previewUrl
-      : getSpriteAssetPath(
-          creatureConfig.creature === "jellyfish" ? "jellyfish" : "tulkun-side"
-        );
 
   if (collapsed) {
     return (
@@ -227,99 +218,7 @@ export function LeftSidebarContent({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 1. README parts (always open) */}
-      <div className="flex flex-col gap-2 rounded-[12px] bg-[var(--surface)] p-2.5">
-        <div className="px-1.5 py-1 text-[12px] font-semibold text-[var(--text)]">
-          README parts
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <div className="px-1.5 pt-0.5 text-[11px] font-medium text-[var(--text-3)]">
-            Text and stack
-          </div>
-          {textParts.map((part) => {
-            const Icon = getPartIcon(part.id);
-            const selected = activePart === part.id;
-            return (
-              <button
-                key={part.id}
-                type="button"
-                aria-current={selected ? "location" : undefined}
-                onClick={() => onSelectPart(part.id)}
-                className={cn(
-                  "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors duration-150",
-                  selected
-                    ? "bg-[var(--surface-3)] text-[var(--text)]"
-                    : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                )}
-              >
-                <Icon className="size-4 shrink-0" />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[13px] font-medium">
-                    {part.label}
-                  </span>
-                  <span className="truncate text-[11px] text-[var(--text-2)] tabular-nums">
-                    {statuses[part.id]}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <div className="px-1.5 pt-0.5 text-[11px] font-medium text-[var(--text-3)]">
-            Creature
-          </div>
-          {creatureParts.map((part) => {
-            const selected = activePart === part.id;
-            return (
-              <button
-                key={part.id}
-                type="button"
-                aria-current={selected ? "location" : undefined}
-                onClick={() => onSelectPart(part.id)}
-                className={cn(
-                  "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors duration-150",
-                  selected
-                    ? "bg-[var(--surface-3)] text-[var(--text)]"
-                    : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                )}
-              >
-                <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#0D1117]">
-                  <img
-                    src={thumbUrl}
-                    alt=""
-                    className={cn(
-                      "size-full object-contain",
-                      readmeConfig.bannerSource === "custom-image" &&
-                        activeCustomBannerAsset
-                        ? "object-cover"
-                        : "p-0.5"
-                    )}
-                    style={{
-                      imageRendering:
-                        readmeConfig.bannerSource === "custom-image"
-                          ? "auto"
-                          : "pixelated",
-                    }}
-                  />
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[13px] font-medium">
-                    {part.label}
-                  </span>
-                  <span className="truncate text-[11px] text-[var(--text-2)] tabular-nums">
-                    {statuses[part.id]}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 2. Add to README (collapsible) */}
+      {/* 1. Add to README (collapsible) */}
       <div className="overflow-hidden rounded-[12px] bg-[var(--surface)]">
         <button
           type="button"

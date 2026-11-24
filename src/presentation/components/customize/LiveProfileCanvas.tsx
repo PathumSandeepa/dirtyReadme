@@ -1142,7 +1142,44 @@ export const LiveProfileCanvas = forwardRef<
           editor
             ?.chain()
             .focus()
-            .setCellAttribute("colwidth", width ? [width] : null)
+            .command(({ tr, state }) => {
+              const { $from } = state.selection;
+              let tableDepth = -1;
+              let rowDepth = -1;
+              let cellDepth = -1;
+              for (let d = $from.depth; d > 0; d--) {
+                const name = $from.node(d).type.name;
+                if (cellDepth === -1 && (name === "tableCell" || name === "tableHeader")) {
+                  cellDepth = d;
+                } else if (rowDepth === -1 && name === "tableRow") {
+                  rowDepth = d;
+                } else if (tableDepth === -1 && name === "table") {
+                  tableDepth = d;
+                  break;
+                }
+              }
+              if (tableDepth === -1 || rowDepth === -1 || cellDepth === -1) {
+                return false;
+              }
+              const targetColIndex = $from.index(rowDepth);
+              const tableNode = $from.node(tableDepth);
+              const tableStart = $from.start(tableDepth);
+              let rowOffset = tableStart;
+              tableNode.forEach((rowNode) => {
+                let cellOffset = rowOffset + 1;
+                rowNode.forEach((cellNode, _offset, colIdx) => {
+                  if (colIdx === targetColIndex) {
+                    tr.setNodeMarkup(cellOffset, undefined, {
+                      ...cellNode.attrs,
+                      colwidth: width ? [width] : null,
+                    });
+                  }
+                  cellOffset += cellNode.nodeSize;
+                });
+                rowOffset += rowNode.nodeSize;
+              });
+              return true;
+            })
             .run(),
         setTableRowSize,
         setTableBorderColor,

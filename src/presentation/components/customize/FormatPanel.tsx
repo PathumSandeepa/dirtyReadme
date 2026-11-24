@@ -6,7 +6,6 @@ import {
   AlignLeft,
   AlignRight,
   Bold,
-  CheckSquare,
   ChevronDown,
   Code,
   Columns3,
@@ -14,8 +13,6 @@ import {
   Heading,
   Italic,
   Link2,
-  List,
-  ListOrdered,
   Quote,
   RemoveFormatting,
   Rows3,
@@ -305,36 +302,6 @@ export function FormatPanel({ state, actions }: FormatPanelProps) {
               onClick={() => actions.setAlign("right")}
               icon={AlignRight}
               label="Right"
-            />
-          </div>
-        </div>
-
-        {/* Lists */}
-        <div className="flex flex-col gap-2">
-          <span className="text-[12px] font-medium text-[var(--text-2)]">
-            Lists
-          </span>
-          <div className="grid grid-cols-2 gap-1.5">
-            <FormatActionButton
-              disabled={disabled}
-              active={state.bulletList}
-              onClick={actions.toggleBulletList}
-              icon={List}
-              label="Bullet"
-            />
-            <FormatActionButton
-              disabled={disabled}
-              active={state.orderedList}
-              onClick={actions.toggleOrderedList}
-              icon={ListOrdered}
-              label="Numbered"
-            />
-            <FormatActionButton
-              disabled={disabled}
-              active={state.taskList}
-              onClick={actions.toggleTaskList}
-              icon={CheckSquare}
-              label="Checklist"
             />
           </div>
         </div>
