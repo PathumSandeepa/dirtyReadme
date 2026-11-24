@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
-const repoName = "DirtyReadme";
+const githubRepoFromEnv = process.env.GITHUB_REPOSITORY?.split("/")[1];
+const repoName =
+  process.env.NEXT_PUBLIC_REPO_NAME ||
+  githubRepoFromEnv ||
+  "dynamic-readme-creature";
 const prodBasePath = `/${repoName}`;
 const basePath = isProd ? prodBasePath : "";
 
