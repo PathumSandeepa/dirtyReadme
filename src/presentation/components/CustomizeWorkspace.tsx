@@ -495,7 +495,7 @@ export function CustomizeWorkspace({
   );
 
   return (
-    <div className="relative mx-auto flex w-full max-w-[1860px] flex-col px-3 py-3 sm:px-5 min-[1280px]:h-[calc(100dvh-152px)] min-[1280px]:overflow-hidden">
+    <div className="relative mx-auto flex w-full flex-col px-2 py-2 sm:px-3 min-[1280px]:h-[calc(100dvh-152px)] min-[1280px]:overflow-hidden">
       {/* Restore Toast (5s auto-dismiss) */}
       {restoredNotice && (
         <div
@@ -542,7 +542,7 @@ export function CustomizeWorkspace({
       </div>
 
       {/* Three-Column Workspace */}
-      <div className="flex min-h-0 min-w-0 flex-1 items-stretch gap-3">
+      <div className="flex min-h-0 min-w-0 flex-1 items-stretch gap-2.5">
         <ReadmeMapSidebar
           activePart={activePart}
           collapsed={leftCollapsed}

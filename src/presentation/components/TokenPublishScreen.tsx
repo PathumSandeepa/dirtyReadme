@@ -86,6 +86,8 @@ interface TokenPublishScreenProps {
   readmeConfig: ReadmeConfig;
   readmeMarkdown: string;
   customImages?: CustomImageMemoryAsset[];
+  imageUrlMap?: Record<string, string>;
+  isDark?: boolean;
   includeShareCard: boolean;
   defaultBranch: string;
   initialProfileRepoExists: boolean;
@@ -164,6 +166,8 @@ export function TokenPublishScreen({
   readmeConfig,
   readmeMarkdown,
   customImages = [],
+  imageUrlMap,
+  isDark = true,
   includeShareCard,
   defaultBranch,
   initialProfileRepoExists,
@@ -183,6 +187,12 @@ export function TokenPublishScreen({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<"visual" | "markdown">(
     "visual"
+  );
+  const [previewTheme, setPreviewTheme] = useState<"light" | "dark">(
+    isDark ? "dark" : "light"
+  );
+  const [creaturePreviewUrl, setCreaturePreviewUrl] = useState<string | null>(
+    null
   );
 
   const [includeWorkflowFiles, setIncludeWorkflowFiles] = useState(false);
@@ -266,6 +276,28 @@ export function TokenPublishScreen({
     readmeMarkdown.includes("creature.webp");
 
   const effectiveDailyUpdate = includesCreatureBinary && includeWorkflowFiles;
+
+  useEffect(() => {
+    if (!previewOpen || !includesCreatureBinary) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    loadCreatureSprite(getSpriteKey(creatureConfig.creature, creatureConfig.view))
+      .then((sprite) => encodeAnimatedWebPFromCreature(creatureConfig, sprite))
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setCreaturePreviewUrl(objectUrl);
+      })
+      .catch(() => {
+        // Ignore preview encoding failures
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [previewOpen, includesCreatureBinary, creatureConfig]);
 
   const allTimeZones = useMemo(() => {
     const supported = getSupportedTimeZones();
@@ -1672,7 +1704,7 @@ export function TokenPublishScreen({
           onOpenChange={setPreviewOpen}
           title="Preview README"
           description={`Rendered preview for ${repoPath}`}
-          maxWidthClass="sm:max-w-4xl"
+          maxWidthClass="sm:max-w-[920px]"
           footer={
             <div className="flex w-full items-center justify-between gap-2">
               <StudioButton
@@ -1695,24 +1727,48 @@ export function TokenPublishScreen({
           }
         >
           <div className="flex flex-col gap-4">
-            <StudioSegmentedControl<"visual" | "markdown">
-              ariaLabel="README preview mode"
-              value={previewMode}
-              onChange={setPreviewMode}
-              options={[
-                { value: "visual", label: "Visual" },
-                { value: "markdown", label: "Markdown" },
-              ]}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <StudioSegmentedControl<"visual" | "markdown">
+                ariaLabel="README preview mode"
+                value={previewMode}
+                onChange={setPreviewMode}
+                options={[
+                  { value: "visual", label: "Visual" },
+                  { value: "markdown", label: "Markdown" },
+                ]}
+              />
+
+              {previewMode === "visual" && (
+                <StudioSegmentedControl<"dark" | "light">
+                  ariaLabel="GitHub preview theme"
+                  size="sm"
+                  value={previewTheme}
+                  onChange={setPreviewTheme}
+                  options={[
+                    { value: "dark", label: "Dark" },
+                    { value: "light", label: "Light" },
+                  ]}
+                />
+              )}
+            </div>
 
             {previewMode === "visual" ? (
               <div
-                data-gh-theme="light"
-                className="rounded-[12px] bg-[var(--gh-bg)] p-5"
+                data-gh-theme={previewTheme}
+                className="rounded-[12px] bg-[var(--gh-bg)] p-6"
               >
                 <AdvancedMarkdownPreview
                   markdown={readmeMarkdown}
-                  isDark={false}
+                  isDark={previewTheme === "dark"}
+                  imageUrlMap={{
+                    ...imageUrlMap,
+                    ...(creaturePreviewUrl
+                      ? {
+                          "./creature.webp": creaturePreviewUrl,
+                          "creature.webp": creaturePreviewUrl,
+                        }
+                      : {}),
+                  }}
                 />
               </div>
             ) : (

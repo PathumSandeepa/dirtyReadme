@@ -52,7 +52,7 @@ export function HomePrivacySection() {
     <section
       id="privacy"
       aria-labelledby="privacy-heading"
-      className="home-section-below relative py-28 sm:py-36"
+      className="home-section-below relative py-20 sm:py-24"
     >
       <div className="mx-auto max-w-[1200px] px-5 sm:px-8">
         <Reveal>

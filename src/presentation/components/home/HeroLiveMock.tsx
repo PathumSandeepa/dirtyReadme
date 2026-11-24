@@ -28,7 +28,6 @@ import {
 } from "./heroMockData";
 import { useDockMagnification } from "./useDockMagnification";
 import { useReducedMotion } from "./useReducedMotion";
-import { useTilt3D } from "./useTilt3D";
 
 type MenuId = "file" | "edit" | "insert" | "view";
 type MapPartId = "header" | "about" | "stack" | "links";
@@ -120,13 +119,13 @@ export function HeroLiveMock() {
   const [badgeIds, setBadgeIds] = useState<string[]>(
     () => HERO_MOCK_PROFILES[0].badgeIds
   );
-  const [linksAlign, setLinksAlign] = useState<"left" | "center">("center");
-  const [bannerVisible, setBannerVisible] = useState(false);
+  const [linksAlign, setLinksAlign] = useState<"left" | "center">("left");
+  const [bannerVisible, setBannerVisible] = useState(true);
   const [bannerAnimating, setBannerAnimating] = useState(false);
   const [previewMode, setPreviewMode] = useState<"visual" | "markdown">(
     "visual"
   );
-  const [isGhDark, setIsGhDark] = useState(false);
+  const [isGhDark, setIsGhDark] = useState(true);
   const [windowState, setWindowState] = useState<WindowState>("open");
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePart, setActivePart] = useState<MapPartId>("header");
@@ -241,11 +240,6 @@ export function HeroLiveMock() {
     }
   }, [publishToast]);
 
-  const {
-    containerRef: tiltContainerRef,
-    onPointerMove: handleTiltPointerMove,
-    onPointerLeave: handleTiltPointerLeave,
-  } = useTilt3D({ maxDegrees: 3, disabled: reducedMotion });
   const {
     registerItem: registerDockItem,
     onPointerMove: handleDockPointerMove,
@@ -515,13 +509,10 @@ export function HeroLiveMock() {
 
   return (
     <div
-      ref={tiltContainerRef}
-      onPointerMove={handleTiltPointerMove}
-      onPointerLeave={handleTiltPointerLeave}
       onPointerDown={() => {
         if (introActive) stopIntro();
       }}
-      className="relative mt-14 w-full max-w-[1160px] text-left transition-transform duration-200 ease-out will-change-transform sm:mt-16"
+      className="relative mt-14 w-full max-w-[1160px] text-left sm:mt-16"
     >
       {/* Realistic MacBook Pro anodized aluminum lid */}
       <div className="rounded-[26px] bg-gradient-to-b from-[#34363c] via-[#1d1e22] to-[#121316] p-[8px] shadow-[0_32px_100px_rgba(0,0,0,0.85)] ring-1 ring-white/15 sm:rounded-[30px] sm:p-[11px]">
@@ -788,8 +779,8 @@ export function HeroLiveMock() {
             </div>
           </div>
 
-          {/* Window body: left README parts list + real MarkdownPreviewRenderer */}
-          <div className="grid md:grid-cols-[190px_minmax(0,1fr)]">
+          {/* Window body: left README parts list + center preview + right settings */}
+          <div className="grid md:grid-cols-[172px_minmax(0,1fr)] lg:grid-cols-[172px_minmax(0,1fr)_188px]">
             <div
               className={cn(
                 "border-b p-3 md:border-r md:border-b-0",
@@ -868,6 +859,94 @@ export function HeroLiveMock() {
                   {markdown}
                 </pre>
               )}
+            </div>
+
+            {/* Right Settings mini-panel matching the live editor */}
+            <div
+              className={cn(
+                "hidden flex-col gap-3 border-l p-3 lg:flex",
+                isGhDark
+                  ? "border-white/10 bg-[#12161d] text-white/80"
+                  : "border-black/8 bg-[#F5F2EC] text-black/80"
+              )}
+            >
+              <div className="grid grid-cols-3 gap-1 rounded-[8px] bg-black/15 p-1 text-[10px] font-medium">
+                <span className="rounded-[6px] py-1 text-center opacity-65">
+                  Part
+                </span>
+                <span className="rounded-[6px] py-1 text-center opacity-65">
+                  Format
+                </span>
+                <span
+                  className={cn(
+                    "rounded-[6px] py-1 text-center font-semibold",
+                    isGhDark
+                      ? "bg-white/12 text-white"
+                      : "bg-white text-black shadow-xs"
+                  )}
+                >
+                  Page
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-medium opacity-60">
+                  Structure preset
+                </span>
+                <div
+                  className={cn(
+                    "rounded-[8px] px-2.5 py-2 text-[11px] font-semibold",
+                    isGhDark ? "bg-white/10 text-white" : "bg-black/8 text-black"
+                  )}
+                >
+                  Full Developer Profile
+                </div>
+                <div className="rounded-[8px] px-2.5 py-1.5 text-[11px] opacity-65">
+                  Minimalist Header
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-medium opacity-60">
+                  Alignment
+                </span>
+                <div className="grid grid-cols-2 gap-1 rounded-[8px] bg-black/15 p-1 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopIntro();
+                      setLinksAlign("left");
+                    }}
+                    className={cn(
+                      "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                      linksAlign === "left"
+                        ? isGhDark
+                          ? "bg-white/14 text-white"
+                          : "bg-white text-black shadow-xs"
+                        : "opacity-65 hover:opacity-100"
+                    )}
+                  >
+                    Left
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopIntro();
+                      setLinksAlign("center");
+                    }}
+                    className={cn(
+                      "cursor-pointer rounded-[6px] py-1 text-center font-medium transition-colors",
+                      linksAlign === "center"
+                        ? isGhDark
+                          ? "bg-white/14 text-white"
+                          : "bg-white text-black shadow-xs"
+                        : "opacity-65 hover:opacity-100"
+                    )}
+                  >
+                    Center
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

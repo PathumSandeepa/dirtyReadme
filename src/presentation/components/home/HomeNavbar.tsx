@@ -103,7 +103,16 @@ export function HomeNavbar({ onStartBuilding }: HomeNavbarProps) {
   const scrollToSection = (sectionId: string) => {
     const target = document.getElementById(sectionId);
     if (!target) return;
-    const top = target.getBoundingClientRect().top + window.scrollY - 96;
+    const contentEl =
+      (target.firstElementChild as HTMLElement | null) ?? target;
+    const rect = contentEl.getBoundingClientRect();
+    const navOffset = 72;
+    const availableHeight = window.innerHeight - navOffset;
+    const centerGap =
+      rect.height < availableHeight
+        ? (availableHeight - rect.height) / 2
+        : 16;
+    const top = rect.top + window.scrollY - navOffset - centerGap;
     window.scrollTo({
       top: Math.max(0, top),
       behavior: reducedMotion ? "auto" : "smooth",

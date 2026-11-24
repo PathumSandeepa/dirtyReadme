@@ -1743,7 +1743,7 @@ export const LiveProfileCanvas = forwardRef<
         {/* Main Canvas Viewport (scrolls inside its own column) */}
         <div
           ref={canvasScrollRef}
-          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[12px] bg-[var(--surface)] p-2 sm:p-3"
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[12px] bg-[var(--surface)] px-1.5 py-2 sm:px-2 sm:py-2.5"
         >
           {viewMode === "visual" && !fullscreen && (
             <>

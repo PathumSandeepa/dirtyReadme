@@ -10,6 +10,7 @@ import {
 } from "@/domain/profile/entities";
 import { getPlatformIconById } from "@/domain/profile/platformIcons";
 import { buildGeneratedReadmeMarkdown } from "@/domain/profile/readmeService";
+import { showcaseAsset } from "./homeData";
 
 export interface HeroMockProfile {
   id: string;
@@ -24,26 +25,9 @@ export interface HeroMockProfile {
 
 export const HERO_BANNER_IMAGE_PATH = "./hero-banner.svg";
 
-const NEUTRAL_BANNER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="848" height="160" viewBox="0 0 848 160">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#18181B" />
-      <stop offset="50%" stop-color="#27272A" />
-      <stop offset="100%" stop-color="#1F2937" />
-    </linearGradient>
-    <radialGradient id="glow" cx="75%" cy="35%" r="55%">
-      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.22" />
-      <stop offset="100%" stop-color="#18181B" stop-opacity="0" />
-    </radialGradient>
-  </defs>
-  <rect width="848" height="160" rx="12" fill="url(#bg)" />
-  <rect width="848" height="160" rx="12" fill="url(#glow)" />
-  <text x="36" y="76" fill="#F4F4F5" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="700" letter-spacing="-0.6">Open source developer</text>
-  <text x="36" y="108" fill="#A1A1AA" font-family="ui-monospace, Menlo, monospace" font-size="14">Building clean web tools and libraries</text>
-</svg>`;
-
 export const HERO_BANNER_IMAGE_MAP: Record<string, string> = {
-  [HERO_BANNER_IMAGE_PATH]: `data:image/svg+xml;utf8,${encodeURIComponent(NEUTRAL_BANNER_SVG)}`,
+  [HERO_BANNER_IMAGE_PATH]: showcaseAsset("view-side.webp"),
+  "./creature.webp": showcaseAsset("view-side.webp"),
 };
 
 function makeLink(
@@ -68,17 +52,46 @@ function makeLink(
 
 export const HERO_MOCK_PROFILES: HeroMockProfile[] = [
   {
-    id: "minimal-builder",
-    label: "Builder",
-    username: "octocat",
-    headline: "Hi, I am The Octocat",
-    subtitleTags: ["Open source", "TypeScript", "Web tools"],
-    bio: "Building fast developer tools, clean interfaces, and open source libraries in TypeScript and Go.",
-    badgeIds: ["typescript", "react", "nextjs", "tailwindcss", "nodejs"],
+    id: "fullstack-template",
+    label: "Full-Stack",
+    username: "alexrivera",
+    headline: "Alex Rivera, Full-Stack Developer",
+    subtitleTags: [
+      "Full-Stack Development",
+      "Systems Architecture",
+      "Open Source",
+      "UI Engineering",
+    ],
+    bio: "Open source builder, Computer science enthusiast, Sharing coding adventures.\n\nExplore my tech stack and live profile projects below.",
+    badgeIds: [
+      "java",
+      "php",
+      "typescript",
+      "javascript",
+      "react",
+      "nextjs",
+      "tailwindcss",
+      "nodejs",
+      "python",
+      "postgresql",
+      "docker",
+      "git",
+      "linux",
+      "figma",
+      "sql",
+      "html5",
+      "css",
+      "redux",
+      "vite",
+      "shadcnui",
+      "mui",
+      "nestjs",
+      "express",
+    ],
     links: [
-      makeLink("gh", "GITHUB", "@octocat", "https://github.com/octocat", "181717", "github"),
-      makeLink("web", "WEBSITE", "octocat.dev", "https://github.com/octocat", "0EA5E9", "website"),
-      makeLink("x", "X", "@octocat", "https://x.com", "111827", "x"),
+      makeLink("gh", "GITHUB", "@alexrivera", "https://github.com/octocat", "181717", "github"),
+      makeLink("x", "X", "@alexriveradev", "https://x.com", "111827", "x"),
+      makeLink("blog", "MEDIUM", "Read articles", "https://medium.com", "181717", "medium"),
     ],
   },
   {

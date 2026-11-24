@@ -73,7 +73,7 @@ function renderMarkdownOnlyInline(
             key={k}
             src={safeSrc}
             alt={imgMatch[1]}
-            className="my-1 inline-block align-middle"
+            className="my-1 mr-1 inline-block align-middle"
           />
         );
       } else {
@@ -157,7 +157,7 @@ export function renderInlineMarkdown(
             key={k}
             src={safeSrc}
             alt={alt}
-            className="my-1 inline-block align-middle"
+            className="my-1 mr-1 inline-block align-middle"
           />
         );
       }
@@ -392,14 +392,16 @@ export function AdvancedMarkdownPreview({
         innerLines.push(lines[j].trim());
         j++;
       }
+      const nonEmptyLines = innerLines.filter(Boolean);
       blocks.push(
-        <div key={key++} style={alignStyle}>
-          {innerLines
-            .filter(Boolean)
-            .map((lineText, idx) => (
-              <p key={idx}>{renderInlineMarkdown(lineText, imageUrlMap)}</p>
-            ))}
-        </div>
+        <p key={key++} style={alignStyle}>
+          {nonEmptyLines.map((lineText, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && " "}
+              {renderInlineMarkdown(lineText, imageUrlMap)}
+            </React.Fragment>
+          ))}
+        </p>
       );
       i = j;
       continue;

@@ -266,6 +266,8 @@ export function StudioApp() {
                 readmeConfig={controller.readmeConfig}
                 readmeMarkdown={controller.fullReadmeMarkdown}
                 customImages={controller.referencedCustomImages}
+                imageUrlMap={controller.imageUrlMap}
+                isDark={isDark}
                 includeShareCard={false}
                 defaultBranch={controller.snapshot?.profileRepoBranch || "main"}
                 initialProfileRepoExists={Boolean(
