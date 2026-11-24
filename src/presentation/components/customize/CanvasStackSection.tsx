@@ -93,6 +93,8 @@ export function CanvasStackSection({
   );
 
   const [dragState, setDragState] = useState<PointerDragState | null>(null);
+  const dragStateRef = useRef<PointerDragState | null>(null);
+  const ghostRef = useRef<HTMLDivElement | null>(null);
   const dragPendingRef = useRef<{
     badgeId: string;
     label: string;
@@ -141,15 +143,29 @@ export function CanvasStackSection({
       .slice(0, 48);
   }, [categoryFilter, readmeConfig.badges, searchQuery]);
 
+  const latestStackRefs = useRef({
+    visibleCards,
+    onAddStackCard,
+    onMoveBadgeAcrossCards,
+  });
+  useEffect(() => {
+    latestStackRefs.current = {
+      visibleCards,
+      onAddStackCard,
+      onMoveBadgeAcrossCards,
+    };
+  });
+
   // Global pointer listeners for drag-and-drop
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
       const pending = dragPendingRef.current;
-      if (pending && !dragState) {
+      const currentDrag = dragStateRef.current;
+      if (pending && !currentDrag) {
         const dx = event.clientX - pending.startX;
         const dy = event.clientY - pending.startY;
-        if (Math.hypot(dx, dy) < 5) return;
-        setDragState({
+        if (Math.hypot(dx, dy) < 4) return;
+        const initial: PointerDragState = {
           badgeId: pending.badgeId,
           label: pending.label,
           src: pending.src,
@@ -159,97 +175,117 @@ export function CanvasStackSection({
           targetCardId: pending.fromCardId,
           targetBeforeBadgeId: undefined,
           overNewGroup: false,
-        });
+        };
+        dragStateRef.current = initial;
+        setDragState(initial);
         return;
       }
 
-      if (!dragState) return;
+      if (!currentDrag) return;
+      if (ghostRef.current) {
+        ghostRef.current.style.transform = `translate3d(${event.clientX + 12}px, ${event.clientY + 12}px, 0)`;
+      }
 
       const el = document.elementFromPoint(event.clientX, event.clientY);
       const newGroupEl = el?.closest<HTMLElement>("[data-new-group-drop]");
       if (newGroupEl) {
-        setDragState((prev) =>
-          prev
-            ? {
-                ...prev,
-                x: event.clientX,
-                y: event.clientY,
-                targetCardId: null,
-                targetBeforeBadgeId: undefined,
-                overNewGroup: true,
-              }
-            : null
-        );
-        return;
-      }
-
-      const badgeEl = el?.closest<HTMLElement>("[data-badge-drop]");
-      if (badgeEl) {
-        const cardId = badgeEl.dataset.cardId ?? null;
-        const badgeId = badgeEl.dataset.badgeId;
-        const rect = badgeEl.getBoundingClientRect();
-        const isAfter = event.clientX > rect.left + rect.width / 2;
-        const card = visibleCards.find((c) => c.id === cardId);
-        let beforeId = badgeId;
-        if (card && badgeId && isAfter) {
-          const idx = card.badgeIds.indexOf(badgeId);
-          beforeId =
-            idx >= 0 && idx + 1 < card.badgeIds.length
-              ? card.badgeIds[idx + 1]
-              : undefined;
+        if (
+          !currentDrag.overNewGroup ||
+          currentDrag.targetCardId !== null
+        ) {
+          const updated: PointerDragState = {
+            ...currentDrag,
+            targetCardId: null,
+            targetBeforeBadgeId: undefined,
+            overNewGroup: true,
+          };
+          dragStateRef.current = updated;
+          setDragState(updated);
         }
-        setDragState((prev) =>
-          prev
-            ? {
-                ...prev,
-                x: event.clientX,
-                y: event.clientY,
-                targetCardId: cardId,
-                targetBeforeBadgeId: beforeId,
-                overNewGroup: false,
-              }
-            : null
-        );
         return;
       }
 
       const groupEl = el?.closest<HTMLElement>("[data-group-drop]");
-      if (groupEl) {
-        setDragState((prev) =>
-          prev
-            ? {
-                ...prev,
-                x: event.clientX,
-                y: event.clientY,
-                targetCardId: groupEl.dataset.groupDrop ?? null,
-                targetBeforeBadgeId: undefined,
-                overNewGroup: false,
-              }
-            : null
-        );
-        return;
+      if (!groupEl) return;
+
+      const cardId = groupEl.dataset.groupDrop ?? null;
+      const card = latestStackRefs.current.visibleCards.find(
+        (c) => c.id === cardId
+      );
+      const badgeNodes = groupEl.querySelectorAll<HTMLElement>(
+        "[data-badge-drop='true']"
+      );
+
+      let beforeId: string | undefined;
+      if (badgeNodes.length > 0 && card) {
+        let bestNode: HTMLElement | null = null;
+        let bestDist = Infinity;
+        badgeNodes.forEach((node) => {
+          const rect = node.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const dist = Math.hypot(
+            event.clientX - cx,
+            (event.clientY - cy) * 1.5
+          );
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestNode = node;
+          }
+        });
+        if (bestNode) {
+          const chosen = bestNode as HTMLElement;
+          const badgeId = chosen.dataset.badgeId;
+          const rect = chosen.getBoundingClientRect();
+          const isAfter = event.clientX > rect.left + rect.width / 2;
+          beforeId = badgeId;
+          if (badgeId && isAfter) {
+            const idx = card.badgeIds.indexOf(badgeId);
+            beforeId =
+              idx >= 0 && idx + 1 < card.badgeIds.length
+                ? card.badgeIds[idx + 1]
+                : undefined;
+          }
+        }
       }
 
-      setDragState((prev) =>
-        prev ? { ...prev, x: event.clientX, y: event.clientY } : null
-      );
+      if (
+        currentDrag.targetCardId !== cardId ||
+        currentDrag.targetBeforeBadgeId !== beforeId ||
+        currentDrag.overNewGroup
+      ) {
+        const updated: PointerDragState = {
+          ...currentDrag,
+          targetCardId: cardId,
+          targetBeforeBadgeId: beforeId,
+          overNewGroup: false,
+        };
+        dragStateRef.current = updated;
+        setDragState(updated);
+      }
     };
 
     const handlePointerUp = () => {
       dragPendingRef.current = null;
-      if (!dragState) return;
-      if (dragState.overNewGroup) {
-        const newId = onAddStackCard("Tech stack");
-        onMoveBadgeAcrossCards(dragState.badgeId, dragState.fromCardId, newId);
-      } else if (dragState.targetCardId) {
-        onMoveBadgeAcrossCards(
-          dragState.badgeId,
-          dragState.fromCardId,
-          dragState.targetCardId,
-          dragState.targetBeforeBadgeId
+      const currentDrag = dragStateRef.current;
+      if (!currentDrag) return;
+      dragStateRef.current = null;
+      setDragState(null);
+      if (currentDrag.overNewGroup) {
+        const newId = latestStackRefs.current.onAddStackCard("Tech stack");
+        latestStackRefs.current.onMoveBadgeAcrossCards(
+          currentDrag.badgeId,
+          currentDrag.fromCardId,
+          newId
+        );
+      } else if (currentDrag.targetCardId) {
+        latestStackRefs.current.onMoveBadgeAcrossCards(
+          currentDrag.badgeId,
+          currentDrag.fromCardId,
+          currentDrag.targetCardId,
+          currentDrag.targetBeforeBadgeId
         );
       }
-      setDragState(null);
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -260,7 +296,7 @@ export function CanvasStackSection({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
-  }, [dragState, onAddStackCard, onMoveBadgeAcrossCards, visibleCards]);
+  }, []);
 
   const moveBadgeByKeyboard = (
     cardId: string,
@@ -451,6 +487,7 @@ export function CanvasStackSection({
                         ) {
                           return;
                         }
+                        e.preventDefault();
                         dragPendingRef.current = {
                           badgeId: badge.id,
                           label: badge.label,
@@ -750,11 +787,13 @@ export function CanvasStackSection({
       {/* Lifted floating ghost */}
       {dragState && (
         <div
+          ref={ghostRef}
           style={{
-            left: dragState.x + 12,
-            top: dragState.y + 12,
+            left: 0,
+            top: 0,
+            transform: `translate3d(${dragState.x + 12}px, ${dragState.y + 12}px, 0)`,
           }}
-          className="pointer-events-none fixed z-50 scale-105 opacity-95 shadow-[var(--shadow-float)]"
+          className="pointer-events-none fixed z-50 scale-105 opacity-95 shadow-[var(--shadow-float)] will-change-transform"
         >
           <img src={dragState.src} alt={dragState.label} className="h-7 w-auto" />
         </div>

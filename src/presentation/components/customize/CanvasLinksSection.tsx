@@ -56,6 +56,9 @@ export function CanvasLinksSection({
   );
 
   const [dragState, setDragState] = useState<LinkDragState | null>(null);
+  const dragStateRef = useRef<LinkDragState | null>(null);
+  const ghostRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const dragPendingRef = useRef<{
     linkId: string;
     label: string;
@@ -86,19 +89,25 @@ export function CanvasLinksSection({
     onShowUndoToast("Link removed");
   };
 
+  const latestCallbacksRef = useRef({ reorderEnabledLinks, enabledLinksLength: enabledLinks.length });
+  useEffect(() => {
+    latestCallbacksRef.current = { reorderEnabledLinks, enabledLinksLength: enabledLinks.length };
+  });
+
   useEffect(() => {
     const handlePointerMove = (event: PointerEvent) => {
       const pending = dragPendingRef.current;
-      if (pending && !dragState) {
+      const currentDrag = dragStateRef.current;
+      if (pending && !currentDrag) {
         if (
           Math.hypot(
             event.clientX - pending.startX,
             event.clientY - pending.startY
-          ) < 5
+          ) < 4
         ) {
           return;
         }
-        setDragState({
+        const initial: LinkDragState = {
           linkId: pending.linkId,
           label: pending.label,
           src: pending.src,
@@ -106,42 +115,64 @@ export function CanvasLinksSection({
           x: event.clientX,
           y: event.clientY,
           targetIndex: pending.fromIndex,
-        });
+        };
+        dragStateRef.current = initial;
+        setDragState(initial);
         return;
       }
 
-      if (!dragState) return;
-      const el = document.elementFromPoint(event.clientX, event.clientY);
-      const linkEl = el?.closest<HTMLElement>("[data-link-drop]");
-      if (linkEl && linkEl.dataset.linkIndex !== undefined) {
-        const idx = Number(linkEl.dataset.linkIndex);
-        const rect = linkEl.getBoundingClientRect();
-        const isAfter = event.clientX > rect.left + rect.width / 2;
-        const targetIndex = isAfter ? Math.min(enabledLinks.length - 1, idx) : idx;
-        setDragState((prev) =>
-          prev
-            ? {
-                ...prev,
-                x: event.clientX,
-                y: event.clientY,
-                targetIndex,
-              }
-            : null
-        );
-        return;
+      if (!currentDrag) return;
+      if (ghostRef.current) {
+        ghostRef.current.style.transform = `translate3d(${event.clientX + 12}px, ${event.clientY + 12}px, 0)`;
       }
-      setDragState((prev) =>
-        prev ? { ...prev, x: event.clientX, y: event.clientY } : null
+
+      const nodes = containerRef.current?.querySelectorAll<HTMLElement>("[data-link-drop='true']");
+      if (!nodes || nodes.length === 0) return;
+
+      let bestIdx = currentDrag.targetIndex;
+      let bestDist = Infinity;
+      let isAfter = false;
+
+      nodes.forEach((node) => {
+        const idx = Number(node.dataset.linkIndex);
+        if (Number.isNaN(idx)) return;
+        const rect = node.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dist = Math.hypot(event.clientX - cx, (event.clientY - cy) * 1.5);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = idx;
+          isAfter = event.clientX > cx;
+        }
+      });
+
+      const rawSlot = isAfter ? bestIdx + 1 : bestIdx;
+      const maxIdx = Math.max(0, latestCallbacksRef.current.enabledLinksLength - 1);
+      const nextTarget = Math.max(
+        0,
+        Math.min(maxIdx, rawSlot > currentDrag.fromIndex ? rawSlot - 1 : rawSlot)
       );
+
+      if (nextTarget !== currentDrag.targetIndex) {
+        const updated = { ...currentDrag, targetIndex: nextTarget };
+        dragStateRef.current = updated;
+        setDragState(updated);
+      }
     };
 
     const handlePointerUp = () => {
       dragPendingRef.current = null;
-      if (!dragState) return;
-      if (dragState.targetIndex !== dragState.fromIndex) {
-        reorderEnabledLinks(dragState.fromIndex, dragState.targetIndex);
-      }
+      const currentDrag = dragStateRef.current;
+      if (!currentDrag) return;
+      dragStateRef.current = null;
       setDragState(null);
+      if (currentDrag.targetIndex !== currentDrag.fromIndex) {
+        latestCallbacksRef.current.reorderEnabledLinks(
+          currentDrag.fromIndex,
+          currentDrag.targetIndex
+        );
+      }
     };
 
     window.addEventListener("pointermove", handlePointerMove);
@@ -152,12 +183,13 @@ export function CanvasLinksSection({
       window.removeEventListener("pointerup", handlePointerUp);
       window.removeEventListener("pointercancel", handlePointerUp);
     };
-  });
+  }, []);
 
   if (enabledLinks.length === 0) return null;
 
   return (
     <div
+      ref={containerRef}
       data-canvas-section="links"
       onClick={onSelectLinks}
       className={cn(
@@ -248,6 +280,7 @@ export function CanvasLinksSection({
                 ) {
                   return;
                 }
+                e.preventDefault();
                 dragPendingRef.current = {
                   linkId: link.id,
                   label: link.label,
@@ -421,11 +454,13 @@ export function CanvasLinksSection({
       {/* Floating ghost */}
       {dragState && (
         <div
+          ref={ghostRef}
           style={{
-            left: dragState.x + 12,
-            top: dragState.y + 12,
+            left: 0,
+            top: 0,
+            transform: `translate3d(${dragState.x + 12}px, ${dragState.y + 12}px, 0)`,
           }}
-          className="pointer-events-none fixed z-50 scale-105 opacity-95 shadow-[var(--shadow-float)]"
+          className="pointer-events-none fixed z-50 scale-105 opacity-95 shadow-[var(--shadow-float)] will-change-transform"
         >
           <img src={dragState.src} alt={dragState.label} className="h-7 w-auto" />
         </div>
