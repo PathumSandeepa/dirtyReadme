@@ -1,5 +1,5 @@
 :HL["/dynamic-readme-creature/_next/static/chunks/0z4b56trtag8k.css","style"]
-:HL["/dynamic-readme-creature/_next/static/chunks/0782oiua9mkt5.css","style"]
+:HL["/dynamic-readme-creature/_next/static/chunks/3bj1k9o3-1zt5.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"5udLbW7eTxKUGiGW0rJef","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"1wTXVr0g4nfrOBMcx4-lY","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
