@@ -529,6 +529,10 @@ export const LiveProfileCanvas = forwardRef<
   const [editorImageOpen, setEditorImageOpen] = useState(false);
   const [bubbleLinkMode, setBubbleLinkMode] = useState(false);
   const [bubbleLinkInput, setBubbleLinkInput] = useState("https://");
+  const [tableRowSize, setTableRowSize] = useState<
+    "compact" | "default" | "spacious" | "tall"
+  >("default");
+  const [tableBorderColor, setTableBorderColor] = useState("");
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webpBusy, setWebpBusy] = useState(false);
@@ -601,7 +605,7 @@ export const LiveProfileCanvas = forwardRef<
         types: ["heading", "paragraph"],
       }),
       TableKit.configure({
-        table: { resizable: false },
+        table: { resizable: true, cellMinWidth: 64 },
       }),
       TaskList,
       TaskItem.configure({
@@ -891,6 +895,8 @@ export const LiveProfileCanvas = forwardRef<
       blockquote: Boolean(editor?.isActive("blockquote")),
       codeBlock: Boolean(editor?.isActive("codeBlock")),
       inTable,
+      tableRowSize,
+      tableBorderColor,
       hasLink: Boolean(editor?.isActive("link")),
       currentLinkHref: String(editor?.getAttributes("link").href ?? ""),
     });
@@ -1132,22 +1138,47 @@ export const LiveProfileCanvas = forwardRef<
         addTableColumn: () => editor?.chain().focus().addColumnAfter().run(),
         deleteTableColumn: () => editor?.chain().focus().deleteColumn().run(),
         deleteTable: () => editor?.chain().focus().deleteTable().run(),
+        setTableColumnWidth: (width: number | null) =>
+          editor
+            ?.chain()
+            .focus()
+            .setCellAttribute("colwidth", width ? [width] : null)
+            .run(),
+        setTableRowSize,
+        setTableBorderColor,
       }),
     }),
     [editor, imageUrlMap, onAddStackCard, onEditorFocus, onSelectPart, onUpdateReadmeField]
   );
 
+  const tableRowPadding =
+    tableRowSize === "compact"
+      ? "4px"
+      : tableRowSize === "spacious"
+        ? "11px"
+        : tableRowSize === "tall"
+          ? "16px"
+          : "6px";
+
   const readmeBoxContent = (isModalFullscreen: boolean) => {
     const innerContent = (
       <div
         data-gh-theme={githubTheme}
+        style={
+          {
+            "--gh-table-cell-py": tableRowPadding,
+            ...(tableBorderColor
+              ? { "--gh-table-border": tableBorderColor }
+              : {}),
+          } as React.CSSProperties
+        }
         className={cn(
           "grid items-start",
           !isModalFullscreen && widthMode === "fit-pane"
             ? "w-full grid-cols-1"
             : showSidebar && !isModalFullscreen
               ? "w-[1200px] grid-cols-[296px_880px] gap-6"
-              : "w-[880px] grid-cols-1"
+              : "w-full max-w-[880px] grid-cols-1"
         )}
       >
         {/* Optional Read-only GitHub Sidebar */}
@@ -1239,13 +1270,13 @@ export const LiveProfileCanvas = forwardRef<
             </span>
           </div>
 
-          <div className="px-2.5 py-4">
+          <div className="px-1.5 py-3">
             <div
               className={cn(
                 "flex flex-col gap-5",
                 !isModalFullscreen && widthMode === "fit-pane"
                   ? "w-full"
-                  : "mx-auto w-[848px]"
+                  : "mx-auto w-full max-w-[848px]"
               )}
             >
               {/* 1. Header and About in-place TipTap surface */}

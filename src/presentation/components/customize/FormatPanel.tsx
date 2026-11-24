@@ -41,6 +41,8 @@ import {
 import { StudioButton } from "../../studio/ui/StudioButton";
 import { StudioField, StudioInput } from "../../studio/ui/StudioInput";
 
+export type TableRowSize = "compact" | "default" | "spacious" | "tall";
+
 export interface FormatPanelState {
   hasEditor: boolean;
   headingLabel: string;
@@ -59,6 +61,8 @@ export interface FormatPanelState {
   blockquote: boolean;
   codeBlock: boolean;
   inTable: boolean;
+  tableRowSize: TableRowSize;
+  tableBorderColor: string;
   hasLink: boolean;
   currentLinkHref: string;
 }
@@ -86,6 +90,9 @@ export interface FormatPanelActions {
   addTableColumn: () => void;
   deleteTableColumn: () => void;
   deleteTable: () => void;
+  setTableColumnWidth: (width: number | null) => void;
+  setTableRowSize: (size: TableRowSize) => void;
+  setTableBorderColor: (color: string) => void;
 }
 
 interface FormatPanelProps {
@@ -404,7 +411,7 @@ export function FormatPanel({ state, actions }: FormatPanelProps) {
 
         {/* Contextual Table Controls */}
         {state.inTable && (
-          <div className="flex flex-col gap-2 rounded-[12px] bg-[var(--tide-soft)] p-3">
+          <div className="flex flex-col gap-3 rounded-[12px] bg-[var(--tide-soft)] p-3.5">
             <span className="text-[12px] font-medium text-[var(--tide)]">
               Table actions
             </span>
@@ -440,6 +447,113 @@ export function FormatPanel({ state, actions }: FormatPanelProps) {
                 <span>Remove column</span>
               </StudioButton>
             </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-medium text-[var(--text)]">
+                Column width
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Auto", value: null },
+                  { label: "120px", value: 120 },
+                  { label: "180px", value: 180 },
+                  { label: "240px", value: 240 },
+                  { label: "320px", value: 320 },
+                ].map((opt) => (
+                  <button
+                    key={opt.label}
+                    type="button"
+                    onClick={() => actions.setTableColumnWidth(opt.value)}
+                    className="h-7 cursor-pointer rounded-[6px] bg-[var(--surface)] px-2.5 text-[12px] font-medium text-[var(--text)] transition-colors hover:bg-[var(--surface-3)]"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[11px] text-[var(--text-2)]">
+                Or drag any column border directly in the table.
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-medium text-[var(--text)]">
+                Row size
+              </span>
+              <div className="grid grid-cols-4 gap-1 rounded-[8px] bg-[var(--surface)] p-1">
+                {(
+                  [
+                    { id: "compact", label: "Compact" },
+                    { id: "default", label: "Default" },
+                    { id: "spacious", label: "Spacious" },
+                    { id: "tall", label: "Tall" },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => actions.setTableRowSize(opt.id)}
+                    className={`h-7 cursor-pointer rounded-[6px] text-[11px] font-medium transition-colors ${
+                      state.tableRowSize === opt.id
+                        ? "bg-[var(--surface-3)] text-[var(--text)]"
+                        : "text-[var(--text-2)] hover:text-[var(--text)]"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12px] font-medium text-[var(--text)]">
+                Border color
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  { label: "Default", value: "" },
+                  { label: "Teal", value: "#58D6B0" },
+                  { label: "Blue", value: "#58A6FF" },
+                  { label: "Amber", value: "#F28C4B" },
+                  { label: "Purple", value: "#A78BFA" },
+                  { label: "Red", value: "#F2605C" },
+                ].map((swatch) => {
+                  const selected = state.tableBorderColor === swatch.value;
+                  return (
+                    <button
+                      key={swatch.label}
+                      type="button"
+                      onClick={() => actions.setTableBorderColor(swatch.value)}
+                      className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[6px] px-2 text-[11px] font-medium transition-colors ${
+                        selected
+                          ? "bg-[var(--surface-3)] text-[var(--text)]"
+                          : "bg-[var(--surface)] text-[var(--text-2)] hover:bg-[var(--surface-2)]"
+                      }`}
+                    >
+                      {swatch.value && (
+                        <span
+                          className="size-2.5 rounded-full"
+                          style={{ backgroundColor: swatch.value }}
+                        />
+                      )}
+                      <span>{swatch.label}</span>
+                    </button>
+                  );
+                })}
+                <label className="inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[6px] bg-[var(--surface)] px-2 text-[11px] font-medium text-[var(--text-2)] hover:bg-[var(--surface-2)]">
+                  <input
+                    type="color"
+                    aria-label="Custom table border color"
+                    value={state.tableBorderColor || "#30363d"}
+                    onChange={(e) =>
+                      actions.setTableBorderColor(e.target.value)
+                    }
+                    className="size-4 cursor-pointer border-0 bg-transparent p-0"
+                  />
+                  <span>Custom</span>
+                </label>
+              </div>
+            </div>
+
             <StudioButton
               variant="ghost"
               size="sm"

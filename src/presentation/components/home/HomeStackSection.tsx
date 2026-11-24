@@ -16,7 +16,7 @@ import { useReducedMotion } from "./useReducedMotion";
 
 const STACK_FEATURES = [
   {
-    title: "More than 200 badges",
+    title: `${HOME_FACTS.techBadgeCount} built in badges`,
     description: `Search ${HOME_FACTS.techBadgeCount} built in badges across ${HOME_FACTS.techCategoryCount} categories or create your own custom shields.`,
   },
   {

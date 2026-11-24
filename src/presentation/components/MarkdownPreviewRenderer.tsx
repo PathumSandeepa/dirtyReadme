@@ -151,12 +151,18 @@ export function renderInlineMarkdown(
     } else if (/^<img/i.test(full)) {
       const safeSrc = resolvePreviewImageSrc(parseAttr(full, "src"), imageUrlMap);
       const alt = parseAttr(full, "alt");
+      const widthAttr = Number(parseAttr(full, "width"));
       if (safeSrc) {
         nodes.push(
           <img
             key={k}
             src={safeSrc}
             alt={alt}
+            style={
+              Number.isFinite(widthAttr) && widthAttr > 0
+                ? { width: `${widthAttr}px`, maxWidth: "100%" }
+                : undefined
+            }
             className="my-1 mr-1 inline-block align-middle"
           />
         );
@@ -241,7 +247,8 @@ export function AdvancedMarkdownPreview({
   isDark: boolean;
   imageUrlMap?: Record<string, string>;
 }) {
-  const lines = markdown.split(/\r?\n/);
+  const cleanedMarkdown = markdown.replace(/<!--[\s\S]*?-->/g, "");
+  const lines = cleanedMarkdown.split(/\r?\n/);
   const blocks: React.ReactNode[] = [];
   let key = 0;
 
@@ -392,15 +399,10 @@ export function AdvancedMarkdownPreview({
         innerLines.push(lines[j].trim());
         j++;
       }
-      const nonEmptyLines = innerLines.filter(Boolean);
+      const joinedHtml = innerLines.filter(Boolean).join(" ");
       blocks.push(
         <p key={key++} style={alignStyle}>
-          {nonEmptyLines.map((lineText, idx) => (
-            <React.Fragment key={idx}>
-              {idx > 0 && " "}
-              {renderInlineMarkdown(lineText, imageUrlMap)}
-            </React.Fragment>
-          ))}
+          {renderInlineMarkdown(joinedHtml, imageUrlMap)}
         </p>
       );
       i = j;

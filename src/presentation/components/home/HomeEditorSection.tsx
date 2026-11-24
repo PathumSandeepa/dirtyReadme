@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Blocks, FileText, Heading, Link2, Sparkles } from "lucide-react";
 import { cn } from "cn";
 import { Reveal } from "./Reveal";
+import { HOME_FACTS } from "./homeData";
 
 const EDITOR_BLOCKS = [
   {
@@ -25,7 +26,7 @@ const EDITOR_BLOCKS = [
   {
     id: "stack",
     title: "Tech stack",
-    body: "More than 200 badges in cards you can drag.",
+    body: `${HOME_FACTS.techBadgeCount} badges in cards you can drag.`,
     position: "top" as const,
     Icon: Blocks,
     xPercent: 50,

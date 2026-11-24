@@ -428,10 +428,25 @@
 
 .gh-markdown-body th,
 .gh-markdown-body td {
-  border: 1px solid var(--gh-border);
-  padding: 6px 13px;
+  border: 1px solid var(--gh-table-border, var(--gh-border));
+  padding: var(--gh-table-cell-py, 6px) 13px;
   vertical-align: top;
-  min-width: 96px;
+  min-width: 64px;
+  position: relative;
+}
+
+.gh-markdown-body .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--tide);
+  pointer-events: none;
+}
+
+.gh-markdown-body.resize-cursor {
+  cursor: col-resize;
 }
 
 .gh-markdown-body th {

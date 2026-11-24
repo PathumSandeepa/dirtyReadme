@@ -23,7 +23,11 @@ import { copyToClipboard } from "@/infrastructure/browser/downloadAdapter";
 import { StudioButton } from "../studio/ui/StudioButton";
 import { StudioBottomSheet } from "../studio/ui/StudioDialog";
 import { ImageStudioDialog } from "./ImageStudioDialog";
-import { FormatPanel, type FormatPanelState } from "./customize/FormatPanel";
+import {
+  FormatPanel,
+  type FormatPanelState,
+  type TableRowSize,
+} from "./customize/FormatPanel";
 import {
   getNextPartId,
   InspectorPanel,
@@ -67,6 +71,8 @@ const DEFAULT_FORMAT_STATE: FormatPanelState = {
   blockquote: false,
   codeBlock: false,
   inTable: false,
+  tableRowSize: "default",
+  tableBorderColor: "",
   hasLink: false,
   currentLinkHref: "",
 };
@@ -480,6 +486,12 @@ export function CustomizeWorkspace({
     deleteTableColumn: () =>
       canvasRef.current?.getFormatActions().deleteTableColumn(),
     deleteTable: () => canvasRef.current?.getFormatActions().deleteTable(),
+    setTableColumnWidth: (width: number | null) =>
+      canvasRef.current?.getFormatActions().setTableColumnWidth(width),
+    setTableRowSize: (size: TableRowSize) =>
+      canvasRef.current?.getFormatActions().setTableRowSize(size),
+    setTableBorderColor: (color: string) =>
+      canvasRef.current?.getFormatActions().setTableBorderColor(color),
   };
 
   const formatContent = (

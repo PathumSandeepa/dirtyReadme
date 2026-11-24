@@ -31,14 +31,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { StudioButton } from "../../studio/ui/StudioButton";
 import { DynamicValuesList } from "./DynamicValuesList";
 import { InsertPalette, type InsertBlockAction } from "./InsertPalette";
 import { CUSTOMIZE_PARTS, type CustomizePartId } from "./customizeTypes";
 
 const OPEN_SECTIONS_STORAGE_KEY = "dirtyreadme-left-sections-v1";
 
-type CollapsibleSectionId = "add" | "templates" | "dynamic";
+type CollapsibleSectionId = "add" | "dynamic";
 
 interface ReadmeMapSidebarProps {
   activePart: CustomizePartId;
@@ -141,7 +140,6 @@ export function LeftSidebarContent({
     Record<CollapsibleSectionId, boolean>
   >({
     add: true,
-    templates: false,
     dynamic: false,
   });
 
@@ -349,38 +347,20 @@ export function LeftSidebarContent({
         )}
       </div>
 
-      {/* 3. Templates (collapsible) */}
-      <div className="overflow-hidden rounded-[12px] bg-[var(--surface)]">
-        <button
-          type="button"
-          aria-expanded={openSections.templates}
-          onClick={() => toggleSection("templates")}
-          className="flex w-full cursor-pointer items-center justify-between bg-[var(--surface-2)] px-3.5 py-2.5 text-left text-[12px] font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-3)]"
-        >
+      {/* 3. Templates (direct button opening modal) */}
+      <button
+        type="button"
+        onClick={onOpenTemplates}
+        className="flex w-full cursor-pointer items-center justify-between rounded-[12px] bg-[var(--surface)] px-3.5 py-2.5 text-left text-[12px] font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-2)]"
+      >
+        <span className="flex items-center gap-2">
+          <LayoutTemplate className="size-4 text-[var(--text-2)]" />
           <span>Templates</span>
-          <ChevronDown
-            className={cn(
-              "size-4 text-[var(--text-2)] transition-transform duration-150",
-              openSections.templates && "rotate-180"
-            )}
-          />
-        </button>
-        {openSections.templates && (
-          <div className="p-3">
-            <StudioButton
-              variant="secondary"
-              size="sm"
-              className="w-full justify-start"
-              onClick={onOpenTemplates}
-            >
-              <LayoutTemplate />
-              <span>
-                Browse templates ({PROFILE_EDITOR_TEMPLATES.length})
-              </span>
-            </StudioButton>
-          </div>
-        )}
-      </div>
+        </span>
+        <span className="rounded-[6px] bg-[var(--surface-2)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-2)]">
+          {PROFILE_EDITOR_TEMPLATES.length}
+        </span>
+      </button>
 
       {/* 4. Dynamic values (collapsible) */}
       <div className="overflow-hidden rounded-[12px] bg-[var(--surface)]">
@@ -423,7 +403,9 @@ export function ReadmeMapSidebar({
         aria-label="Parts and blocks"
         className={cn(
           "studio-no-scrollbar hidden h-full shrink-0 flex-col gap-2.5 overflow-y-auto transition-[width] duration-150 min-[1280px]:flex",
-          collapsed ? "w-[56px]" : "w-[324px] min-[1440px]:w-[348px]"
+          collapsed
+            ? "w-[56px]"
+            : "w-[330px] min-[1536px]:w-[390px] min-[1760px]:w-[440px]"
         )}
       >
         <div className="flex items-center justify-between gap-2 px-1">
