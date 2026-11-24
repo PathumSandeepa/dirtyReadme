@@ -1387,8 +1387,95 @@ export const LiveProfileCanvas = forwardRef<
                       options={BUBBLE_MENU_OPTIONS}
                       appendTo={getBubbleMenuContainer}
                       updateDelay={100}
+                      shouldShow={({ editor: ed }) => {
+                        if (ed.state.selection.empty) return false;
+                        if (ed.isActive("image")) {
+                          return String(
+                            ed.getAttributes("image").src ?? ""
+                          ).includes("komarev.com/ghpvc");
+                        }
+                        return true;
+                      }}
                       className="z-50 flex flex-wrap items-center gap-0.5 rounded-[10px] bg-[var(--surface)] p-1 text-[var(--text)] shadow-[var(--shadow-float)]"
                     >
+                      {editor.isActive("image") &&
+                      String(editor.getAttributes("image").src ?? "").includes(
+                        "komarev.com/ghpvc"
+                      ) ? (
+                        <div className="flex items-center gap-1.5 px-1.5 py-0.5">
+                          <span className="text-[11px] font-medium text-[var(--text-2)]">
+                            Color
+                          </span>
+                          {[
+                            "58D6B0",
+                            "3B82F6",
+                            "F28C4B",
+                            "A78BFA",
+                            "EF4444",
+                            "18181B",
+                          ].map((hex) => {
+                            const currentSrc = String(
+                              editor.getAttributes("image").src ?? ""
+                            );
+                            const active = currentSrc
+                              .toUpperCase()
+                              .includes(`color=${hex}`);
+                            return (
+                              <button
+                                key={hex}
+                                type="button"
+                                aria-label={`Set visitor counter color #${hex}`}
+                                onClick={() => {
+                                  const nextSrc = currentSrc.includes("color=")
+                                    ? currentSrc.replace(
+                                        /color=[0-9a-fA-F]+/i,
+                                        `color=${hex}`
+                                      )
+                                    : `${currentSrc}&color=${hex}`;
+                                  editor
+                                    .chain()
+                                    .focus()
+                                    .updateAttributes("image", { src: nextSrc })
+                                    .run();
+                                }}
+                                style={{ backgroundColor: `#${hex}` }}
+                                className={cn(
+                                  "size-5 cursor-pointer rounded-full transition-transform hover:scale-110",
+                                  active && "ring-2 ring-[var(--text)] ring-offset-1 ring-offset-[var(--surface)]"
+                                )}
+                              />
+                            );
+                          })}
+                          <label className="inline-flex h-6 cursor-pointer items-center gap-1 rounded-[6px] bg-[var(--surface-2)] px-1.5 text-[11px] text-[var(--text)]">
+                            <input
+                              type="color"
+                              aria-label="Custom visitor counter color"
+                              defaultValue="#58D6B0"
+                              onChange={(e) => {
+                                const hex = e.target.value
+                                  .replace("#", "")
+                                  .toUpperCase();
+                                const currentSrc = String(
+                                  editor.getAttributes("image").src ?? ""
+                                );
+                                const nextSrc = currentSrc.includes("color=")
+                                  ? currentSrc.replace(
+                                      /color=[0-9a-fA-F]+/i,
+                                      `color=${hex}`
+                                    )
+                                  : `${currentSrc}&color=${hex}`;
+                                editor
+                                  .chain()
+                                  .focus()
+                                  .updateAttributes("image", { src: nextSrc })
+                                  .run();
+                              }}
+                              className="size-4 cursor-pointer border-0 bg-transparent p-0"
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <>
                       <button
                         type="button"
                         onClick={() => editor.chain().focus().setParagraph().run()}
@@ -1543,6 +1630,8 @@ export const LiveProfileCanvas = forwardRef<
                             Set
                           </StudioButton>
                         </form>
+                      )}
+                        </>
                       )}
                     </BubbleMenu>
                   )}
