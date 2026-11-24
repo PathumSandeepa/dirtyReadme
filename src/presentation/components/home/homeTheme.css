@@ -1,4 +1,4 @@
-/* Scoped dark editorial styles for the ReadmeForge landing page.
+/* Scoped dark editorial styles for the DirtyReadme landing page.
    Every token and visual rule is scoped strictly inside .home-root so nothing leaks into the studio. */
 
 .home-root {
@@ -31,32 +31,26 @@
   color: #ffffff;
 }
 
-.home-root
-  :is(
-    a,
-    button,
-    input,
-    [tabindex],
-    [role="switch"],
-    [role="slider"],
-    [role="tab"],
-    [role="radio"]
-  ):focus:not(:focus-visible) {
+.home-root :is(a,
+  button,
+  input,
+  [tabindex],
+  [role="switch"],
+  [role="slider"],
+  [role="tab"],
+  [role="radio"]):focus:not(:focus-visible) {
   outline: none;
   box-shadow: none;
 }
 
-.home-root
-  :is(
-    a,
-    button,
-    input,
-    [tabindex],
-    [role="switch"],
-    [role="slider"],
-    [role="tab"],
-    [role="radio"]
-  ):focus-visible {
+.home-root :is(a,
+  button,
+  input,
+  [tabindex],
+  [role="switch"],
+  [role="slider"],
+  [role="tab"],
+  [role="radio"]):focus-visible {
   outline: 2px solid #ffffff;
   outline-offset: 3px;
   box-shadow: none;
@@ -70,26 +64,25 @@
   font-family: var(--home-font-display);
   font-weight: 800;
   font-size: clamp(56px, 9vw, 128px);
-  line-height: 0.95;
-  letter-spacing: -0.055em;
-  word-spacing: -0.08em;
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+  word-spacing: 0.04em;
 }
 
 .home-root .home-h2 {
   font-family: var(--home-font-display);
   font-weight: 800;
   font-size: clamp(44px, 6.4vw, 88px);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-  word-spacing: -0.08em;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  word-spacing: 0.04em;
+  padding-bottom: 0.08em;
 }
 
 .home-root .home-gradient-text {
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    rgba(255, 255, 255, 0.42) 100%
-  );
+  background: linear-gradient(180deg,
+      #ffffff 0%,
+      rgba(255, 255, 255, 0.42) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -203,9 +196,9 @@
   z-index: 0;
 }
 
-.home-root .wall-ocean > *,
-.home-root .wall-sunset > *,
-.home-root .wall-lagoon > * {
+.home-root .wall-ocean>*,
+.home-root .wall-sunset>*,
+.home-root .wall-lagoon>* {
   position: relative;
   z-index: 1;
 }
@@ -214,6 +207,7 @@
 .home-root .home-section-below {
   content-visibility: auto;
   contain-intrinsic-size: auto 820px;
+  scroll-margin-top: 76px;
 }
 
 /* Scroll reveal (opacity and 16px rise, 500ms ease-out) */
@@ -236,10 +230,12 @@
     opacity: 0;
     transform: translate3d(0, 8px, 0) scale(0.8);
   }
+
   70% {
     opacity: 1;
     transform: translate3d(0, -2px, 0) scale(1.06);
   }
+
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
@@ -258,6 +254,7 @@
     filter: blur(10px);
     transform: translate3d(0, 14px, 0);
   }
+
   100% {
     opacity: 1;
     filter: blur(0);
@@ -272,60 +269,53 @@
   will-change: transform, opacity;
 }
 
-/* Inline hero pill swimming whale (6 second loop) */
-@keyframes home-whale-swim {
-  0% {
-    transform: translate3d(-14px, 1px, 0);
-  }
-  50% {
-    transform: translate3d(14px, -2px, 0);
-  }
-  100% {
-    transform: translate3d(-14px, 1px, 0);
-  }
-}
+/* Dock icon two-hop bounce and badge pop */
+@keyframes home-dock-bounce {
 
-.home-root .home-pill-whale {
-  animation: home-whale-swim 6s ease-in-out infinite;
-  will-change: transform;
-}
-
-/* Hero Tulkun gentle 3s 6px bob and hover wiggle */
-@keyframes home-tulkun-bob {
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
-  50% {
-    transform: translate3d(0, -6px, 0);
-  }
-}
 
-@keyframes home-tulkun-wiggle {
-  0% {
-    transform: translate3d(0, -2px, 0) rotate(0deg) scale(1.04);
-  }
   25% {
-    transform: translate3d(0, -4px, 0) rotate(-4deg) scale(1.06);
+    transform: translate3d(0, -14px, 0);
   }
-  55% {
-    transform: translate3d(0, -3px, 0) rotate(4deg) scale(1.06);
+
+  50% {
+    transform: translate3d(0, 0, 0);
   }
-  80% {
-    transform: translate3d(0, -2px, 0) rotate(-2deg) scale(1.04);
+
+  72% {
+    transform: translate3d(0, -7px, 0);
   }
+}
+
+.home-root .home-dock-bounce {
+  animation: home-dock-bounce 560ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+}
+
+@keyframes home-crop-settle {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12px, 0) scale(1.04);
+    box-shadow: 0 0 0 2px #ffa033;
+  }
+
+  65% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow: 0 0 0 2px #ffa033;
+  }
+
   100% {
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
-.home-root .home-tulkun-bob {
-  animation: home-tulkun-bob 3s ease-in-out infinite;
-  will-change: transform;
-}
-
-.home-root .home-tulkun-bob:hover {
-  animation: home-tulkun-wiggle 480ms ease-in-out 1;
+.home-root .home-crop-settle {
+  animation: home-crop-settle 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* Dual opposite-direction 60s marquee rows */
@@ -333,6 +323,7 @@
   0% {
     transform: translate3d(0, 0, 0);
   }
+
   100% {
     transform: translate3d(-50%, 0, 0);
   }
@@ -342,6 +333,7 @@
   0% {
     transform: translate3d(-50%, 0, 0);
   }
+
   100% {
     transform: translate3d(0, 0, 0);
   }
@@ -379,49 +371,18 @@
   stroke-dashoffset: 0;
 }
 
-/* Creature stage cross-fade pop */
-@keyframes home-stage-pop {
-  0% {
-    opacity: 0;
-    transform: scale(0.96) translate3d(0, 6px, 0);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-}
-
-.home-root .home-stage-pop {
-  animation: home-stage-pop 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* Settings creature CSS swimming loop controlled via --swim-duration */
-@keyframes home-creature-swim-demo {
-  0%,
-  100% {
-    transform: translate3d(-8px, 0, 0);
-  }
-  50% {
-    transform: translate3d(8px, -4px, 0);
-  }
-}
-
-.home-root .home-creature-swim-demo {
-  animation: home-creature-swim-demo var(--swim-duration, 3.6s) ease-in-out
-    infinite;
-  will-change: transform;
-}
-
 /* Privacy packet motion */
 @keyframes home-packet-travel {
   0% {
     opacity: 0;
     transform: translate3d(-24px, 0, 0);
   }
+
   20%,
   80% {
     opacity: 1;
   }
+
   100% {
     opacity: 0;
     transform: translate3d(24px, 0, 0);
@@ -445,31 +406,42 @@
   inset: 0;
   pointer-events: none;
   opacity: var(--spot-opacity, 0);
-  background: radial-gradient(
-    280px circle at var(--spot-x, 50%) var(--spot-y, 50%),
-    rgba(255, 255, 255, 0.08),
-    transparent 70%
-  );
+  background: radial-gradient(280px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+      rgba(255, 255, 255, 0.08),
+      transparent 70%);
   transition: opacity 200ms ease-out;
 }
 
 /* Giant faded footer wordmark */
 .home-root .home-footer-wordmark {
+  font-size: 16vw;
+  line-height: 0.82;
+  user-select: none;
+  pointer-events: none;
+}
+
+.home-root .home-footer-wordmark-dirty {
   font-family: var(--home-font-display);
   font-weight: 800;
-  font-size: 18vw;
-  line-height: 0.82;
-  letter-spacing: -0.055em;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0) 92%
-  );
+  letter-spacing: -0.04em;
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0) 92%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  user-select: none;
-  pointer-events: none;
+}
+
+.home-root .home-footer-wordmark-readme {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  background: linear-gradient(180deg,
+      rgba(255, 160, 51, 0.14) 0%,
+      rgba(255, 160, 51, 0) 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Strict reduced motion support across every animation and interactive loop */
@@ -482,11 +454,8 @@
 
   .home-root .home-dock-tile-pop,
   .home-root .home-word-reveal,
-  .home-root .home-pill-whale,
-  .home-root .home-tulkun-bob,
-  .home-root .home-tulkun-bob:hover,
-  .home-root .home-stage-pop,
-  .home-root .home-creature-swim-demo,
+  .home-root .home-dock-bounce,
+  .home-root .home-crop-settle,
   .home-root .home-packet-travel {
     opacity: 1 !important;
     filter: none !important;

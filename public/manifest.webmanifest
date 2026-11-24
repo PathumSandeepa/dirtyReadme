@@ -1,7 +1,7 @@
 {
-  "name": "ReadmeForge",
-  "short_name": "ReadmeForge",
-  "description": "Build, edit and publish a GitHub profile README in your browser with live preview, starter templates, animated pixel creatures and custom images.",
+  "name": "DirtyReadme",
+  "short_name": "DirtyReadme",
+  "description": "DirtyReadme is a free, open source GitHub README builder. Edit with a live preview, start from templates, add badges and links, and publish to your profile in one push.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0C0E0F",

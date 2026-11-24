@@ -2,17 +2,16 @@
 
 import { FolderGit2 } from "lucide-react";
 import { BRAND } from "@/config/brand";
+import { BrandLockup } from "../ui/BrandLockup";
 
 /** Single-row open-source footer shared across Studio pages. */
 export function StudioFooter() {
   return (
     <footer className="bg-[var(--surface)]">
-      <div className="mx-auto flex max-w-[1120px] flex-wrap items-center justify-between gap-3 px-4 py-4 text-[13px] text-[var(--text-2)] sm:px-6">
-        <span>
-          <strong className="font-medium text-[var(--text)]">
-            {BRAND.name}
-          </strong>
-          . Open source by {BRAND.authorName}.
+      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-4 text-[13px] text-[var(--text-2)] sm:px-6">
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <BrandLockup size="sm" variant="studio" />
+          <span>Open source by {BRAND.authorName}.</span>
         </span>
 
         <div className="flex items-center gap-4">

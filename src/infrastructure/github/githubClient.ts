@@ -415,9 +415,10 @@ export async function publishFilesToProfileRepo(params: {
   repo: string;
   branch: string;
   files: PublishFileInput[];
+  commitMessage?: string;
   onStep?: (step: PublishProgressStep) => void;
 }): Promise<{ updatedPaths: string[]; repoUrl: string }> {
-  const { token, owner, repo, branch, files, onStep } = params;
+  const { token, owner, repo, branch, files, commitMessage, onStep } = params;
   const cleanToken = token.trim();
   if (!cleanToken) {
     throw new Error("A Personal Access Token is required before pushing.");
@@ -585,7 +586,7 @@ export async function publishFilesToProfileRepo(params: {
         method: "POST",
         headers,
         body: JSON.stringify({
-          message: "feat: update animated pixel creature and profile README",
+          message: commitMessage?.trim() || "Update README with DirtyReadme",
           tree: treeJson.sha,
           parents: [headCommitSha],
         }),

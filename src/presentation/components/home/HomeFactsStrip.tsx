@@ -7,10 +7,10 @@ import { usePointerSpotlight } from "./usePointerSpotlight";
 import { useReducedMotion } from "./useReducedMotion";
 
 const FACT_ITEMS = [
-  { target: HOME_FACTS.templateCount, unit: "templates" },
-  { target: HOME_FACTS.creatureCount, unit: "creatures" },
-  { target: HOME_FACTS.stageCount, unit: "stages" },
-  { target: HOME_FACTS.serverCount, unit: "servers" },
+  { target: HOME_FACTS.templateCount, unit: "Templates" },
+  { target: HOME_FACTS.techBadgeCount, unit: "Badges" },
+  { target: HOME_FACTS.studioStepCount, unit: "Steps to publish" },
+  { target: HOME_FACTS.serverCount, unit: "Servers" },
 ] as const;
 
 function FactCell({

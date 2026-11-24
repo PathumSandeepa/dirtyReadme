@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Blocks, FileText, Fish, Heading, Link2 } from "lucide-react";
+import { Blocks, FileText, Heading, Link2, Sparkles } from "lucide-react";
 import { cn } from "cn";
-import { homeAsset } from "./homeData";
 import { Reveal } from "./Reveal";
 
 const EDITOR_BLOCKS = [
@@ -41,10 +40,10 @@ const EDITOR_BLOCKS = [
   },
   {
     id: "creature",
-    title: "Creature",
-    body: "Always at the bottom of the README.",
+    title: "Optional creature",
+    body: "An optional animated banner at the bottom.",
     position: "top" as const,
-    Icon: Fish,
+    Icon: Sparkles,
     xPercent: 90,
   },
 ] as const;
@@ -53,7 +52,6 @@ export function HomeEditorSection() {
   const diagramRef = useRef<HTMLDivElement | null>(null);
   const [drawn, setDrawn] = useState(false);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-  const [imgFailed, setImgFailed] = useState(false);
 
   useEffect(() => {
     const node = diagramRef.current;
@@ -297,25 +295,84 @@ export function HomeEditorSection() {
           })}
         </div>
 
-        {/* Real studio screenshot framed on .wall-lagoon */}
+        {/* Three-zone CSS wireframe framed on .wall-lagoon */}
         <Reveal stagger={100} className="mt-14">
           <div className="wall-lagoon p-3 shadow-[0_28px_80px_rgba(0,0,0,0.65)] sm:p-5 md:p-7">
-            <div className="home-glass overflow-hidden rounded-[16px] p-1.5 shadow-2xl">
-              {!imgFailed ? (
-                <img
-                  src={homeAsset("editor-map-dark.png")}
-                  width={1440}
-                  height={960}
-                  loading="lazy"
-                  onError={() => setImgFailed(true)}
-                  alt="ReadmeForge live editor workspace with README map, inline canvas and right inspector"
-                  className="block h-auto w-full rounded-[12px]"
-                />
-              ) : (
-                <div className="flex aspect-[3/2] items-center justify-center rounded-[12px] bg-[#0B0B0C] p-8 text-[14px] text-[var(--home-text-2)]">
-                  Live README editor preview
+            <div className="home-glass overflow-hidden rounded-[16px] p-3 sm:p-4">
+              <div className="grid gap-3 md:grid-cols-[200px_minmax(0,1fr)_220px]">
+                {/* Left zone: parts and blocks */}
+                <div className="rounded-[12px] border border-white/10 bg-[#0B0B0C] p-3.5">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--home-text-3)]">
+                    Parts and blocks
+                  </div>
+                  <div className="mt-3 space-y-1.5 text-[13px]">
+                    {EDITOR_BLOCKS.map((block) => (
+                      <div
+                        key={block.id}
+                        className={cn(
+                          "rounded-[8px] px-2.5 py-1.5 transition-colors",
+                          highlightedId === block.id ||
+                            (highlightedId === null && block.id === "header")
+                            ? "bg-white/12 font-semibold text-white"
+                            : "text-[var(--home-text-2)]"
+                        )}
+                      >
+                        {block.title}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
+
+                {/* Center zone: README canvas */}
+                <div className="rounded-[12px] border border-white/10 bg-[#FAF8F4] p-5 text-[#171717]">
+                  <div className="flex items-center justify-between border-b border-black/8 pb-2.5 font-mono text-[11px] text-black/55">
+                    <span>README.md</span>
+                    <span>848px canvas</span>
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    <div className="home-display text-[20px] font-extrabold tracking-[-0.03em] text-[#111111]">
+                      Hi, I am The Octocat
+                    </div>
+                    <p className="text-[13px] leading-relaxed text-black/65">
+                      Building fast developer tools and open source libraries.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <span className="rounded-[5px] bg-[#3178C6] px-2.5 py-1 font-mono text-[11px] font-semibold text-white">
+                        TypeScript
+                      </span>
+                      <span className="rounded-[5px] bg-[#181717] px-2.5 py-1 font-mono text-[11px] font-semibold text-white">
+                        Next.js
+                      </span>
+                      <span className="rounded-[5px] bg-[#06B6D4] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#111111]">
+                        Tailwind
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right zone: settings */}
+                <div className="rounded-[12px] border border-white/10 bg-[#0B0B0C] p-3.5">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--home-text-3)]">
+                    Settings
+                  </div>
+                  <div className="mt-3 space-y-2.5 text-[12px]">
+                    <div className="flex items-center justify-between rounded-[8px] bg-white/[0.04] px-2.5 py-2 text-white/85">
+                      <span>Alignment</span>
+                      <span className="font-mono text-[var(--amber-label)]">
+                        Center
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-[8px] bg-white/[0.04] px-2.5 py-2 text-white/85">
+                      <span>Surface</span>
+                      <span className="font-mono text-white/65">Light</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-[8px] bg-white/[0.04] px-2.5 py-2 text-white/85">
+                      <span>Links row</span>
+                      <span className="font-mono text-[var(--live)]">On</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </Reveal>

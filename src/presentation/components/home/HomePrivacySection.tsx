@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { KeyRound, Lock, Monitor, Server } from "lucide-react";
+import { BRAND } from "@/config/brand";
 import { Reveal } from "./Reveal";
 import { homeAsset } from "./homeData";
 
@@ -31,7 +32,7 @@ const PRIVACY_CARDS = [
     number: "02",
     title: "Token stays in memory",
     description:
-      "When you publish, your personal access token stays in browser memory and clears when you close the tab.",
+      "When you publish, your personal access token stays in browser memory and clears right after pushing.",
   },
   {
     number: "03",
@@ -201,7 +202,7 @@ export function HomePrivacySection() {
                 {!imageError ? (
                   <img
                     src={homeAsset("publish-dark.png")}
-                    alt="ReadmeForge publish screen committing directly to GitHub"
+                    alt={`${BRAND.name} publish screen committing directly to GitHub`}
                     width={1440}
                     height={960}
                     loading="lazy"
@@ -215,7 +216,7 @@ export function HomePrivacySection() {
                     </p>
                     <p className="text-[12px] text-[var(--home-text-2)]">
                       Paste a fine-grained token to commit README.md and your
-                      creature directly.
+                      assets directly.
                     </p>
                     <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-[11px] text-[var(--home-text-3)]">
                       github_pat_memory_only

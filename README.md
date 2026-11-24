@@ -1,132 +1,111 @@
-# ReadmeForge
+![DirtyReadme landing hero](docs/screenshots/landing-hero.png)
 
-Build a GitHub profile README that moves.
+# DirtyReadme
 
-Build, edit and publish a GitHub profile README in your browser with live preview, starter templates, animated pixel creatures and custom images.
-
-![ReadmeForge hero showcase](./docs/screenshots/home-dark.png)
+Build your GitHub README fast and push it in one click.
 
 > This is an open source project. Issues, ideas and pull requests are welcome.
 
-## Links
+- [Live site](https://pathumsandeepa.github.io/DirtyReadme/)
+- [GitHub repository](https://github.com/PathumSandeepa/DirtyReadme)
 
-- Live site: [pathumsandeepa.github.io/dynamic-readme-creature](https://pathumsandeepa.github.io/dynamic-readme-creature/)
-- Repository: [github.com/PathumSandeepa/dynamic-readme-creature](https://github.com/PathumSandeepa/dynamic-readme-creature)
-- Issues: [github.com/PathumSandeepa/dynamic-readme-creature/issues](https://github.com/PathumSandeepa/dynamic-readme-creature/issues)
+## Why DirtyReadme
+
+Most developers want a clean, informative GitHub profile README without spending an evening fighting raw HTML tables, broken badge URLs or local build tools. DirtyReadme lets anyone open a browser, inspect their public profile, customize a README in a live visual editor and push it directly to GitHub in one commit. Everything runs in the browser with nothing to install.
 
 ## Screenshots
 
-### Home page in dark and light themes
+### Landing page
 
-![ReadmeForge home page dark theme](./docs/screenshots/home-dark.png)
+![DirtyReadme landing page](docs/screenshots/landing-hero.png)
 
-![ReadmeForge home page light theme](./docs/screenshots/home-light.png)
+### Live editor
 
-### Customize workspace with README map
+![DirtyReadme live editor](docs/screenshots/editor.png)
 
-![Customize workspace with README map dark theme](./docs/screenshots/editor-map-dark.png)
+### Template gallery
 
-![Customize workspace with README map light theme](./docs/screenshots/editor-map-light.png)
+![DirtyReadme template gallery](docs/screenshots/template-gallery.png)
 
-### Creature inspector
+### Publish flow
 
-![Creature inspector controls and live preview](./docs/screenshots/creature-inspector-dark.png)
-
-### Custom image crop studio
-
-![Custom image crop and aspect ratio dialog](./docs/screenshots/custom-image-crop-dark.png)
-
-### Publish workflow in dark and light themes
-
-![Publish screen dark theme](./docs/screenshots/publish-dark.png)
-
-![Publish screen light theme](./docs/screenshots/publish-light.png)
+![DirtyReadme publish page](docs/screenshots/publish.png)
 
 ## Features
 
-- **README map and inline editing**: Navigate sections from the outline (`Header`, `About`, `Tech stack`, `Links`, `Creature`) and edit directly at the real `848px` GitHub README width with TipTap, slash commands, dynamic value tokens and a raw Markdown view.
-- **30 starter templates**: Search by keyword or filter by category, preview at GitHub width, and confirm whether to replace your intro or insert below.
-- **202 plus tech badges**: Browse `202` built in badges across `11` categories or add custom badges, organize them into reorderable stack groups and manage visibility on the canvas.
-- **Link buttons**: Add profile action buttons for websites, social links and developer profiles with automatic platform icon matching.
-- **Animated pixel creatures with five growth stages**: Customize `Pixel Tulkun` and `Pixel Jellyfish`, pick side or top views, map language colors onto creature regions and scale through `5` stages from your commit count.
-- **Custom images with crop and WebP conversion**: Crop, zoom, rotate in 90 degree steps and flip images in your browser with `react-easy-crop`, encode WebP locally and save assets under `readme-assets`.
-- **WebP and GIF export**: Export `creature.webp`, `creature.gif`, Markdown files or a complete bundle zip directly in your browser.
-- **Share card**: Preview and include a `1280` by `640` `share-card.png` summary graphic.
-- **Midnight auto evolve GitHub Action**: Generate `.github/workflows/evolve-creature.yml`, `scripts/evolve-creature.mjs` and `creature-config.json` to keep `creature.webp` and `README.md` up to date daily.
-- **Dark and light themes**: Switch seamlessly between `Abyss` dark and `Paper` light studio themes while independently previewing GitHub Light or GitHub Dark README surfaces.
+- **Live visual editor**: Write and format headings, lists, links, code blocks and tables directly at GitHub width with TipTap 3.
+- **README parts map**: Jump between header, about, tech stack, links, custom images and optional sections from the left sidebar.
+- **40 starter templates**: Filter by category, search by keyword, preview full layouts and either replace your draft or insert below.
+- **200 plus tech badges with drag and drop**: Search curated stack badges, drag them between groups, add custom badges and reorder sections.
+- **Link buttons**: Add portfolio, blog, social and contact links with platform icons and labels.
+- **Custom images**: Upload images, crop them in the browser and convert them to lightweight WebP files committed under `readme-assets`.
+- **Undo, redo and clear all**: Step backward and forward across editor, form and inspector changes, or reset safely with confirmation.
+- **Light and dark preview**: Switch between GitHub light and dark surfaces while editing.
+- **Publish with one push**: Commit your README, assets and optional workflow files to your profile repository straight from the browser.
+- **Optional daily auto update**: Pick a time of day and time zone to refresh dynamic stats and creature telemetry on a GitHub Actions schedule.
+- **Optional animated pixel creature**: Turn on a pixel creature banner that evolves with your commit count if you want a playful extra on your profile.
 
 ## How it works
 
-1. **Connect**: Enter a GitHub username or profile URL for a live read only preview of public language weights, commit counts and any saved setup in your profile repository.
-2. **Repository**: Follow the three step guide to confirm or create your public username profile repository on GitHub.
-3. **Customize**: Edit every section in place with the README map, rich text tools, templates, tech stack cards, link buttons and animated creature or custom WebP studio.
-4. **Publish**: Paste a temporary Classic or Fine grained Personal Access Token to push your files in one atomic commit, or download every asset manually.
+1. **Connect**: Enter your GitHub username or profile URL to load your public languages, commit counts and any existing README setup.
+2. **Repository**: Check that your public `username/username` profile repository exists, or follow the guided steps to create it on GitHub.
+3. **Customize**: Pick a starter template or edit every part of your README in the live visual editor.
+4. **Publish**: Review your files, paste a temporary GitHub Personal Access Token and push everything in one atomic commit.
 
 ## Privacy and security
 
-- **Browser only**: All rendering, image cropping, WebP encoding, GIF encoding and GitHub requests run directly inside your browser tab.
-- **Token in memory only**: Personal Access Tokens stay strictly in React component state for the active tab, never touch cookies or web storage and are cleared immediately after pushing.
-- **No server**: The app is exported statically (`output: "export"`) with zero backend databases, proxies or analytics trackers.
+DirtyReadme runs completely in your browser with no backend server. Your GitHub Personal Access Token is kept only in React component state in memory for the current tab, is never written to cookies or `localStorage`, and is cleared from memory as soon as a push succeeds. You can also download a zip archive of your generated files and commit them manually instead of pasting a token.
 
 ## Tech stack
 
-- Next.js `16.4.6` (App Router with static export)
-- React `19.3.0` and TypeScript `5`
-- Tailwind CSS `4.3.3`, shadcn with `@base-ui/react` and `lucide-react`
-- TipTap `3.35.0` (`@tiptap/react`, starter kit, table, task list, image and align extensions)
-- `react-easy-crop`, `react-color-palette`, `gifenc`, `simple-icons`, `sharp` and `playwright`
+- **Framework**: Next.js 16 and React 19
+- **Styling**: Tailwind CSS 4 and Base UI
+- **Editor**: TipTap 3
+- **Icons**: Lucide React
+- **Image tools**: `react-easy-crop`, `react-color-palette` and `gifenc`
+- **Package manager**: `pnpm` and TypeScript
 
 ## Getting started
 
-Install Node.js `22` or newer and `pnpm` (`12.21.0`).
-
 ```bash
-git clone https://github.com/PathumSandeepa/dynamic-readme-creature.git
-cd dynamic-readme-creature
+git clone https://github.com/PathumSandeepa/DirtyReadme.git
+cd DirtyReadme
 pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:3000` in your browser.
+Available scripts:
 
-Useful scripts:
-
-```bash
-pnpm dev
-pnpm build
-pnpm lint
-pnpm exec tsc --noEmit
-```
+- `pnpm dev`: Start the local development server.
+- `pnpm build`: Build the production static bundle.
+- `pnpm lint`: Run ESLint across the codebase.
 
 ## Project structure
 
 ```text
 src/
-  app/            Next.js App Router entry, fonts and global CSS
-  application/    Studio state controller hook
-  components/ui/  Shared base UI primitives
-  config/         Brand metadata and site URLs
-  domain/         Creature animation, evolution, profiles, templates and workflow generation
-  infrastructure/ Browser encoders, downloads, crop engine, zip builder and GitHub client
-  presentation/   Studio layout, design tokens, home page and four step screens
-docs/
-  screenshots/    Curated dark and light PNG screenshots
-public/
-  showcase/       Static creature artwork and hero preview assets
+  app/             Next.js App Router pages, layout and global styles
+  components/ui/   Shared Base UI and Tailwind primitives
+  config/          Brand metadata and repository URLs
+  domain/          Profile, creature and workflow domain logic
+  infrastructure/  Browser storage, image encoding, zip builder and GitHub API client
+  presentation/    Studio screens, live editor, inspectors and landing sections
+public/            Static icons, sprites and landing assets
+docs/              Documentation and screenshots
 ```
 
 ## Contributing
 
-Contributions, bug fixes and template ideas are welcome.
+Contributions are welcome.
 
-1. Open an issue at [github.com/PathumSandeepa/dynamic-readme-creature/issues](https://github.com/PathumSandeepa/dynamic-readme-creature/issues) to discuss bugs or feature ideas.
-2. Fork the repository, create a branch and make focused changes without breaking existing flows.
-3. Follow the project notes in `AGENTS.md`: check Next.js `16` framework guides under `node_modules/next/dist/docs` when changing framework integrations, keep copy free of em dashes, semicolons and emoji and avoid workspace workarounds.
+1. Open an issue in [GitHub Issues](https://github.com/PathumSandeepa/DirtyReadme/issues) to describe a bug or propose an improvement.
+2. Fork the repository and create a short feature branch.
+3. Follow the Next.js 16 notes in [AGENTS.md](AGENTS.md) and check `node_modules/next/dist/docs/` before changing Next.js APIs.
 4. Run `pnpm exec tsc --noEmit`, `pnpm lint` and `pnpm build` before opening a pull request.
 
 ## License
 
-Released under the MIT License. Copyright (c) 2026 PathumSandeepa. See [LICENSE](./LICENSE).
+This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 ## Credits
 

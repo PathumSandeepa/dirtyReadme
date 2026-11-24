@@ -283,7 +283,7 @@ async function writeStaticShareCardPng(name, config) {
       <rect width="1280" height="640" fill="#0B0F17" />
       <rect x="20" y="20" width="1240" height="600" rx="14" fill="none" stroke="${config.colors.accent}" stroke-opacity="0.6" stroke-width="2" />
       <rect x="28" y="28" width="1224" height="48" rx="8" fill="#111622" />
-      <text x="56" y="57" fill="#E6EDF3" font-family="monospace" font-size="16" font-weight="700">READMEFORGE  @${config.username}</text>
+      <text x="56" y="57" fill="#E6EDF3" font-family="monospace" font-size="16" font-weight="700">DIRTYREADME  @${config.username}</text>
       <text x="1224" y="57" fill="${config.colors.accent}" font-family="monospace" font-size="16" font-weight="700" text-anchor="end">STAGE 4: MATURE TULKUN</text>
       <rect x="28" y="520" width="1224" height="92" rx="8" fill="#111622" />
       <text x="52" y="560" fill="#E6EDF3" font-family="monospace" font-size="16" font-weight="700">CONTRIBUTIONS (THIS YEAR): ${config.commits.toLocaleString("en-US")}</text>

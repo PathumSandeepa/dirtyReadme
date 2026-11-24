@@ -85,10 +85,10 @@ export function HeaderInspector({
         <div className="flex items-center justify-between gap-2">
           <div className="flex flex-col">
             <span className="text-[13px] font-medium text-[var(--text)]">
-              GitHub profile details
+              Sync from GitHub profile
             </span>
             <span className="text-[12px] text-[var(--text-2)]">
-              Reset intro from your fetched GitHub profile data.
+              Replaces your title and bio with your fetched GitHub profile details.
             </span>
           </div>
           <StudioButton variant="secondary" size="sm" onClick={onSyncFromForm}>

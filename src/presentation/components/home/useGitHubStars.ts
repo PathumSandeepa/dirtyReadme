@@ -39,7 +39,7 @@ export function useGitHubStars(): number | null {
     }
 
     fetch(
-      "https://api.github.com/repos/PathumSandeepa/dynamic-readme-creature",
+      "https://api.github.com/repos/PathumSandeepa/DirtyReadme",
       { headers: { Accept: "application/vnd.github+json" } }
     )
       .then((res) => (res.ok ? res.json() : null))

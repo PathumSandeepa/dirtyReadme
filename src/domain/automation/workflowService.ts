@@ -20,6 +20,157 @@ export function getMidnightCronForTimezone(offsetMinutesEast: number): string {
   return `${minute} ${hour} * * *`;
 }
 
+const FALLBACK_TIME_ZONES = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Asia/Dubai",
+  "Asia/Colombo",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+];
+
+/** Returns all IANA time zones supported by the browser, with a short built-in fallback. */
+export function getSupportedTimeZones(): string[] {
+  try {
+    const intlWithValues = Intl as typeof Intl & {
+      supportedValuesOf?: (key: string) => string[];
+    };
+    const values = intlWithValues.supportedValuesOf?.("timeZone");
+    if (values && values.length > 0) {
+      return values;
+    }
+  } catch {
+    // Fall back to the built-in list when supportedValuesOf is unavailable.
+  }
+  return FALLBACK_TIME_ZONES;
+}
+
+/** Resolves the UTC offset in minutes (east positive) for a given IANA time zone and instant. */
+export function getTimeZoneOffsetMinutes(
+  timeZone: string,
+  date: Date = new Date()
+): number {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    });
+    const parts = formatter.formatToParts(date);
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(parts.find((part) => part.type === type)?.value ?? 0);
+    const zonedAsUtc = Date.UTC(
+      get("year"),
+      get("month") - 1,
+      get("day"),
+      get("hour") % 24,
+      get("minute"),
+      get("second")
+    );
+    const utcAligned = Math.floor(date.getTime() / 1000) * 1000;
+    return Math.round((zonedAsUtc - utcAligned) / 60000);
+  } catch {
+    return -date.getTimezoneOffset();
+  }
+}
+
+/**
+ * Converts a local hour and minute in an IANA time zone into a UTC cron expression.
+ * Uses the zone's UTC offset on the reference date, subtracting east-positive offset
+ * minutes from local minutes and wrapping modulo 1440 into the 24-hour UTC clock.
+ */
+export function getDailyCronForTimeZone(
+  hour: number,
+  minute: number,
+  timeZone: string,
+  referenceDate: Date = new Date()
+): {
+  utcHour: number;
+  utcMinute: number;
+  utcTimeLabel: string;
+  cron: string;
+  offsetMinutes: number;
+} {
+  const offsetMinutes = getTimeZoneOffsetMinutes(timeZone, referenceDate);
+  const localMinutes = hour * 60 + minute;
+  const utcTotalMinutes = (((localMinutes - offsetMinutes) % 1440) + 1440) % 1440;
+  const utcHour = Math.floor(utcTotalMinutes / 60);
+  const utcMinute = utcTotalMinutes % 60;
+  const utcTimeLabel = `${String(utcHour).padStart(2, "0")}:${String(utcMinute).padStart(2, "0")}`;
+  return {
+    utcHour,
+    utcMinute,
+    utcTimeLabel,
+    cron: `${utcMinute} ${utcHour} * * *`,
+    offsetMinutes,
+  };
+}
+
+/** Detects whether an IANA time zone observes daylight saving by comparing January and July offsets. */
+export function hasDaylightSavingTime(
+  timeZone: string,
+  year: number = new Date().getUTCFullYear()
+): boolean {
+  const janOffset = getTimeZoneOffsetMinutes(
+    timeZone,
+    new Date(Date.UTC(year, 0, 1, 12, 0))
+  );
+  const julOffset = getTimeZoneOffsetMinutes(
+    timeZone,
+    new Date(Date.UTC(year, 6, 1, 12, 0))
+  );
+  return janOffset !== julOffset;
+}
+
+/** Formats the next scheduled run (e.g. "Tuesday 06:00") in the chosen time zone. */
+export function formatNextRunLocal(
+  hour: number,
+  minute: number,
+  timeZone: string,
+  now: Date = new Date()
+): string {
+  const hhmm = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  try {
+    const timeParts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(now);
+    const nowHour = Number(
+      timeParts.find((part) => part.type === "hour")?.value ?? 0
+    ) % 24;
+    const nowMinute = Number(
+      timeParts.find((part) => part.type === "minute")?.value ?? 0
+    );
+    const isTomorrow =
+      nowHour > hour || (nowHour === hour && nowMinute >= minute);
+    const targetDate = new Date(
+      now.getTime() + (isTomorrow ? 24 * 60 * 60 * 1000 : 0)
+    );
+    const weekday = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      weekday: "long",
+    }).format(targetDate);
+    return `${weekday} ${hhmm}`;
+  } catch {
+    return hhmm;
+  }
+}
+
 export function generateCreatureConfigJson(
   creatureConfig: CreatureConfig,
   readmeConfig: ReadmeConfig
@@ -114,7 +265,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add creature.webp README.md creature-config.json 2>/dev/null || true
           if ! git diff --cached --quiet; then
-            git commit -m "chore: 12AM daily profile & creature telemetry update"
+            git commit -m "chore: daily profile and creature telemetry update"
             git pull --rebase origin "\${{ github.ref_name }}"
             git push
           else
@@ -941,7 +1092,7 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
           headers: {
             Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
             "Content-Type": "application/json",
-            "User-Agent": "dynamic-readme-creature",
+            "User-Agent": "DirtyReadme",
           },
           body: JSON.stringify({ query: yearsQuery, variables: { login: username } }),
         });
@@ -959,7 +1110,7 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
                 headers: {
                   Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
                   "Content-Type": "application/json",
-                  "User-Agent": "dynamic-readme-creature",
+                  "User-Agent": "DirtyReadme",
                 },
                 body: JSON.stringify({ query: q, variables: { login: username, from, to } }),
               });
@@ -981,7 +1132,7 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
           headers: {
             Authorization: \`Bearer \${process.env.PROFILE_PAT}\`,
             "Content-Type": "application/json",
-            "User-Agent": "dynamic-readme-creature",
+            "User-Agent": "DirtyReadme",
           },
           body: JSON.stringify({ query, variables: { login: username, from: fromDate, to: now.toISOString() } }),
         });
@@ -998,7 +1149,7 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
     try {
       const currentYear = String(new Date().getUTCFullYear());
       const res = await fetch(\`https://github-contributions-api.jogruber.de/v4/\${encodeURIComponent(username)}\`, {
-        headers: { "User-Agent": "dynamic-readme-creature" },
+        headers: { "User-Agent": "DirtyReadme" },
       });
       if (res.ok) {
         const data = await res.json();
@@ -1020,7 +1171,7 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
   if (commits === null && windowMode === "annual") {
     try {
       const res = await fetch(\`https://github.com/users/\${encodeURIComponent(username)}/contributions\`, {
-        headers: { "User-Agent": "dynamic-readme-creature" },
+        headers: { "User-Agent": "DirtyReadme" },
       });
       if (res.ok) {
         const html = await res.text();
@@ -1037,7 +1188,7 @@ async function fetchLiveTelemetry(username, windowMode, fallbackCommits, fallbac
   let topLanguages = fallbackLangs || [];
 
   try {
-    const headers = { Accept: "application/vnd.github+json", "User-Agent": "dynamic-readme-creature" };
+    const headers = { Accept: "application/vnd.github+json", "User-Agent": "DirtyReadme" };
     if (token) headers.Authorization = \`Bearer \${token}\`;
     const reposRes = await fetch(
       \`https://api.github.com/users/\${encodeURIComponent(username)}/repos?per_page=100&sort=updated\`,
@@ -1174,7 +1325,7 @@ async function main() {
     spriteBuffer = fs.readFileSync(localSpritePath);
   } else {
     const spriteRes = await fetch(
-      \`https://pathumsandeepa.github.io/dynamic-readme-creature/sprites/\${DEFAULT_SPRITE_KEY}.png\`
+      \`https://pathumsandeepa.github.io/DirtyReadme/sprites/\${DEFAULT_SPRITE_KEY}.png\`
     );
     if (!spriteRes.ok) throw new Error("Missing assets/creature-sprite.png and unable to download fallback sprite.");
     spriteBuffer = Buffer.from(await spriteRes.arrayBuffer());

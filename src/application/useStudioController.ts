@@ -52,6 +52,7 @@ import {
   getLanguageColor,
   parseGitHubUsername,
 } from "@/infrastructure/github/githubClient";
+import { useDraftHistory, type DraftSnapshot } from "./useDraftHistory";
 
 const STUDIO_STORAGE_KEY = "dynamic-creature-studio-v1";
 
@@ -79,6 +80,66 @@ export function useStudioController() {
   const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
   const storageReadyRef = useRef(false);
   const customImagesRef = useRef(customImages);
+  const history = useDraftHistory();
+
+  function getCurrentDraftSnapshot(): DraftSnapshot {
+    return { creatureConfig, readmeConfig, customBgHex };
+  }
+
+  function applyDraftSnapshot(next: DraftSnapshot) {
+    setCreatureConfig(next.creatureConfig);
+    setReadmeConfig(next.readmeConfig);
+    setCustomBgHex(next.customBgHex);
+  }
+
+  function undoDraft() {
+    const restored = history.undo(getCurrentDraftSnapshot());
+    if (restored) {
+      applyDraftSnapshot(restored);
+    }
+  }
+
+  function redoDraft() {
+    const restored = history.redo(getCurrentDraftSnapshot());
+    if (restored) {
+      applyDraftSnapshot(restored);
+    }
+  }
+
+  function clearAllContent() {
+    history.recordBefore(getCurrentDraftSnapshot());
+    setReadmeConfig((prev) => ({
+      ...prev,
+      advancedProfileMarkdown: "",
+      headline: "",
+      bio: "",
+      ctaLine: "",
+      subtitleTags: [],
+      stackCards: [],
+      actionLinks: [],
+      customBannerImagePath: null,
+      showCreatureBanner: false,
+      includeStatsTable: false,
+      rawOverride: null,
+    }));
+    setCustomImages((prev) => {
+      Object.values(prev).forEach((asset) => {
+        URL.revokeObjectURL(asset.previewUrl);
+      });
+      return {};
+    });
+    history.showUndoToast("Cleared all content");
+  }
+
+  function setCreatureConfigWithHistory(
+    updater: (prev: CreatureConfig) => CreatureConfig
+  ) {
+    history.recordBefore(getCurrentDraftSnapshot(), {
+      coalesceKey: "inspector:creature",
+      coalesceMs: 800,
+    });
+    setCreatureConfig(updater);
+  }
 
   useEffect(() => {
     customImagesRef.current = customImages;
@@ -209,6 +270,7 @@ export function useStudioController() {
   }
 
   function selectView(view: CameraView) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => {
       if (prev.creature === "jellyfish") {
         return { ...prev, view: "side" };
@@ -218,6 +280,7 @@ export function useStudioController() {
   }
 
   function selectWindow(windowMode: ContributionWindow) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => ({
       ...prev,
       windowMode,
@@ -230,6 +293,7 @@ export function useStudioController() {
   }
 
   function applyOriginalColors() {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => restoreOriginalCreatureColors(prev));
   }
 
@@ -257,6 +321,7 @@ export function useStudioController() {
   }
 
   function applyAutoLanguageColors() {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => {
       if (!snapshot) {
         const stackLangs = deriveStackLanguages();
@@ -272,6 +337,7 @@ export function useStudioController() {
   }
 
   function setLanguageCount(count: LanguageCount) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => {
       const nextLangs = ensureLanguageSlots(prev.languages, count);
       const updated: CreatureConfig = {
@@ -286,6 +352,10 @@ export function useStudioController() {
   }
 
   function updateLanguageColor(index: number, hex: string) {
+    history.recordBefore(getCurrentDraftSnapshot(), {
+      coalesceKey: `inspector:langColor:${index}`,
+      coalesceMs: 800,
+    });
     setCreatureConfig((prev) => {
       const padded = ensureLanguageSlots(prev.languages, prev.languageCount);
       if (index < 0 || index >= padded.length) return prev;
@@ -297,6 +367,10 @@ export function useStudioController() {
   }
 
   function updateLanguageName(index: number, name: string) {
+    history.recordBefore(getCurrentDraftSnapshot(), {
+      coalesceKey: `inspector:langName:${index}`,
+      coalesceMs: 800,
+    });
     setCreatureConfig((prev) => {
       const padded = ensureLanguageSlots(prev.languages, prev.languageCount);
       if (index < 0 || index >= padded.length) return prev;
@@ -308,6 +382,7 @@ export function useStudioController() {
   }
 
   function resetLanguageColors() {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => {
       const base = ensureLanguageSlots(prev.languages, prev.languageCount);
       const reset = base.map((lang, idx) => {
@@ -329,10 +404,12 @@ export function useStudioController() {
   }
 
   function setWaterMode(waterMode: WaterMode) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => ({ ...prev, waterMode }));
   }
 
   function setBackgroundMode(mode: BackgroundMode) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setCreatureConfig((prev) => ({
       ...prev,
       backgroundMode: mode,
@@ -344,6 +421,10 @@ export function useStudioController() {
   }
 
   function updateCustomBackground(hex: string) {
+    history.recordBefore(getCurrentDraftSnapshot(), {
+      coalesceKey: "inspector:customBg",
+      coalesceMs: 800,
+    });
     const normalized = hex.toUpperCase();
     setCustomBgHex(normalized);
     setCreatureConfig((prev) => ({
@@ -360,6 +441,27 @@ export function useStudioController() {
     key: K,
     value: ReadmeConfig[K]
   ) {
+    if (key === "advancedProfileMarkdown") {
+      history.recordBefore(getCurrentDraftSnapshot(), {
+        coalesceKey: "typing",
+        coalesceMs: 800,
+      });
+    } else if (
+      key === "imageWidth" ||
+      key === "customBannerWidth" ||
+      key === "statsTableTitle" ||
+      key === "customBannerAlt"
+    ) {
+      history.recordBefore(getCurrentDraftSnapshot(), {
+        coalesceKey: `inspector:${String(key)}`,
+        coalesceMs: 800,
+      });
+    } else {
+      history.recordBefore(getCurrentDraftSnapshot());
+    }
+    if (key === "showCreatureBanner" && value === false) {
+      history.showUndoToast("Creature hidden");
+    }
     setReadmeConfig((prev) => ({
       ...prev,
       [key]: value,
@@ -368,12 +470,13 @@ export function useStudioController() {
   }
 
   function selectReadmeTemplate(templateId: ReadmeTemplateId) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       templateId,
       rawOverride: null,
       includeStatsTable: templateId === "telemetry-stats",
-      includeShareCard: templateId === "telemetry-stats",
+      includeShareCard: false,
     }));
   }
 
@@ -382,6 +485,7 @@ export function useStudioController() {
     badgeId: string,
     beforeBadgeId?: string
   ) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -395,11 +499,13 @@ export function useStudioController() {
   }
 
   function removeBadgeFromCard(cardId: string, badgeId: string) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
       stackCards: removeBadgeFromStackCard(prev.stackCards, cardId, badgeId),
     }));
+    history.showUndoToast("Badge removed");
   }
 
   function moveBadgeAcrossCards(
@@ -408,6 +514,7 @@ export function useStudioController() {
     toCardId: string,
     targetBadgeId?: string
   ) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -422,6 +529,7 @@ export function useStudioController() {
   }
 
   function addStackCard(title = "New Skill Group") {
+    history.recordBefore(getCurrentDraftSnapshot());
     const newId = `card-${Date.now()}`;
     setReadmeConfig((prev) => ({
       ...prev,
@@ -435,6 +543,7 @@ export function useStudioController() {
   }
 
   function toggleStackCardVisibility(cardId: string, visible: boolean) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -445,6 +554,10 @@ export function useStudioController() {
   }
 
   function renameStackCard(cardId: string, title: string) {
+    history.recordBefore(getCurrentDraftSnapshot(), {
+      coalesceKey: `inspector:renameCard:${cardId}`,
+      coalesceMs: 800,
+    });
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -455,17 +568,17 @@ export function useStudioController() {
   }
 
   function deleteStackCard(cardId: string) {
-    setReadmeConfig((prev) => {
-      if (prev.stackCards.length <= 1) return prev;
-      return {
-        ...prev,
-        rawOverride: null,
-        stackCards: prev.stackCards.filter((c) => c.id !== cardId),
-      };
-    });
+    history.recordBefore(getCurrentDraftSnapshot());
+    setReadmeConfig((prev) => ({
+      ...prev,
+      rawOverride: null,
+      stackCards: prev.stackCards.filter((c) => c.id !== cardId),
+    }));
+    history.showUndoToast("Group deleted");
   }
 
   function reorderCards(fromIdx: number, toIdx: number) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -474,6 +587,7 @@ export function useStudioController() {
   }
 
   function combineStackCards() {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => {
       if (prev.stackCards.length <= 1) return prev;
       const { cards, snapshot: saved } = combineAllStackCards(prev.stackCards);
@@ -487,6 +601,7 @@ export function useStudioController() {
   }
 
   function undoCombineStackCards() {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => {
       if (!prev.savedOrganizedCards) return prev;
       return {
@@ -505,6 +620,7 @@ export function useStudioController() {
     cardId: string,
     badge: Omit<ReadmeBadge, "enabled">
   ) {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -527,6 +643,7 @@ export function useStudioController() {
   }
 
   function setCustomBannerImage(asset: CustomImageMemoryAsset) {
+    history.recordBefore(getCurrentDraftSnapshot());
     registerCustomImage(asset);
     setReadmeConfig((prev) => ({
       ...prev,
@@ -539,6 +656,7 @@ export function useStudioController() {
   }
 
   function clearCustomBannerImage() {
+    history.recordBefore(getCurrentDraftSnapshot());
     setReadmeConfig((prev) => ({
       ...prev,
       rawOverride: null,
@@ -639,7 +757,7 @@ export function useStudioController() {
         });
         setCustomBgHex(hydrated.customBgHex);
         setRestoredNotice(
-          `Restored your saved creature and README customizations from ${snap.username}/${snap.username}.`
+          `Restored your saved README from ${snap.username}/${snap.username}.`
         );
         return snap;
       }
@@ -844,7 +962,7 @@ export function useStudioController() {
 
   return {
     creatureConfig,
-    setCreatureConfig,
+    setCreatureConfig: setCreatureConfigWithHistory,
     readmeConfig,
     setReadmeConfig,
     customBgHex,
@@ -857,6 +975,14 @@ export function useStudioController() {
     clearSyncError: () => setSyncError(null),
     restoredNotice,
     dismissRestoredNotice: () => setRestoredNotice(null),
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
+    undoToast: history.undoToast,
+    undoDraft,
+    redoDraft,
+    clearAllContent,
+    showUndoToast: history.showUndoToast,
+    dismissUndoToast: history.dismissUndoToast,
     markerBlock,
     fullReadmeMarkdown,
     selectCreature,

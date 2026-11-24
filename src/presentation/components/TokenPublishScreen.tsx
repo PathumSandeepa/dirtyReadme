@@ -8,6 +8,8 @@ import {
   BookOpen,
   Check,
   CheckCircle2,
+  ChevronDown,
+  Copy,
   Download,
   ExternalLink,
   Eye,
@@ -25,10 +27,13 @@ import {
 import { cn } from "cn";
 import { BRAND } from "@/config/brand";
 import {
+  formatNextRunLocal,
   generateCreatureConfigJson,
   generateEvolveScriptMjs,
   generateEvolveWorkflowYaml,
-  getMidnightCronForTimezone,
+  getDailyCronForTimeZone,
+  getSupportedTimeZones,
+  hasDaylightSavingTime,
 } from "@/domain/automation/workflowService";
 import type { CreatureConfig } from "@/domain/creature/entities";
 import { getSpriteKey } from "@/domain/creature/services";
@@ -38,6 +43,7 @@ import type {
 } from "@/domain/profile/entities";
 import {
   blobToBase64,
+  copyToClipboard,
   downloadBlobFile,
   downloadTextFile,
 } from "@/infrastructure/browser/downloadAdapter";
@@ -68,10 +74,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StudioButton } from "../studio/ui/StudioButton";
+import { StudioDialog } from "../studio/ui/StudioDialog";
 import { StudioField, StudioInput } from "../studio/ui/StudioInput";
-import { StudioSectionCard } from "../studio/ui/StudioSectionCard";
 import { StudioSegmentedControl } from "../studio/ui/StudioSegmentedControl";
 import { StudioSwitchRow } from "../studio/ui/StudioSwitchRow";
+import { AdvancedMarkdownPreview } from "./MarkdownPreviewRenderer";
 import { TokenGuideDialog } from "./TokenGuideDialog";
 
 interface TokenPublishScreenProps {
@@ -86,6 +93,16 @@ interface TokenPublishScreenProps {
   onBack: () => void;
 }
 
+const DEFAULT_COMMIT_MESSAGE = "Update README with DirtyReadme";
+const MINUTE_OPTIONS = [0, 15, 30, 45];
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, index) => index);
+const TIME_PRESETS = [
+  { label: "Midnight", hour: 0, minute: 0 },
+  { label: "6 AM", hour: 6, minute: 0 },
+  { label: "Noon", hour: 12, minute: 0 },
+  { label: "6 PM", hour: 18, minute: 0 },
+] as const;
+
 function formatByteSize(text: string): string {
   const bytes = new TextEncoder().encode(text).length;
   if (bytes < 1024) return `${bytes} B`;
@@ -98,8 +115,49 @@ function isValidTokenFormat(raw: string): boolean {
   return /^(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})$/.test(trimmed);
 }
 
+function formatHourMinute(hour: number, minute: number): string {
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+interface NumberedPublishCardProps {
+  number: number;
+  title: string;
+  help: string;
+  headerAction?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function NumberedPublishCard({
+  number,
+  title,
+  help,
+  headerAction,
+  children,
+}: NumberedPublishCardProps) {
+  return (
+    <section className="flex flex-col gap-5 rounded-[12px] bg-[var(--surface)] p-6 sm:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-[var(--surface-2)] text-[18px] font-semibold text-[var(--text)] tabular-nums">
+            {number}
+          </span>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-[var(--text)]">
+              {title}
+            </h2>
+            <p className="text-[13px] leading-5 text-[var(--text-2)]">{help}</p>
+          </div>
+        </div>
+        {headerAction}
+      </div>
+
+      <div className="flex flex-col gap-5">{children}</div>
+    </section>
+  );
+}
+
 /**
- * Step 4 Publish screen with atomic GitHub commit flow, sticky help rail, and local bundle downloads.
+ * Step 4 Publish screen with 4 numbered sections, sticky summary column, daily schedule, and local downloads.
  */
 export function TokenPublishScreen({
   creatureConfig,
@@ -121,8 +179,28 @@ export function TokenPublishScreen({
   const [tokenTab, setTokenTab] = useState<"classic" | "fine-grained">(
     "classic"
   );
+  const [commitMessage, setCommitMessage] = useState(DEFAULT_COMMIT_MESSAGE);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"visual" | "markdown">(
+    "visual"
+  );
+
   const [includeWorkflowFiles, setIncludeWorkflowFiles] = useState(false);
-  const [timezoneMode, setTimezoneMode] = useState<"local" | "utc">("local");
+  const [scheduleHour, setScheduleHour] = useState(0);
+  const [scheduleMinute, setScheduleMinute] = useState(0);
+  const [selectedTimeZone, setSelectedTimeZone] = useState(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    } catch {
+      return "UTC";
+    }
+  });
+  const [timeZoneFilter, setTimeZoneFilter] = useState("");
+  const [workflowPreviewOpen, setWorkflowPreviewOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<"cron" | "yaml" | "readme" | null>(
+    null
+  );
+
   const [pushLoading, setPushLoading] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<PublishProgressStep[]>(
     []
@@ -182,12 +260,48 @@ export function TokenPublishScreen({
     }
   };
 
-  const localCron = useMemo(() => {
-    const offsetMinutesEast = -new Date().getTimezoneOffset();
-    return getMidnightCronForTimezone(offsetMinutesEast);
-  }, []);
+  const includesCreatureBinary =
+    (readmeConfig.showCreatureBanner !== false &&
+      readmeConfig.bannerSource !== "custom-image") ||
+    readmeMarkdown.includes("creature.webp");
 
-  const cronExpression = timezoneMode === "local" ? localCron : "0 0 * * *";
+  const effectiveDailyUpdate = includesCreatureBinary && includeWorkflowFiles;
+
+  const allTimeZones = useMemo(() => {
+    const supported = getSupportedTimeZones();
+    if (!supported.includes(selectedTimeZone)) {
+      return [selectedTimeZone, ...supported];
+    }
+    return supported;
+  }, [selectedTimeZone]);
+
+  const filteredTimeZones = useMemo(() => {
+    const query = timeZoneFilter.trim().toLowerCase();
+    if (!query) return allTimeZones;
+    const matches = allTimeZones.filter((tz) =>
+      tz.toLowerCase().includes(query)
+    );
+    if (matches.length > 0 && !matches.includes(selectedTimeZone)) {
+      return [selectedTimeZone, ...matches];
+    }
+    return matches;
+  }, [allTimeZones, timeZoneFilter, selectedTimeZone]);
+
+  const cronInfo = useMemo(
+    () =>
+      getDailyCronForTimeZone(scheduleHour, scheduleMinute, selectedTimeZone),
+    [scheduleHour, scheduleMinute, selectedTimeZone]
+  );
+
+  const nextRunLabel = useMemo(
+    () => formatNextRunLocal(scheduleHour, scheduleMinute, selectedTimeZone),
+    [scheduleHour, scheduleMinute, selectedTimeZone]
+  );
+
+  const usesDst = useMemo(
+    () => hasDaylightSavingTime(selectedTimeZone),
+    [selectedTimeZone]
+  );
 
   const configJson = useMemo(
     () => generateCreatureConfigJson(creatureConfig, readmeConfig),
@@ -196,18 +310,18 @@ export function TokenPublishScreen({
 
   const workflowYaml = useMemo(
     () =>
-      includeWorkflowFiles
-        ? generateEvolveWorkflowYaml(creatureConfig, cronExpression)
+      effectiveDailyUpdate
+        ? generateEvolveWorkflowYaml(creatureConfig, cronInfo.cron)
         : "",
-    [includeWorkflowFiles, creatureConfig, cronExpression]
+    [effectiveDailyUpdate, creatureConfig, cronInfo.cron]
   );
 
   const evolveScript = useMemo(
     () =>
-      includeWorkflowFiles
+      effectiveDailyUpdate
         ? generateEvolveScriptMjs(creatureConfig, readmeConfig)
         : "",
-    [includeWorkflowFiles, creatureConfig, readmeConfig]
+    [effectiveDailyUpdate, creatureConfig, readmeConfig]
   );
 
   const trimmedToken = tokenInput.trim();
@@ -216,10 +330,6 @@ export function TokenPublishScreen({
     trimmedToken.length > 0 && !tokenValid
       ? "Enter a valid GitHub token starting with github_pat_ or ghp_."
       : null;
-
-  const includesCreatureBinary =
-    readmeConfig.bannerSource !== "custom-image" ||
-    readmeMarkdown.includes("creature.webp");
 
   const commitFiles = useMemo(() => {
     const items: {
@@ -254,10 +364,14 @@ export function TokenPublishScreen({
     ];
 
     if (includeShareCard && readmeConfig.bannerSource !== "custom-image") {
-      items.push({ path: "share-card.png", size: "1280 by 640 PNG", kind: "image" });
+      items.push({
+        path: "share-card.png",
+        size: "1280 by 640 PNG",
+        kind: "image",
+      });
     }
 
-    if (includeWorkflowFiles) {
+    if (effectiveDailyUpdate) {
       items.push(
         {
           path: ".github/workflows/evolve-creature.yml",
@@ -285,10 +399,21 @@ export function TokenPublishScreen({
     configJson,
     includeShareCard,
     readmeConfig.bannerSource,
-    includeWorkflowFiles,
+    effectiveDailyUpdate,
     workflowYaml,
     evolveScript,
   ]);
+
+  const handleCopyText = async (
+    target: "cron" | "yaml" | "readme",
+    text: string
+  ) => {
+    await copyToClipboard(text);
+    setCopiedId(target);
+    window.setTimeout(() => {
+      setCopiedId((curr) => (curr === target ? null : curr));
+    }, 1800);
+  };
 
   const handleDownloadWebP = async () => {
     setWebpBusy(true);
@@ -365,7 +490,7 @@ export function TokenPublishScreen({
         });
       }
 
-      if (includeWorkflowFiles) {
+      if (effectiveDailyUpdate) {
         entries.push(
           {
             path: ".github/workflows/evolve-creature.yml",
@@ -397,7 +522,7 @@ export function TokenPublishScreen({
       ? [{ id: "uploading-images" as const, label: "Uploading custom images" }]
       : []),
     { id: "updating-readme", label: "Updating README.md" },
-    ...(includeWorkflowFiles
+    ...(effectiveDailyUpdate
       ? [
           {
             id: "adding-workflow" as const,
@@ -408,8 +533,8 @@ export function TokenPublishScreen({
     { id: "committing", label: "Creating commit on branch" },
   ];
 
-  const handlePush = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handlePush = async (event?: React.FormEvent) => {
+    event?.preventDefault();
     if (!tokenValid) {
       setPushError(
         "Paste a valid GitHub Personal Access Token starting with github_pat_ or ghp_ before pushing."
@@ -431,7 +556,7 @@ export function TokenPublishScreen({
       );
       const needsSprite =
         includesCreatureBinary ||
-        includeWorkflowFiles ||
+        effectiveDailyUpdate ||
         (includeShareCard && readmeConfig.bannerSource !== "custom-image");
       const sprite = needsSprite ? await loadCreatureSprite(spriteKey) : null;
 
@@ -461,12 +586,12 @@ export function TokenPublishScreen({
         {
           path: "README.md",
           content: readmeMarkdown,
-          message: "feat: update GitHub profile README",
+          message: commitMessage.trim() || DEFAULT_COMMIT_MESSAGE,
         },
         {
           path: "creature-config.json",
           content: configJson,
-          message: "ci: save ReadmeForge profile configuration",
+          message: `ci: save ${BRAND.name} profile configuration`,
         }
       );
 
@@ -483,18 +608,18 @@ export function TokenPublishScreen({
         });
       }
 
-      if (includeWorkflowFiles) {
+      if (effectiveDailyUpdate) {
         const spritePngBase64 = await fetchSpritePngBase64(spriteKey);
         files.push(
           {
             path: "assets/creature-sprite.png",
             base64Content: spritePngBase64,
-            message: "ci: store base pixel creature sprite for midnight updates",
+            message: "ci: store base pixel creature sprite for daily updates",
           },
           {
             path: ".github/workflows/evolve-creature.yml",
             content: workflowYaml,
-            message: "ci: add 12 AM daily auto evolve workflow",
+            message: "ci: add daily auto evolve workflow",
           },
           {
             path: "scripts/evolve-creature.mjs",
@@ -511,6 +636,7 @@ export function TokenPublishScreen({
         owner: username,
         repo: username,
         branch: resolvedBranch || "main",
+        commitMessage: commitMessage.trim() || DEFAULT_COMMIT_MESSAGE,
         files,
         onStep: (step) => {
           setActivePushStep(step);
@@ -542,12 +668,13 @@ export function TokenPublishScreen({
     }
   };
 
-  const pushButton = (
+  const renderPushButton = (fullWidth = false) => (
     <StudioButton
       type="submit"
       variant="primary"
       size="lg"
       disabled={pushLoading || !tokenValid}
+      className={fullWidth ? "w-full" : undefined}
     >
       {pushLoading ? (
         <>
@@ -563,31 +690,40 @@ export function TokenPublishScreen({
     </StudioButton>
   );
 
-  const classicCreateUrl = `https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=${includeWorkflowFiles ? "repo,workflow" : "repo"}`;
+  const classicCreateUrl = `https://github.com/settings/tokens/new?description=dirtyreadme&scopes=${effectiveDailyUpdate ? "repo,workflow" : "repo"}`;
+
+  const tokenStatusLabel = !trimmedToken
+    ? "Token not added"
+    : tokenValid
+      ? "Token format looks good"
+      : "Check token prefix";
+
+  const dailySummaryLabel = effectiveDailyUpdate
+    ? `Every day at ${formatHourMinute(scheduleHour, scheduleMinute)} ${selectedTimeZone}, next run ${nextRunLabel}`
+    : "Off";
 
   return (
     <TooltipProvider delay={150}>
       <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-4 py-10 sm:px-6 sm:py-12">
         {/* Page Header */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-[var(--text)] sm:text-[32px]">
+            Publish your README
+          </h1>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-[var(--text)] sm:text-[32px]">
-              Publish to your profile
-            </h1>
             <a
               href={repoUrl}
               target="_blank"
               rel="noreferrer"
-              className="studio-mono inline-flex items-center gap-1.5 rounded-[8px] bg-[var(--surface-2)] px-3 py-1 text-[13px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)] hover:text-[var(--tide)]"
+              className="studio-mono inline-flex w-fit items-center gap-1.5 rounded-[8px] bg-[var(--surface-2)] px-3 py-1 text-[13px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)] hover:text-[var(--tide)]"
             >
               <span>{repoPath}</span>
               <ExternalLink className="size-3.5 text-[var(--text-2)]" />
             </a>
+            <span className="text-[14px] text-[var(--text-2)]">
+              Commit directly from your browser using a temporary GitHub token.
+            </span>
           </div>
-          <p className="text-[15px] leading-6 text-[var(--text-2)]">
-            Commit your README, creature animation and custom images directly
-            from your browser using a temporary GitHub token.
-          </p>
         </div>
 
         {/* Repository Status Banner */}
@@ -615,7 +751,7 @@ export function TokenPublishScreen({
               <span>
                 Public repository{" "}
                 <code className="studio-mono font-semibold">{repoPath}</code>{" "}
-                was not detected yet. Create it on GitHub or re-check before
+                was not detected yet. Create it on GitHub or check again before
                 pushing.
               </span>
             </div>
@@ -627,7 +763,7 @@ export function TokenPublishScreen({
                 onClick={handleRecheckRepo}
               >
                 <RefreshCw />
-                <span>Re-check repository</span>
+                <span>Check again</span>
               </StudioButton>
               <a
                 href="https://github.com/new"
@@ -642,21 +778,26 @@ export function TokenPublishScreen({
           </div>
         )}
 
-        {/* Two columns: 680px main and sticky 360px help rail */}
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,680px)_360px] lg:justify-between">
+        {/* Two columns: 680px main and sticky 360px summary */}
+        <form
+          id="publish-form"
+          onSubmit={handlePush}
+          className="grid items-start gap-8 lg:grid-cols-[minmax(0,680px)_360px] lg:justify-between"
+        >
           {/* Left Main Column */}
           <div className="flex flex-col gap-6">
-            {/* 1. What will be committed */}
-            <StudioSectionCard
-              title="What will be committed"
-              description="Files included in one atomic commit to your profile repository."
+            {/* Section 1: Review */}
+            <NumberedPublishCard
+              number={1}
+              title="Review"
+              help="Check the files, commit message and branch before pushing."
               headerAction={
                 <span className="studio-mono inline-flex shrink-0 items-center rounded-[8px] bg-[var(--surface-2)] px-3 py-1 text-[12px] font-medium whitespace-nowrap text-[var(--text)]">
                   Branch {resolvedBranch || "main"}
                 </span>
               }
             >
-              <ul className="divide-y divide-[var(--line)] rounded-[10px] bg-[var(--surface-2)]">
+              <ul className="flex flex-col gap-1.5 rounded-[10px] bg-[var(--surface-2)] p-2">
                 {commitFiles.map((file) => {
                   const Icon =
                     file.kind === "image"
@@ -667,7 +808,7 @@ export function TokenPublishScreen({
                   return (
                     <li
                       key={file.path}
-                      className="flex items-center justify-between gap-3 px-4 py-3 text-[13px]"
+                      className="flex items-center justify-between gap-3 rounded-[8px] bg-[var(--surface)] px-3.5 py-2.5 text-[13px]"
                     >
                       <span className="flex min-w-0 items-center gap-2.5">
                         <Icon className="size-4 shrink-0 text-[var(--text-2)]" />
@@ -682,12 +823,38 @@ export function TokenPublishScreen({
                   );
                 })}
               </ul>
-            </StudioSectionCard>
 
-            {/* 2. Create a token */}
-            <StudioSectionCard
-              title="Create a token"
-              description="Generate a temporary GitHub token with write access to your profile repository."
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <StudioField
+                    label="Commit message"
+                    htmlFor="publish-commit-message"
+                  >
+                    <StudioInput
+                      id="publish-commit-message"
+                      value={commitMessage}
+                      onChange={(e) => setCommitMessage(e.target.value)}
+                      placeholder={DEFAULT_COMMIT_MESSAGE}
+                    />
+                  </StudioField>
+                </div>
+
+                <StudioButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setPreviewOpen(true)}
+                >
+                  <Eye />
+                  <span>Preview README</span>
+                </StudioButton>
+              </div>
+            </NumberedPublishCard>
+
+            {/* Section 2: Token */}
+            <NumberedPublishCard
+              number={2}
+              title="Token"
+              help="Create and paste a temporary GitHub token with write access."
             >
               <StudioSegmentedControl<"classic" | "fine-grained">
                 ariaLabel="Token format"
@@ -710,24 +877,21 @@ export function TokenPublishScreen({
                         <Check className="size-3.5 text-[var(--tide)]" />
                         <span>repo</span>
                       </span>
-                      {includeWorkflowFiles ? (
+                      {effectiveDailyUpdate && (
                         <span className="studio-mono inline-flex items-center gap-1.5 rounded-[8px] bg-[var(--tide-soft)] px-3 py-1.5 font-medium text-[var(--tide)]">
                           <Check className="size-3.5" />
                           <span>workflow</span>
                         </span>
-                      ) : (
-                        <span className="text-[13px] text-[var(--text-2)]">
-                          Also select{" "}
-                          <code className="studio-mono text-[var(--text)]">
-                            workflow
-                          </code>{" "}
-                          only when the daily action is on.
-                        </span>
                       )}
                     </div>
+                    {!effectiveDailyUpdate && (
+                      <p className="text-[12px] text-[var(--text-2)]">
+                        Only repo is needed while daily update is off.
+                      </p>
+                    )}
                   </div>
 
-                  <div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <a
                       href={classicCreateUrl}
                       target="_blank"
@@ -737,6 +901,16 @@ export function TokenPublishScreen({
                       <span>Create classic token</span>
                       <ExternalLink className="size-3.5 text-[var(--text-2)]" />
                     </a>
+
+                    <StudioButton
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTokenGuideOpen(true)}
+                    >
+                      <BookOpen />
+                      <span>Step by step guide</span>
+                    </StudioButton>
                   </div>
                 </div>
               ) : (
@@ -751,19 +925,19 @@ export function TokenPublishScreen({
                         <Check className="size-3.5 text-[var(--tide)]" />
                         <span>Contents read and write</span>
                       </span>
-                      {includeWorkflowFiles && (
+                      <span className="studio-mono inline-flex items-center rounded-[8px] bg-[var(--surface)] px-3 py-1.5 text-[var(--text-2)]">
+                        Metadata read only
+                      </span>
+                      {effectiveDailyUpdate && (
                         <span className="studio-mono inline-flex items-center gap-1.5 rounded-[8px] bg-[var(--tide-soft)] px-3 py-1.5 font-medium text-[var(--tide)]">
                           <Check className="size-3.5" />
                           <span>Workflows read and write</span>
                         </span>
                       )}
-                      <span className="studio-mono inline-flex items-center rounded-[8px] bg-[var(--surface)] px-3 py-1.5 text-[var(--text-2)]">
-                        Metadata read only
-                      </span>
                     </div>
                   </div>
 
-                  <div>
+                  <div className="flex flex-wrap items-center gap-2">
                     <a
                       href="https://github.com/settings/personal-access-tokens/new"
                       target="_blank"
@@ -773,320 +947,520 @@ export function TokenPublishScreen({
                       <span>Create fine grained token</span>
                       <ExternalLink className="size-3.5 text-[var(--text-2)]" />
                     </a>
+
+                    <StudioButton
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTokenGuideOpen(true)}
+                    >
+                      <BookOpen />
+                      <span>Step by step guide</span>
+                    </StudioButton>
                   </div>
                 </div>
               )}
 
-              <div>
-                <StudioButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setTokenGuideOpen(true)}
-                >
-                  <BookOpen />
-                  <span>Step by step guide</span>
-                </StudioButton>
-              </div>
-            </StudioSectionCard>
-
-            {/* Form wrapping Paste your token and Options and publish */}
-            <form onSubmit={handlePush} className="flex flex-col gap-6">
-              {/* 3. Paste your token */}
-              <StudioSectionCard
-                title="Paste your token"
-                description="Copy, cut and context menu actions are disabled on this field."
+              <StudioField
+                label="GitHub personal access token"
+                htmlFor="pat-single-input"
+                trailing={
+                  <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--text-2)]">
+                    <Lock className="size-3.5" />
+                    <span>Kept in memory only</span>
+                  </span>
+                }
+                error={tokenFormatError}
+                helper={
+                  tokenValid
+                    ? undefined
+                    : "Prefix must start with github_pat_ or ghp_."
+                }
               >
-                <StudioField
-                  label="GitHub personal access token"
-                  htmlFor="pat-single-input"
-                  trailing={
-                    <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--text-2)]">
-                      <Lock className="size-3.5" />
-                      <span>Kept in memory only</span>
-                    </span>
-                  }
-                  error={tokenFormatError}
-                  helper={
-                    tokenValid
-                      ? undefined
-                      : "Prefix must start with github_pat_ or ghp_."
-                  }
-                >
-                  <div className="flex items-center gap-2">
-                    <StudioInput
-                      id="pat-single-input"
-                      inputSize="lg"
-                      type={showToken ? "text" : "password"}
-                      monospace
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={tokenInput}
-                      invalid={Boolean(tokenFormatError)}
-                      onChange={(e) => {
-                        setTokenInput(e.target.value);
-                        if (pushError) setPushError(null);
-                      }}
-                      onCopy={(e) => e.preventDefault()}
-                      onCut={(e) => e.preventDefault()}
-                      onDragStart={(e) => e.preventDefault()}
-                      onContextMenu={(e) => e.preventDefault()}
-                      placeholder="github_pat_ or ghp_ token"
-                      className="flex-1 select-none"
-                    />
+                <div className="flex items-center gap-2">
+                  <StudioInput
+                    id="pat-single-input"
+                    inputSize="lg"
+                    type={showToken ? "text" : "password"}
+                    monospace
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={tokenInput}
+                    invalid={Boolean(tokenFormatError)}
+                    onChange={(e) => {
+                      setTokenInput(e.target.value);
+                      if (pushError) setPushError(null);
+                    }}
+                    onCopy={(e) => e.preventDefault()}
+                    onCut={(e) => e.preventDefault()}
+                    onDragStart={(e) => e.preventDefault()}
+                    onContextMenu={(e) => e.preventDefault()}
+                    placeholder="github_pat_ or ghp_ token"
+                    className="flex-1 select-none"
+                  />
 
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <StudioButton
+                          type="button"
+                          variant="secondary"
+                          size="icon"
+                          className="sm:size-10"
+                          onClick={() => setShowToken((prev) => !prev)}
+                          aria-label={showToken ? "Hide token" : "Show token"}
+                        />
+                      }
+                    >
+                      {showToken ? <EyeOff /> : <Eye />}
+                    </TooltipTrigger>
+                    <TooltipContent
+                      data-app="studio"
+                      className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
+                    >
+                      {showToken ? "Hide token" : "Show token"}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {tokenInput && (
                     <Tooltip>
                       <TooltipTrigger
                         render={
                           <StudioButton
                             type="button"
-                            variant="secondary"
+                            variant="ghost"
                             size="icon"
                             className="sm:size-10"
-                            onClick={() => setShowToken((prev) => !prev)}
-                            aria-label={
-                              showToken ? "Hide token" : "Show token"
-                            }
+                            onClick={() => setTokenInput("")}
+                            aria-label="Clear token from memory"
                           />
                         }
                       >
-                        {showToken ? <EyeOff /> : <Eye />}
+                        <Trash2 />
                       </TooltipTrigger>
                       <TooltipContent
                         data-app="studio"
                         className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
                       >
-                        {showToken ? "Hide token" : "Show token"}
+                        Clear token from memory
                       </TooltipContent>
                     </Tooltip>
+                  )}
+                </div>
 
-                    {tokenInput && (
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
+                {tokenValid && (
+                  <p
+                    data-testid="token-valid-indicator"
+                    className="mt-1 flex items-center gap-1.5 text-[13px] text-[var(--tide)]"
+                  >
+                    <CheckCircle2 className="size-3.5 shrink-0" />
+                    <span>Token format looks good.</span>
+                  </p>
+                )}
+              </StudioField>
+            </NumberedPublishCard>
+
+            {/* Section 3: Daily update (optional) */}
+            <NumberedPublishCard
+              number={3}
+              title="Daily update"
+              help="Optional GitHub Action that refreshes your creature image and stats."
+            >
+              {!includesCreatureBinary ? (
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-[10px] bg-[var(--surface-2)] p-4">
+                  <p className="text-[13px] leading-5 text-[var(--text-2)]">
+                    Turn on the creature in the editor to use daily updates.
+                  </p>
+                  <StudioButton
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={onBack}
+                  >
+                    <span>Open editor</span>
+                  </StudioButton>
+                </div>
+              ) : (
+                <>
+                  <StudioSwitchRow
+                    id="daily-update-check"
+                    checked={includeWorkflowFiles}
+                    onCheckedChange={setIncludeWorkflowFiles}
+                    label="Update my README every day"
+                    description="Adds a GitHub Actions workflow that regenerates creature.webp on schedule."
+                  />
+
+                  {hasLegacyWorkflow && !includeWorkflowFiles && (
+                    <div className="flex items-start gap-2.5 rounded-[10px] bg-[var(--warning-soft)] px-4 py-3 text-[13px] leading-5 text-[var(--text)]">
+                      <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
+                      <span>
+                        An older{" "}
+                        <code className="studio-mono">evolve-creature.yml</code>{" "}
+                        was detected in{" "}
+                        <code className="studio-mono">{repoPath}</code>. Turn on
+                        daily update above with workflow permission to upgrade
+                        it.
+                      </span>
+                    </div>
+                  )}
+
+                  {includeWorkflowFiles && (
+                    <div className="flex flex-col gap-5 rounded-[10px] bg-[var(--surface-2)] p-4">
+                      {/* Time of day */}
+                      <div className="flex flex-col gap-2.5">
+                        <span className="text-[13px] font-medium text-[var(--text)]">
+                          Time of day
+                        </span>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="sr-only" htmlFor="schedule-hour">
+                            Hour
+                          </label>
+                          <select
+                            id="schedule-hour"
+                            value={scheduleHour}
+                            onChange={(e) =>
+                              setScheduleHour(Number(e.target.value))
+                            }
+                            className="h-9 rounded-[8px] bg-[var(--surface)] px-3 text-[13px] font-medium text-[var(--text)] outline-none"
+                          >
+                            {HOUR_OPTIONS.map((hour) => (
+                              <option key={hour} value={hour}>
+                                {String(hour).padStart(2, "0")}
+                              </option>
+                            ))}
+                          </select>
+
+                          <span className="text-[13px] font-semibold text-[var(--text-2)]">
+                            :
+                          </span>
+
+                          <label className="sr-only" htmlFor="schedule-minute">
+                            Minute
+                          </label>
+                          <select
+                            id="schedule-minute"
+                            value={scheduleMinute}
+                            onChange={(e) =>
+                              setScheduleMinute(Number(e.target.value))
+                            }
+                            className="h-9 rounded-[8px] bg-[var(--surface)] px-3 text-[13px] font-medium text-[var(--text)] outline-none"
+                          >
+                            {MINUTE_OPTIONS.map((minute) => (
+                              <option key={minute} value={minute}>
+                                {String(minute).padStart(2, "0")}
+                              </option>
+                            ))}
+                          </select>
+
+                          <div className="flex flex-wrap gap-1.5 sm:ml-2">
+                            {TIME_PRESETS.map((preset) => {
+                              const isSelected =
+                                scheduleHour === preset.hour &&
+                                scheduleMinute === preset.minute;
+                              return (
+                                <button
+                                  key={preset.label}
+                                  type="button"
+                                  onClick={() => {
+                                    setScheduleHour(preset.hour);
+                                    setScheduleMinute(preset.minute);
+                                  }}
+                                  className={cn(
+                                    "h-8 cursor-pointer rounded-[8px] px-3 text-[12px] font-medium transition-colors outline-none",
+                                    isSelected
+                                      ? "bg-[var(--surface-3)] text-[var(--text)]"
+                                      : "bg-[var(--surface)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text)]"
+                                  )}
+                                >
+                                  {preset.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Time zone */}
+                      <div className="flex flex-col gap-2">
+                        <label
+                          htmlFor="schedule-timezone-search"
+                          className="text-[13px] font-medium text-[var(--text)]"
+                        >
+                          Time zone
+                        </label>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <StudioInput
+                            id="schedule-timezone-search"
+                            value={timeZoneFilter}
+                            onChange={(e) => setTimeZoneFilter(e.target.value)}
+                            placeholder="Filter time zones..."
+                            aria-label="Filter time zones"
+                          />
+                          <select
+                            aria-label="Select time zone"
+                            value={selectedTimeZone}
+                            onChange={(e) =>
+                              setSelectedTimeZone(e.target.value)
+                            }
+                            className="h-9 rounded-[8px] bg-[var(--surface)] px-3 text-[13px] text-[var(--text)] outline-none"
+                          >
+                            {filteredTimeZones.map((tz) => (
+                              <option key={tz} value={tz}>
+                                {tz}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Live UTC conversion and cron */}
+                      <div className="flex flex-col gap-2 rounded-[8px] bg-[var(--surface)] p-3.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[13px] font-medium text-[var(--text)]">
+                            In UTC this runs at {cronInfo.utcTimeLabel}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <code className="studio-mono rounded-[6px] bg-[var(--surface-2)] px-2.5 py-1 text-[12px] text-[var(--text)]">
+                              {cronInfo.cron}
+                            </code>
                             <StudioButton
                               type="button"
                               variant="ghost"
-                              size="icon"
-                              className="sm:size-10"
-                              onClick={() => setTokenInput("")}
-                              aria-label="Clear token from memory"
+                              size="sm"
+                              onClick={() =>
+                                handleCopyText("cron", cronInfo.cron)
+                              }
+                            >
+                              {copiedId === "cron" ? <Check /> : <Copy />}
+                              <span>
+                                {copiedId === "cron" ? "Copied" : "Copy"}
+                              </span>
+                            </StudioButton>
+                          </div>
+                        </div>
+
+                        <p className="text-[13px] text-[var(--text-2)]">
+                          Next run: {nextRunLabel}
+                        </p>
+
+                        <p className="text-[12px] leading-5 text-[var(--text-2)]">
+                          GitHub schedules use UTC and runs can start a few
+                          minutes late.
+                          {usesDst
+                            ? " The local time shifts by one hour when daylight saving changes."
+                            : ""}
+                        </p>
+                      </div>
+
+                      {/* Preview workflow file */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setWorkflowPreviewOpen((prev) => !prev)
+                            }
+                            className="inline-flex cursor-pointer items-center gap-1.5 text-[13px] font-medium text-[var(--text)] transition-opacity hover:opacity-80"
+                          >
+                            <ChevronDown
+                              className={cn(
+                                "size-4 transition-transform duration-150",
+                                workflowPreviewOpen && "rotate-180"
+                              )}
                             />
-                          }
-                        >
-                          <Trash2 />
-                        </TooltipTrigger>
-                        <TooltipContent
-                          data-app="studio"
-                          className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-                        >
-                          Clear token from memory
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
+                            <span>Preview workflow file</span>
+                          </button>
 
-                  {tokenValid && (
-                    <p
-                      data-testid="token-valid-indicator"
-                      className="mt-1 flex items-center gap-1.5 text-[13px] text-[var(--tide)]"
-                    >
-                      <CheckCircle2 className="size-3.5 shrink-0" />
-                      <span>Token format recognized.</span>
-                    </p>
-                  )}
-                </StudioField>
-              </StudioSectionCard>
-
-              {/* 4. Options and publish */}
-              <StudioSectionCard
-                title="Options and publish"
-                description="Choose whether to enable the 12:00 AM daily auto evolve GitHub Action, then push."
-              >
-                <StudioSwitchRow
-                  id="auto-evolve-check"
-                  checked={includeWorkflowFiles}
-                  onCheckedChange={setIncludeWorkflowFiles}
-                  label="Enable 12:00 AM daily auto evolve action"
-                  description="Refreshes creature.webp and README.md markers every midnight."
-                />
-
-                {includeWorkflowFiles && (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[13px] font-medium text-[var(--text-2)]">
-                      Daily schedule
-                    </span>
-                    <StudioSegmentedControl<"local" | "utc">
-                      ariaLabel="Daily GitHub Action schedule"
-                      value={timezoneMode}
-                      onChange={setTimezoneMode}
-                      options={[
-                        {
-                          value: "local",
-                          label: `12:00 AM local (${localCron})`,
-                        },
-                        {
-                          value: "utc",
-                          label: "12:00 AM UTC (0 0 * * *)",
-                        },
-                      ]}
-                    />
-                  </div>
-                )}
-
-                {hasLegacyWorkflow && !includeWorkflowFiles && (
-                  <div className="flex items-start gap-2.5 rounded-[10px] bg-[var(--warning-soft)] px-4 py-3 text-[13px] leading-5 text-[var(--text)]">
-                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--warning)]" />
-                    <span>
-                      An older{" "}
-                      <code className="studio-mono">evolve-creature.yml</code>{" "}
-                      was detected in{" "}
-                      <code className="studio-mono">{repoPath}</code>. Enable
-                      the switch above with workflow permission to upgrade it
-                      to animated WebP.
-                    </span>
-                  </div>
-                )}
-
-                {pushLoading && (
-                  <ul
-                    aria-live="polite"
-                    className="flex flex-col gap-2.5 rounded-[10px] bg-[var(--surface-2)] p-4 text-[13px]"
-                  >
-                    {pushStepRows.map((step) => {
-                      const isDone = completedSteps.includes(step.id);
-                      const isActive = activePushStep === step.id && !isDone;
-                      return (
-                        <li
-                          key={step.id}
-                          className={cn(
-                            "flex items-center gap-3",
-                            isDone
-                              ? "text-[var(--tide)]"
-                              : isActive
-                                ? "font-medium text-[var(--text)]"
-                                : "text-[var(--text-3)]"
+                          {workflowPreviewOpen && (
+                            <StudioButton
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleCopyText("yaml", workflowYaml)
+                              }
+                            >
+                              {copiedId === "yaml" ? <Check /> : <Copy />}
+                              <span>
+                                {copiedId === "yaml" ? "Copied" : "Copy YAML"}
+                              </span>
+                            </StudioButton>
                           )}
-                        >
-                          {isDone ? (
-                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--tide-soft)] text-[var(--tide)]">
-                              <Check className="size-3.5" />
-                            </span>
-                          ) : isActive ? (
-                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--tide)] text-[var(--on-primary)]">
-                              <Loader2 className="size-3 animate-spin" />
-                            </span>
-                          ) : (
-                            <span className="size-5 shrink-0 rounded-full bg-[var(--surface-3)]" />
-                          )}
-                          <span>{step.label}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
+                        </div>
 
-                {pushError && (
-                  <div
-                    role="alert"
-                    className="flex items-start gap-3 rounded-[10px] bg-[var(--danger-soft)] p-4 text-[13px] leading-5 text-[var(--text)]"
-                  >
-                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--danger)]" />
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold text-[var(--danger)]">
-                        Push failed
-                      </span>
-                      <span>{pushError}</span>
-                    </div>
-                  </div>
-                )}
-
-                {publishResult && (
-                  <div
-                    role="status"
-                    className="flex flex-col gap-3 rounded-[10px] bg-[var(--tide-soft)] p-4 text-[13px] leading-5 text-[var(--text)]"
-                  >
-                    <div className="flex items-start gap-2.5">
-                      <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--tide)]" />
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[14px] font-semibold text-[var(--tide)]">
-                          Published to GitHub
-                        </span>
-                        <span>
-                          Committed{" "}
-                          <code className="studio-mono">
-                            {publishResult.updatedPaths.join(", ")}
-                          </code>{" "}
-                          to <code className="studio-mono">{repoPath}</code>.
-                          Your token was cleared from memory.
-                        </span>
+                        {workflowPreviewOpen && (
+                          <pre className="studio-mono max-h-64 overflow-auto rounded-[8px] bg-[var(--surface)] p-3.5 text-[12px] leading-5 text-[var(--text)]">
+                            <code>{workflowYaml}</code>
+                          </pre>
+                        )}
                       </div>
                     </div>
+                  )}
+                </>
+              )}
+            </NumberedPublishCard>
 
-                    <div className="flex flex-wrap gap-2 pl-6">
-                      <a
-                        href={publishResult.repoUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[var(--surface)] px-3.5 text-[13px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-2)]"
+            {/* Section 4: Publish */}
+            <NumberedPublishCard
+              number={4}
+              title="Publish"
+              help="Push all selected files to your profile repository."
+            >
+              {pushLoading && (
+                <ul
+                  aria-live="polite"
+                  className="flex flex-col gap-2.5 rounded-[10px] bg-[var(--surface-2)] p-4 text-[13px]"
+                >
+                  {pushStepRows.map((step) => {
+                    const isDone = completedSteps.includes(step.id);
+                    const isActive = activePushStep === step.id && !isDone;
+                    return (
+                      <li
+                        key={step.id}
+                        className={cn(
+                          "flex items-center gap-3",
+                          isDone
+                            ? "text-[var(--tide)]"
+                            : isActive
+                              ? "font-medium text-[var(--text)]"
+                              : "text-[var(--text-3)]"
+                        )}
                       >
-                        <span>View repository</span>
-                        <ExternalLink className="size-3.5 text-[var(--text-2)]" />
-                      </a>
-                      <a
-                        href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[var(--primary)] px-3.5 text-[13px] font-medium text-[var(--on-primary)] transition-colors duration-150 hover:bg-[var(--primary-hover)]"
-                      >
-                        <span>View your profile</span>
-                        <ExternalLink className="size-3.5" />
-                      </a>
+                        {isDone ? (
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--tide-soft)] text-[var(--tide)]">
+                            <Check className="size-3.5" />
+                          </span>
+                        ) : isActive ? (
+                          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--tide)] text-[var(--on-primary)]">
+                            <Loader2 className="size-3 animate-spin" />
+                          </span>
+                        ) : (
+                          <span className="size-5 shrink-0 rounded-full bg-[var(--surface-3)]" />
+                        )}
+                        <span>{step.label}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+
+              {pushError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-3 rounded-[10px] bg-[var(--danger-soft)] p-4 text-[13px] leading-5 text-[var(--text)]"
+                >
+                  <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--danger)]" />
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-[var(--danger)]">
+                      Push failed
+                    </span>
+                    <span>{pushError}</span>
+                  </div>
+                </div>
+              )}
+
+              {publishResult && (
+                <div
+                  role="status"
+                  className="flex flex-col gap-3 rounded-[10px] bg-[var(--tide-soft)] p-4 text-[13px] leading-5 text-[var(--text)]"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--tide)]" />
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[14px] font-semibold text-[var(--tide)]">
+                        Published to GitHub
+                      </span>
+                      <span>
+                        Committed{" "}
+                        <code className="studio-mono">
+                          {publishResult.updatedPaths.join(", ")}
+                        </code>{" "}
+                        to <code className="studio-mono">{repoPath}</code>. Your
+                        token was cleared from memory.
+                      </span>
                     </div>
                   </div>
-                )}
 
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                  <StudioButton
-                    type="button"
-                    variant="ghost"
-                    onClick={onBack}
-                    disabled={pushLoading}
-                  >
-                    <ArrowLeft />
-                    <span>Back</span>
-                  </StudioButton>
-
-                  {!tokenValid && !pushLoading ? (
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span tabIndex={0} className="inline-flex">
-                            {pushButton}
-                          </span>
-                        }
-                      />
-                      <TooltipContent
-                        data-app="studio"
-                        className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-                      >
-                        Paste a valid token starting with github_pat_ or ghp_ to
-                        push.
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    pushButton
-                  )}
+                  <div className="flex flex-wrap gap-2 pl-6">
+                    <a
+                      href={publishResult.repoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[var(--surface)] px-3.5 text-[13px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-2)]"
+                    >
+                      <span>View repository</span>
+                      <ExternalLink className="size-3.5 text-[var(--text-2)]" />
+                    </a>
+                    <a
+                      href={`https://github.com/${encodeURIComponent(publishResult.username)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-[var(--primary)] px-3.5 text-[13px] font-medium text-[var(--on-primary)] transition-colors duration-150 hover:bg-[var(--primary-hover)]"
+                    >
+                      <span>View your profile</span>
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                    <StudioButton
+                      type="button"
+                      variant="secondary"
+                      onClick={onBack}
+                    >
+                      <span>Back to editor</span>
+                    </StudioButton>
+                  </div>
                 </div>
-              </StudioSectionCard>
-            </form>
+              )}
 
-            {/* 5. Prefer to do it yourself */}
-            <StudioSectionCard
-              title="Prefer to do it yourself"
-              description="Download the generated files or zip archive and commit them manually."
-            >
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <StudioButton
+                  type="button"
+                  variant="ghost"
+                  onClick={onBack}
+                  disabled={pushLoading}
+                >
+                  <ArrowLeft />
+                  <span>Back to editor</span>
+                </StudioButton>
+
+                {!tokenValid && !pushLoading ? (
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <span tabIndex={0} className="inline-flex">
+                          {renderPushButton(false)}
+                        </span>
+                      }
+                    />
+                    <TooltipContent
+                      data-app="studio"
+                      className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
+                    >
+                      Paste a valid token starting with github_pat_ or ghp_ to
+                      push.
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  renderPushButton(false)
+                )}
+              </div>
+            </NumberedPublishCard>
+
+            {/* Secondary: Prefer to do it yourself */}
+            <section className="flex flex-col gap-5 rounded-[12px] bg-[var(--surface)] p-6 sm:p-8">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-[var(--text)]">
+                  Prefer to do it yourself
+                </h2>
+                <p className="text-[13px] leading-5 text-[var(--text-2)]">
+                  Download the generated files or zip archive and commit them
+                  manually.
+                </p>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <StudioButton
+                  type="button"
                   variant="primary"
                   disabled={zipBusy}
                   onClick={handleDownloadAllZip}
@@ -1099,6 +1473,7 @@ export function TokenPublishScreen({
 
                 {includesCreatureBinary && (
                   <StudioButton
+                    type="button"
                     variant="secondary"
                     disabled={webpBusy}
                     onClick={handleDownloadWebP}
@@ -1112,6 +1487,7 @@ export function TokenPublishScreen({
 
                 {includesCreatureBinary && (
                   <StudioButton
+                    type="button"
                     variant="secondary"
                     disabled={gifBusy}
                     onClick={handleDownloadGif}
@@ -1126,6 +1502,7 @@ export function TokenPublishScreen({
                 {customImages.map((img) => (
                   <StudioButton
                     key={img.repoPath}
+                    type="button"
                     variant="secondary"
                     onClick={() => downloadBlobFile(img.filename, img.webpBlob)}
                   >
@@ -1135,6 +1512,7 @@ export function TokenPublishScreen({
                 ))}
 
                 <StudioButton
+                  type="button"
                   variant="secondary"
                   onClick={() =>
                     downloadTextFile(
@@ -1148,37 +1526,113 @@ export function TokenPublishScreen({
                   <span>Download README.md</span>
                 </StudioButton>
               </div>
-            </StudioSectionCard>
+            </section>
           </div>
 
-          {/* Right Sticky Help Column */}
+          {/* Right Sticky Summary Column */}
           <aside className="flex flex-col gap-6 lg:sticky lg:top-[116px] lg:self-start">
-            <StudioSectionCard title="Token safety">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-[14px] font-medium text-[var(--text)]">
-                  <ShieldCheck className="size-4 shrink-0 text-[var(--tide)]" />
-                  <span>In memory only</span>
-                </div>
-
-                <p className="text-[13px] leading-6 text-[var(--text-2)]">
-                  {BRAND.name} runs purely in your browser. Your token stays in
-                  component memory for this tab only, is never written to cookies
-                  or storage, and is cleared right after pushing.
+            <section className="flex flex-col gap-5 rounded-[12px] bg-[var(--surface)] p-6">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-[16px] leading-6 font-semibold tracking-[-0.015em] text-[var(--text)]">
+                  Publish summary
+                </h2>
+                <p className="studio-mono text-[12px] text-[var(--text-2)]">
+                  {repoPath} on {resolvedBranch || "main"}
                 </p>
-
-                <a
-                  href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex w-fit items-center gap-1.5 rounded-[6px] py-0.5 text-[13px] font-medium text-[var(--tide)] underline underline-offset-4 hover:opacity-85"
-                >
-                  <span>GitHub privacy statement</span>
-                  <ExternalLink className="size-3.5" />
-                </a>
               </div>
-            </StudioSectionCard>
 
-            <StudioSectionCard title="What happens next">
+              <div className="flex flex-col gap-2">
+                <span className="text-[12px] font-medium text-[var(--text-2)]">
+                  Files
+                </span>
+                <ul className="flex flex-col gap-1.5">
+                  {commitFiles.map((file) => (
+                    <li
+                      key={file.path}
+                      className="flex items-center justify-between gap-2 rounded-[8px] bg-[var(--surface-2)] px-3 py-2 text-[12px]"
+                    >
+                      <span className="studio-mono truncate text-[var(--text)]">
+                        {file.path}
+                      </span>
+                      <span className="studio-mono shrink-0 text-[var(--text-2)] tabular-nums">
+                        {file.size}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex flex-col gap-2.5 rounded-[10px] bg-[var(--surface-2)] p-3.5 text-[12px]">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[var(--text-2)]">Token</span>
+                  <span
+                    className={cn(
+                      "font-medium",
+                      tokenValid ? "text-[var(--tide)]" : "text-[var(--text)]"
+                    )}
+                  >
+                    {tokenStatusLabel}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="shrink-0 text-[var(--text-2)]">
+                    Daily update
+                  </span>
+                  <span className="text-right font-medium text-[var(--text)]">
+                    {dailySummaryLabel}
+                  </span>
+                </div>
+              </div>
+
+              {!tokenValid && !pushLoading ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span tabIndex={0} className="inline-flex w-full">
+                        {renderPushButton(true)}
+                      </span>
+                    }
+                  />
+                  <TooltipContent
+                    data-app="studio"
+                    className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
+                  >
+                    Paste a valid token starting with github_pat_ or ghp_ to
+                    push.
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                renderPushButton(true)
+              )}
+            </section>
+
+            <section className="flex flex-col gap-3 rounded-[12px] bg-[var(--surface)] p-6">
+              <div className="flex items-center gap-2 text-[14px] font-semibold text-[var(--text)]">
+                <ShieldCheck className="size-4 shrink-0 text-[var(--tide)]" />
+                <span>In memory only</span>
+              </div>
+
+              <p className="text-[13px] leading-6 text-[var(--text-2)]">
+                {BRAND.name} runs purely in your browser. Your token stays in
+                component memory for this tab only, is never written to cookies
+                or storage, and is cleared right after pushing.
+              </p>
+
+              <a
+                href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-fit items-center gap-1.5 rounded-[6px] py-0.5 text-[13px] font-medium text-[var(--tide)] underline underline-offset-4 hover:opacity-85"
+              >
+                <span>GitHub privacy statement</span>
+                <ExternalLink className="size-3.5" />
+              </a>
+            </section>
+
+            <section className="flex flex-col gap-4 rounded-[12px] bg-[var(--surface)] p-6">
+              <h3 className="text-[15px] font-semibold text-[var(--text)]">
+                What happens next
+              </h3>
               <ol className="flex flex-col gap-3.5 text-[13px] leading-5 text-[var(--text-2)]">
                 <li className="flex items-start gap-3">
                   <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] text-[12px] font-semibold text-[var(--text)]">
@@ -1194,8 +1648,8 @@ export function TokenPublishScreen({
                     2
                   </span>
                   <span>
-                    If the midnight action is enabled, GitHub Actions updates
-                    your creature automatically every day.
+                    If daily update is on, GitHub Actions refreshes your
+                    creature automatically on schedule.
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -1208,15 +1662,72 @@ export function TokenPublishScreen({
                   </span>
                 </li>
               </ol>
-            </StudioSectionCard>
+            </section>
           </aside>
-        </div>
+        </form>
+
+        {/* Preview README Dialog */}
+        <StudioDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          title="Preview README"
+          description={`Rendered preview for ${repoPath}`}
+          maxWidthClass="sm:max-w-4xl"
+          footer={
+            <div className="flex w-full items-center justify-between gap-2">
+              <StudioButton
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => handleCopyText("readme", readmeMarkdown)}
+              >
+                {copiedId === "readme" ? <Check /> : <Copy />}
+                <span>{copiedId === "readme" ? "Copied" : "Copy markdown"}</span>
+              </StudioButton>
+              <StudioButton
+                type="button"
+                variant="primary"
+                onClick={() => setPreviewOpen(false)}
+              >
+                Done
+              </StudioButton>
+            </div>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <StudioSegmentedControl<"visual" | "markdown">
+              ariaLabel="README preview mode"
+              value={previewMode}
+              onChange={setPreviewMode}
+              options={[
+                { value: "visual", label: "Visual" },
+                { value: "markdown", label: "Markdown" },
+              ]}
+            />
+
+            {previewMode === "visual" ? (
+              <div
+                data-gh-theme="light"
+                className="rounded-[12px] bg-[var(--gh-bg)] p-5"
+              >
+                <AdvancedMarkdownPreview
+                  markdown={readmeMarkdown}
+                  isDark={false}
+                />
+              </div>
+            ) : (
+              <pre className="studio-mono max-h-[55vh] overflow-auto rounded-[12px] bg-[var(--surface-2)] p-4 text-[12px] leading-5 text-[var(--text)]">
+                <code>{readmeMarkdown}</code>
+              </pre>
+            )}
+          </div>
+        </StudioDialog>
 
         <TokenGuideDialog
           open={tokenGuideOpen}
           onClose={() => setTokenGuideOpen(false)}
           username={username}
-          includeWorkflowFiles={includeWorkflowFiles}
+          includeWorkflowFiles={effectiveDailyUpdate}
         />
       </div>
     </TooltipProvider>

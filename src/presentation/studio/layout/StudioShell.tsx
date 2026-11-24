@@ -1,8 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
-import { StudioConfirmDialog } from "../ui/StudioDialog";
 import { StudioActionBar } from "./StudioActionBar";
 import { StudioFooter } from "./StudioFooter";
 import { StudioHeader } from "./StudioHeader";
@@ -15,7 +13,6 @@ interface StudioShellProps {
   currentStep: StudioMainStep;
   onGoHome: () => void;
   onNavigateStep: (step: StudioMainStep) => void;
-  onResetAll: () => void;
   showActionBar?: boolean;
   showFooter?: boolean;
   backLabel?: string;
@@ -33,7 +30,6 @@ export function StudioShell({
   currentStep,
   onGoHome,
   onNavigateStep,
-  onResetAll,
   showActionBar = true,
   showFooter = false,
   backLabel = "Back",
@@ -42,8 +38,6 @@ export function StudioShell({
   onNext,
   children,
 }: StudioShellProps) {
-  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
-
   return (
     <div
       data-app="studio"
@@ -58,7 +52,6 @@ export function StudioShell({
         onToggleTheme={onToggleTheme}
         onGoHome={onGoHome}
         onOpenRepoGuide={() => onNavigateStep("repository")}
-        onRequestStartOver={() => setConfirmResetOpen(true)}
       />
 
       <StudioStepper currentStep={currentStep} onNavigateStep={onNavigateStep} />
@@ -75,16 +68,6 @@ export function StudioShell({
           onNext={onNext}
         />
       )}
-
-      <StudioConfirmDialog
-        open={confirmResetOpen}
-        onOpenChange={setConfirmResetOpen}
-        title="Start over from scratch?"
-        description="This clears your creature settings, custom README text, tech stack cards, custom images, and loaded profile data."
-        confirmLabel="Start over"
-        destructive
-        onConfirm={onResetAll}
-      />
     </div>
   );
 }

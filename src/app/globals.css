@@ -379,7 +379,32 @@
   transform: translate3d(0, 0, 0);
 }
 
+@keyframes brand-caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.brand-lockup-caret {
+  opacity: 0;
+}
+
+.brand-lockup:hover .brand-lockup-caret,
+.brand-lockup:focus-visible .brand-lockup-caret {
+  opacity: 1;
+  animation: brand-caret-blink 1s steps(1, end) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .brand-lockup:hover .brand-lockup-caret,
+  .brand-lockup:focus-visible .brand-lockup-caret {
+    animation: none !important;
+  }
   html {
     scroll-behavior: auto;
   }

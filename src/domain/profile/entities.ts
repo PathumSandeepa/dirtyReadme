@@ -149,25 +149,24 @@ export const README_TEMPLATES: {
 }[] = [
   {
     id: "cyber-guardian",
-    name: "Full profile",
+    name: "Full Developer Profile",
     description:
       "Title, specialty line, intro text, tech stack cards, links and creature banner.",
   },
   {
     id: "minimal-header",
-    name: "Minimal header",
+    name: "Minimalist Header",
     description: "Clean banner with profile title and a short intro paragraph.",
   },
   {
     id: "auto-evolve-block",
-    name: "Auto evolve block only",
+    name: "Auto Evolve Block Only",
     description: "Drop-in update markers for an existing README.md file.",
   },
   {
     id: "telemetry-stats",
-    name: "Stats table and share card",
-    description:
-      "Banner, live commit stats table and 1280 by 640 social preview card.",
+    name: "Telemetry",
+    description: "Banner and live commit stats table.",
   },
 ];
 

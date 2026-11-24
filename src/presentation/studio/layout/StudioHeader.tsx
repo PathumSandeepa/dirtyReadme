@@ -1,10 +1,9 @@
 "use client";
 
-import { BookOpen, Moon, RotateCcw, Sun } from "lucide-react";
+import { BookOpen, Moon, Sun } from "lucide-react";
 import { cn } from "cn";
-import { BRAND } from "@/config/brand";
 import { useWindowScrolled } from "../hooks/useWindowScrolled";
-import { BrandMark } from "../ui/BrandMark";
+import { BrandLockup } from "../ui/BrandLockup";
 import { StudioButton } from "../ui/StudioButton";
 
 interface StudioHeaderProps {
@@ -14,7 +13,6 @@ interface StudioHeaderProps {
   onToggleTheme: () => void;
   onGoHome: () => void;
   onOpenRepoGuide: () => void;
-  onRequestStartOver: () => void;
 }
 
 /** Sticky 56px navigation bar shared by Studio steps using borderless Abyss and Paper tokens. */
@@ -25,7 +23,6 @@ export function StudioHeader({
   onToggleTheme,
   onGoHome,
   onOpenRepoGuide,
-  onRequestStartOver,
 }: StudioHeaderProps) {
   const scrolled = useWindowScrolled(4);
   const trimmedUser = username.trim();
@@ -42,16 +39,14 @@ export function StudioHeader({
       )}
     >
       <div className="mx-auto flex h-full max-w-[1784px] items-center justify-between gap-2 px-4 sm:px-6">
-        <button
-          type="button"
-          onClick={onGoHome}
-          className="flex min-w-0 cursor-pointer items-center gap-2.5 rounded-[8px] py-1 pr-2 text-left transition-opacity duration-150 hover:opacity-85"
-        >
-          <BrandMark size={28} className="shrink-0" />
-          <span className="truncate text-[14px] font-semibold tracking-[-0.02em] text-[var(--text)]">
-            {BRAND.name}
-          </span>
-        </button>
+        <BrandLockup
+          size="md"
+          variant="studio"
+          onClick={(event) => {
+            event.preventDefault();
+            onGoHome();
+          }}
+        />
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {hasRealUser && (
@@ -83,17 +78,6 @@ export function StudioHeader({
           >
             {isDark ? <Sun /> : <Moon />}
             <span>{isDark ? "Light" : "Dark"}</span>
-          </StudioButton>
-
-          <StudioButton
-            variant="ghost"
-            size="sm"
-            onClick={onRequestStartOver}
-            className="text-[var(--text-2)] hover:text-[var(--danger)]"
-          >
-            <RotateCcw />
-            <span className="hidden sm:inline">Start over</span>
-            <span className="sm:hidden">Reset</span>
           </StudioButton>
         </div>
       </div>

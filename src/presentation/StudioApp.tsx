@@ -5,7 +5,6 @@ import { useStudioController } from "@/application/useStudioController";
 import { DEFAULT_DUMMY_INTRO } from "@/domain/profile/entities";
 import { buildStructuredProfileMarkdown } from "@/domain/profile/readmeService";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
-import { AutoEvolveDialog } from "./components/AutoEvolveDialog";
 import { CustomizeWorkspace } from "./components/CustomizeWorkspace";
 import {
   isCustomizePartId,
@@ -70,7 +69,6 @@ export function StudioApp() {
   } = useThemePreference();
   const [screen, setScreen] = useState<AppScreen>("showcase");
   const [customizePart, setCustomizePart] = useState<CustomizePartId>("header");
-  const [autoEvolveOpen, setAutoEvolveOpen] = useState(false);
 
   useEffect(() => {
     const applyHash = () => {
@@ -119,11 +117,6 @@ export function StudioApp() {
     if (snap) {
       navigateTo("repo-guide");
     }
-  };
-
-  const handleReset = () => {
-    controller.resetAll();
-    navigateTo("showcase", "header");
   };
 
   const handleNavigateStep = (step: StudioMainStep) => {
@@ -175,7 +168,6 @@ export function StudioApp() {
           currentStep={currentStep}
           onGoHome={() => navigateTo("showcase")}
           onNavigateStep={handleNavigateStep}
-          onResetAll={handleReset}
           showActionBar={screen === "customize"}
           showFooter={screen !== "customize"}
           backLabel="Back"
@@ -257,7 +249,14 @@ export function StudioApp() {
                 onClearCustomBannerImage={controller.clearCustomBannerImage}
                 onUpdateBannerAlt={controller.updateCustomBannerAlt}
                 onSyncFromForm={handleSyncIntroFromForm}
-                onOpenAutoEvolve={() => setAutoEvolveOpen(true)}
+                canUndo={controller.canUndo}
+                canRedo={controller.canRedo}
+                undoToast={controller.undoToast}
+                onUndo={controller.undoDraft}
+                onRedo={controller.redoDraft}
+                onClearAll={controller.clearAllContent}
+                onShowUndoToast={controller.showUndoToast}
+                onDismissUndoToast={controller.dismissUndoToast}
               />
             )}
 
@@ -267,11 +266,7 @@ export function StudioApp() {
                 readmeConfig={controller.readmeConfig}
                 readmeMarkdown={controller.fullReadmeMarkdown}
                 customImages={controller.referencedCustomImages}
-                includeShareCard={
-                  controller.readmeConfig.templateId !== "minimal-header" &&
-                  controller.readmeConfig.templateId !== "auto-evolve-block" &&
-                  controller.readmeConfig.includeShareCard
-                }
+                includeShareCard={false}
                 defaultBranch={controller.snapshot?.profileRepoBranch || "main"}
                 initialProfileRepoExists={Boolean(
                   controller.snapshot?.profileRepoExists
@@ -284,13 +279,6 @@ export function StudioApp() {
             )}
           </div>
         </StudioShell>
-
-        <AutoEvolveDialog
-          open={autoEvolveOpen}
-          onClose={() => setAutoEvolveOpen(false)}
-          config={controller.creatureConfig}
-          readmeConfig={controller.readmeConfig}
-        />
       </>
     );
   }

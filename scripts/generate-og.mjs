@@ -104,6 +104,10 @@ async function buildOgImage() {
   const backgroundSvg = Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
       <defs>
+        <linearGradient id="brandAmber" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFB84A" />
+          <stop offset="100%" stop-color="#F07A0F" />
+        </linearGradient>
         <radialGradient id="caustic" cx="76%" cy="48%" r="48%">
           <stop offset="0%" stop-color="#58D6B0" stop-opacity="0.16" />
           <stop offset="65%" stop-color="#58D6B0" stop-opacity="0.04" />
@@ -121,41 +125,32 @@ async function buildOgImage() {
 
       <!-- Brand mark + wordmark -->
       <g transform="translate(72, 72)">
-        <rect width="44" height="44" rx="10" fill="#171B1E" />
-        <rect x="11" y="11" width="3" height="3" fill="#58D6B0" />
-        <rect x="17" y="11" width="3" height="3" fill="#58D6B0" />
-        <rect x="14" y="14" width="3" height="3" fill="#58D6B0" />
-        <rect x="8" y="19" width="14" height="3" fill="#ECEFF1" />
-        <rect x="30" y="19" width="3" height="3" fill="#ECEFF1" />
-        <rect x="35" y="19" width="3" height="3" fill="#ECEFF1" />
-        <rect x="5" y="22" width="19" height="3" fill="#ECEFF1" />
-        <rect x="33" y="22" width="3" height="3" fill="#ECEFF1" />
-        <rect x="5" y="25" width="3" height="3" fill="#ECEFF1" />
-        <rect x="8" y="25" width="3" height="3" fill="#F28C4B" />
-        <rect x="11" y="25" width="16" height="3" fill="#ECEFF1" />
-        <rect x="33" y="25" width="3" height="3" fill="#ECEFF1" />
-        <rect x="5" y="28" width="30" height="3" fill="#ECEFF1" />
-        <rect x="25" y="31" width="8" height="3" fill="#ECEFF1" />
-        <rect x="8" y="31" width="17" height="3" fill="#A4ADB3" />
-        <text x="62" y="30" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="24" font-weight="600" letter-spacing="-0.5">ReadmeForge</text>
+        <rect width="44" height="44" rx="12.5" fill="url(#brandAmber)" />
+        <g fill="#1A0D00">
+          <rect x="14.9" y="10.2" width="4.4" height="23.6" rx="1.5" />
+          <rect x="24.7" y="10.2" width="4.4" height="23.6" rx="1.5" />
+          <rect x="10.2" y="15.7" width="23.6" height="4.1" rx="1.5" />
+          <rect x="10.2" y="24.2" width="23.6" height="4.1" rx="1.5" />
+        </g>
+        <text x="62" y="31" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="26" font-weight="800" letter-spacing="-1"><tspan fill="#FFFFFF">Dirty</tspan><tspan fill="#FFA033" font-family="ui-monospace, Menlo, Consolas, monospace" font-weight="600" letter-spacing="-0.5">Readme</tspan></text>
       </g>
 
       <!-- Hero title & description -->
-      <text x="72" y="232" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="54" font-weight="600" letter-spacing="-1.5">Your GitHub profile</text>
-      <text x="72" y="296" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="54" font-weight="600" letter-spacing="-1.5">finally worth a visit.</text>
+      <text x="72" y="232" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="50" font-weight="600" letter-spacing="-1.5">Build your GitHub README</text>
+      <text x="72" y="294" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="50" font-weight="600" letter-spacing="-1.5">fast and push in one click.</text>
 
-      <text x="72" y="356" fill="#A4ADB3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">Build and edit your profile README with live</text>
-      <text x="72" y="386" fill="#A4ADB3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">preview, starter templates, animated pixel</text>
-      <text x="72" y="416" fill="#A4ADB3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">creatures and custom images in your browser.</text>
+      <text x="72" y="356" fill="#A4ADB3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">Free, open source GitHub README builder.</text>
+      <text x="72" y="386" fill="#A4ADB3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">Edit with a live preview, start from templates,</text>
+      <text x="72" y="416" fill="#A4ADB3" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="20">add badges and links, and publish in one push.</text>
 
       <!-- Bottom pills -->
       <rect x="72" y="478" width="212" height="44" rx="10" fill="#171B1E" />
       <circle cx="96" cy="500" r="5" fill="#58D6B0" />
       <text x="114" y="506" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="16" font-weight="500">Runs in your browser</text>
 
-      <rect x="300" y="478" width="186" height="44" rx="10" fill="#171B1E" />
+      <rect x="300" y="478" width="198" height="44" rx="10" fill="#171B1E" />
       <circle cx="324" cy="500" r="5" fill="#F28C4B" />
-      <text x="342" y="506" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="16" font-weight="500">Stage 4 Mature</text>
+      <text x="342" y="506" fill="#ECEFF1" font-family="system-ui, -apple-system, Segoe UI, sans-serif" font-size="16" font-weight="500">One push to GitHub</text>
 
       <!-- Glass preview card on the right -->
       <rect x="616" y="138" width="520" height="390" rx="18" fill="#121517" fill-opacity="0.92" />

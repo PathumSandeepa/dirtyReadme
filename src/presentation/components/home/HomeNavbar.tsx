@@ -5,7 +5,7 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import { cn } from "cn";
 import { BRAND } from "@/config/brand";
 import { useWindowScrolled } from "@/presentation/studio/hooks/useWindowScrolled";
-import { useDockMagnification } from "./useDockMagnification";
+import { BrandLockup } from "@/presentation/studio/ui/BrandLockup";
 import { useReducedMotion } from "./useReducedMotion";
 
 interface HomeNavbarProps {
@@ -16,33 +16,10 @@ const NAV_LINKS = [
   { id: "editor", label: "Editor" },
   { id: "templates", label: "Templates" },
   { id: "stack", label: "Stack" },
-  { id: "creatures", label: "Creatures" },
   { id: "images", label: "Images" },
   { id: "privacy", label: "Privacy" },
   { id: "open-source", label: "Open source" },
 ] as const;
-
-const DOCK_TILE_COLORS = [
-  "#8B5CF6",
-  "#06B6D4",
-  "#22C55E",
-  "#A855F7",
-  "#EC4899",
-  "#F59E0B",
-] as const;
-
-const LOGO_WORD =
-  BRAND.name.length > 8
-    ? (BRAND.name.match(/^[A-Z][a-z]+/)?.[0] ?? BRAND.name.slice(0, 6))
-    : BRAND.name;
-
-const LOGO_TILES = LOGO_WORD.toUpperCase()
-  .split("")
-  .map((char, index) => ({
-    char,
-    color: DOCK_TILE_COLORS[index % DOCK_TILE_COLORS.length],
-    hasDot: index === 0 || index === 2 || index === 4,
-  }));
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -62,13 +39,6 @@ export function HomeNavbar({ onStartBuilding }: HomeNavbarProps) {
   const reducedMotion = useReducedMotion();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeId, setActiveId] = useState<string>("");
-
-  const logoDock = useDockMagnification({
-    maxScale: 1.36,
-    radius: 84,
-    lift: 4,
-    disabled: reducedMotion,
-  });
 
   useEffect(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -151,10 +121,10 @@ export function HomeNavbar({ onStartBuilding }: HomeNavbarProps) {
         )}
       >
         <div className="mx-auto flex h-full max-w-[1240px] items-center justify-between gap-4 px-4 sm:px-6">
-          {/* Magnifying glass dock brand logo */}
-          <a
+          <BrandLockup
+            size="md"
+            variant="landing"
             href="#top"
-            aria-label={BRAND.name}
             onClick={(event) => {
               event.preventDefault();
               window.scrollTo({
@@ -162,35 +132,7 @@ export function HomeNavbar({ onStartBuilding }: HomeNavbarProps) {
                 behavior: reducedMotion ? "auto" : "smooth",
               });
             }}
-            onPointerMove={logoDock.onPointerMove}
-            onPointerLeave={logoDock.onPointerLeave}
-            className="home-glass inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-[14px] px-2.5 py-1.5"
-          >
-            {LOGO_TILES.map((tile, index) => (
-              <span
-                key={`${tile.char}-${index}`}
-                className="flex flex-col items-center gap-[3px]"
-              >
-                <span
-                  ref={logoDock.registerItem(index)}
-                  style={{
-                    backgroundColor: tile.color,
-                    animationDelay: `${index * 60}ms`,
-                  }}
-                  className="home-dock-tile-pop home-display flex size-[26px] origin-bottom items-center justify-center rounded-[8px] text-[13px] font-extrabold text-white shadow-sm transition-transform duration-150 ease-out will-change-transform select-none"
-                >
-                  {tile.char}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-[3px] rounded-full",
-                    tile.hasDot ? "bg-white/80" : "bg-transparent"
-                  )}
-                />
-              </span>
-            ))}
-          </a>
+          />
 
           {/* Center mono uppercase navigation */}
           <nav
@@ -262,9 +204,11 @@ export function HomeNavbar({ onStartBuilding }: HomeNavbarProps) {
           className="fixed inset-0 z-50 flex flex-col justify-between bg-[rgba(5,5,5,0.92)] p-6 backdrop-blur-2xl min-[900px]:hidden"
         >
           <div className="flex items-center justify-between">
-            <span className="home-display text-[18px] font-extrabold tracking-tight text-white">
-              {BRAND.name}
-            </span>
+            <BrandLockup
+              size="md"
+              variant="landing"
+              onClick={() => setMobileMenuOpen(false)}
+            />
             <button
               type="button"
               aria-label="Close menu"

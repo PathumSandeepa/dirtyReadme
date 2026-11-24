@@ -5,18 +5,18 @@ import type {
   ResolvedTheme,
   ThemePreference,
 } from "@/presentation/studio/hooks/useThemePreference";
-import { HomeAutoEvolveSection } from "./home/HomeAutoEvolveSection";
-import { HomeCreaturesSection } from "./home/HomeCreaturesSection";
 import { HomeCustomImagesSection } from "./home/HomeCustomImagesSection";
 import { HomeEditorSection } from "./home/HomeEditorSection";
 import { HomeFactsStrip } from "./home/HomeFactsStrip";
+import { HomeFaqSection } from "./home/HomeFaqSection";
 import { HomeFinalCtaSection } from "./home/HomeFinalCtaSection";
 import { HomeFooter } from "./home/HomeFooter";
 import { HomeHero } from "./home/HomeHero";
+import { HomeHowItWorksSection } from "./home/HomeHowItWorksSection";
+import { HomeMoreFeaturesSection } from "./home/HomeMoreFeaturesSection";
 import { HomeNavbar } from "./home/HomeNavbar";
 import { HomeOpenSourceSection } from "./home/HomeOpenSourceSection";
 import { HomePrivacySection } from "./home/HomePrivacySection";
-import { HomeSettingsSection } from "./home/HomeSettingsSection";
 import { HomeStackSection } from "./home/HomeStackSection";
 import { HomeTemplatesSection } from "./home/HomeTemplatesSection";
 
@@ -37,14 +37,14 @@ export function ShowcaseGalleryView({
       <main className="flex-1">
         <HomeHero onStartBuilding={onStartCustomize} />
         <HomeFactsStrip />
+        <HomeHowItWorksSection />
         <HomeEditorSection />
         <HomeTemplatesSection onStartBuilding={onStartCustomize} />
         <HomeStackSection />
-        <HomeCreaturesSection />
         <HomeCustomImagesSection />
-        <HomeSettingsSection />
-        <HomeAutoEvolveSection />
+        <HomeMoreFeaturesSection />
         <HomePrivacySection />
+        <HomeFaqSection />
         <HomeOpenSourceSection onStartBuilding={onStartCustomize} />
         <HomeFinalCtaSection onStartBuilding={onStartCustomize} />
       </main>

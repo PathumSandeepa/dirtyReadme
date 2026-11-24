@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BRAND } from "@/config/brand";
 import { Reveal } from "./Reveal";
 import { homeAsset } from "./homeData";
 
@@ -74,7 +75,7 @@ export function HomeCustomImagesSection() {
                 {!imageError ? (
                   <img
                     src={homeAsset("custom-image-crop-dark.png")}
-                    alt="ReadmeForge custom image crop dialog showing aspect presets and WebP output"
+                    alt={`${BRAND.name} custom image crop dialog showing aspect presets and WebP output`}
                     width={1440}
                     height={960}
                     loading="lazy"

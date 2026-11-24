@@ -28,9 +28,9 @@ export function StudioStepper({
   return (
     <nav
       aria-label="Studio progress"
-      className="sticky top-14 z-20 min-h-12 bg-[var(--surface)]"
+      className="sticky top-14 z-20 h-10 min-h-10 bg-[var(--surface)]"
     >
-      <div className="studio-no-scrollbar mx-auto flex h-12 max-w-[1784px] items-center justify-between gap-4 overflow-x-auto px-4 sm:px-6">
+      <div className="studio-no-scrollbar mx-auto flex h-10 max-w-[1784px] items-center justify-between gap-4 overflow-x-auto px-4 sm:px-6">
         <ol className="flex items-center gap-1 sm:gap-2">
           {MAIN_STEPS.map((step, idx) => {
             const isCompleted = step.order < currentOrder;
@@ -53,7 +53,7 @@ export function StudioStepper({
                     <span className="flex size-4 items-center justify-center rounded-full bg-[var(--tide-soft)] text-[var(--tide)]">
                       <Check className="size-3 stroke-[2.5]" />
                     </span>
-                    <span>{step.label}</span>
+                    <span className="hidden sm:inline">{step.label}</span>
                   </button>
                 ) : (
                   <span
@@ -75,7 +75,9 @@ export function StudioStepper({
                     >
                       {step.order}
                     </span>
-                    <span>{step.label}</span>
+                    <span className={isCurrent ? "inline" : "hidden sm:inline"}>
+                      {step.label}
+                    </span>
                   </span>
                 )}
               </li>

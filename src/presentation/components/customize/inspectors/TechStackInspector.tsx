@@ -194,8 +194,15 @@ export function TechStackInspector({
       setNewBadgeError("Enter a badge name such as Zig or WebGPU.");
       return;
     }
-    if (!activeCardId) return;
+    if (!activeCardId) {
+      setNewBadgeError("Create a group first.");
+      return;
+    }
     const logoSlug = newBadgeLogo.trim().toLowerCase().replace(/\s+/g, "");
+    if (logoSlug && !/^[a-z0-9-]+$/.test(logoSlug)) {
+      setNewBadgeError("Icon slug may use lowercase letters, numbers and hyphens only.");
+      return;
+    }
     const seq = customSeqRef.current++;
     onAddCustomBadgeToCard(activeCardId, {
       id: `custom-${seq}`,
@@ -263,7 +270,25 @@ export function TechStackInspector({
 
       {/* Stack Cards List */}
       <div className="flex flex-col gap-3">
-        {readmeConfig.stackCards.map((card, cardIdx) => {
+        {readmeConfig.stackCards.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-[12px] bg-[var(--surface-2)] p-5 text-center">
+            <p className="text-[13px] text-[var(--text-2)]">
+              No tech stack groups yet.
+            </p>
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const newId = onAddStackCard("Tech stack");
+                onSelectCardId(newId);
+              }}
+            >
+              <Plus />
+              <span>Add group</span>
+            </StudioButton>
+          </div>
+        ) : (
+          readmeConfig.stackCards.map((card, cardIdx) => {
           const isSelected = card.id === activeCardId;
           const isDropping = dropCardId === card.id;
           const isVisible = card.visible !== false;
@@ -355,7 +380,6 @@ export function TechStackInspector({
                   <StudioButton
                     variant="ghost"
                     size="icon"
-                    disabled={readmeConfig.stackCards.length <= 1}
                     onClick={() => onDeleteStackCard(card.id)}
                     aria-label="Delete card"
                     title="Delete card"
@@ -467,7 +491,8 @@ export function TechStackInspector({
               )}
             </div>
           );
-        })}
+        })
+        )}
       </div>
 
       {/* Two-Column Skills Library */}

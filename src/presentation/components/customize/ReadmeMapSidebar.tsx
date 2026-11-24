@@ -1,13 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
+  ChevronDown,
   FileText,
   Heading,
   Layers,
+  LayoutTemplate,
   Link2,
   PanelLeftClose,
   PanelLeftOpen,
-  Sliders,
   Sparkles,
 } from "lucide-react";
 import { cn } from "cn";
@@ -21,6 +23,7 @@ import type {
   CustomImageMemoryAsset,
   ReadmeConfig,
 } from "@/domain/profile/entities";
+import { PROFILE_EDITOR_TEMPLATES } from "@/domain/profile/markdownRichText";
 import { extractHeaderFromMarkdown } from "@/domain/profile/headerSync";
 import {
   Tooltip,
@@ -28,7 +31,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { StudioButton } from "../../studio/ui/StudioButton";
+import { DynamicValuesList } from "./DynamicValuesList";
+import { InsertPalette, type InsertBlockAction } from "./InsertPalette";
 import { CUSTOMIZE_PARTS, type CustomizePartId } from "./customizeTypes";
+
+const OPEN_SECTIONS_STORAGE_KEY = "dirtyreadme-left-sections-v1";
+
+type CollapsibleSectionId = "add" | "templates" | "dynamic";
 
 interface ReadmeMapSidebarProps {
   activePart: CustomizePartId;
@@ -38,6 +48,11 @@ interface ReadmeMapSidebarProps {
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
   activeCustomBannerAsset?: CustomImageMemoryAsset | null;
+  onInsertBlock: (action: InsertBlockAction) => void;
+  onInsertEmoji: (emoji: string) => void;
+  onInsertSnippet: (snippetId: "status" | "roadmap" | "visitors") => void;
+  onOpenTemplates: () => void;
+  onInsertToken: (token: string) => void;
 }
 
 function getPartIcon(id: CustomizePartId) {
@@ -107,58 +122,60 @@ function getPartStatuses(
   };
 }
 
-function WireframeMiniMap({
+export function LeftSidebarContent({
   activePart,
-  onSelectPart,
-}: {
-  activePart: CustomizePartId;
-  onSelectPart: (part: CustomizePartId) => void;
-}) {
-  const bar = (part: CustomizePartId, heightClass: string, title: string) => {
-    const active = activePart === part;
-    return (
-      <button
-        type="button"
-        onClick={() => onSelectPart(part)}
-        title={`Jump to ${title}`}
-        aria-label={`Select ${title} in wireframe`}
-        className={cn(
-          "w-full cursor-pointer rounded-[4px] transition-colors duration-150",
-          heightClass,
-          active
-            ? "bg-[var(--surface-3)]"
-            : "bg-[var(--surface-2)] hover:bg-[var(--surface-3)]/70"
-        )}
-      />
-    );
-  };
-
-  return (
-    <div className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--surface)] p-3">
-      <div className="text-[11px] font-medium text-[var(--text-3)]">
-        Page order
-      </div>
-      <div className="flex flex-col gap-1.5">
-        {bar("header", "h-2.5", "Header")}
-        {bar("about", "h-4", "About")}
-        {bar("stack", "h-3", "Tech stack")}
-        {bar("links", "h-2", "Links")}
-        {bar("creature", "h-6", "Creature")}
-      </div>
-    </div>
-  );
-}
-
-/** Collapsible 240px desktop outline mapping the exact top to bottom order of the README. */
-export function ReadmeMapSidebar({
-  activePart,
-  collapsed,
-  onToggleCollapsed,
+  collapsed = false,
   onSelectPart,
   creatureConfig,
   readmeConfig,
   activeCustomBannerAsset,
-}: ReadmeMapSidebarProps) {
+  onInsertBlock,
+  onInsertEmoji,
+  onInsertSnippet,
+  onOpenTemplates,
+  onInsertToken,
+}: Omit<ReadmeMapSidebarProps, "collapsed" | "onToggleCollapsed"> & {
+  collapsed?: boolean;
+}) {
+  const [openSections, setOpenSections] = useState<
+    Record<CollapsibleSectionId, boolean>
+  >({
+    add: true,
+    templates: false,
+    dynamic: false,
+  });
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(OPEN_SECTIONS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<
+          Record<CollapsibleSectionId, boolean>
+        >;
+        queueMicrotask(() => {
+          setOpenSections((prev) => ({ ...prev, ...parsed }));
+        });
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const toggleSection = (id: CollapsibleSectionId) => {
+    setOpenSections((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        window.localStorage.setItem(
+          OPEN_SECTIONS_STORAGE_KEY,
+          JSON.stringify(next)
+        );
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
+
   const statuses = getPartStatuses(creatureConfig, readmeConfig);
   const textParts = CUSTOMIZE_PARTS.filter((p) => p.group === "text-stack");
   const creatureParts = CUSTOMIZE_PARTS.filter((p) => p.group === "creature");
@@ -170,238 +187,281 @@ export function ReadmeMapSidebar({
           creatureConfig.creature === "jellyfish" ? "jellyfish" : "tulkun-side"
         );
 
-  return (
-    <TooltipProvider delay={120}>
-      <aside
-        aria-label="README map"
-        className={cn(
-          "studio-no-scrollbar hidden shrink-0 transition-[width] duration-150 min-[1200px]:sticky min-[1200px]:top-[116px] min-[1200px]:flex min-[1200px]:max-h-[calc(100vh-188px)] min-[1200px]:flex-col min-[1200px]:gap-3 min-[1200px]:self-start min-[1200px]:overflow-y-auto",
-          collapsed ? "w-[64px]" : "w-[240px]"
-        )}
-      >
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2 px-1">
-            {!collapsed && (
-              <span className="text-[13px] font-semibold tracking-[-0.01em] text-[var(--text)]">
-                README map
-              </span>
-            )}
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    type="button"
-                    onClick={onToggleCollapsed}
-                    aria-label={
-                      collapsed ? "Expand README map" : "Collapse README map"
-                    }
-                    className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-[8px] bg-[var(--surface)] text-[var(--text-2)] transition-colors duration-150 hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                  />
-                }
-              >
-                {collapsed ? (
-                  <PanelLeftOpen className="size-4" />
-                ) : (
-                  <PanelLeftClose className="size-4" />
-                )}
-              </TooltipTrigger>
-              <TooltipContent
-                data-app="studio"
-                className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-              >
-                {collapsed ? "Expand README map" : "Collapse README map"}
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {!collapsed && (
-            <WireframeMiniMap
-              activePart={activePart}
-              onSelectPart={onSelectPart}
-            />
-          )}
-
-          <div className="flex flex-col gap-3 rounded-[12px] bg-[var(--surface)] p-2">
-            <div className="flex flex-col gap-1">
-              {!collapsed && (
-                <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium text-[var(--text-3)]">
-                  Text and stack
-                </div>
-              )}
-
-              {textParts.map((part) => {
-                const Icon = getPartIcon(part.id);
-                const selected = activePart === part.id;
-                const button = (
-                  <button
-                    key={part.id}
-                    type="button"
-                    aria-current={selected ? "location" : undefined}
-                    onClick={() => onSelectPart(part.id)}
-                    className={cn(
-                      "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors duration-150",
-                      collapsed && "justify-center px-0",
-                      selected
-                        ? "bg-[var(--surface-3)] text-[var(--text)]"
-                        : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                    )}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    {!collapsed && (
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-[13px] font-medium">
-                          {part.label}
-                        </span>
-                        <span className="truncate text-[12px] text-[var(--text-2)] tabular-nums">
-                          {statuses[part.id]}
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                );
-
-                if (!collapsed) return button;
-                return (
-                  <Tooltip key={part.id}>
-                    <TooltipTrigger render={button} />
-                    <TooltipContent
-                      data-app="studio"
-                      side="right"
-                      className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-                    >
-                      {part.label} ({statuses[part.id]})
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-
-            <div className="flex flex-col gap-1">
-              {!collapsed && (
-                <div className="px-2 pt-1 pb-0.5 text-[11px] font-medium text-[var(--text-3)]">
-                  Creature
-                </div>
-              )}
-
-              {creatureParts.map((part) => {
-                const selected = activePart === part.id;
-                const button = (
-                  <button
-                    key={part.id}
-                    type="button"
-                    aria-current={selected ? "location" : undefined}
-                    onClick={() => onSelectPart(part.id)}
-                    className={cn(
-                      "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors duration-150",
-                      collapsed && "justify-center px-0",
-                      selected
-                        ? "bg-[var(--surface-3)] text-[var(--text)]"
-                        : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                    )}
-                  >
-                    <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#0D1117]">
-                      <img
-                        src={thumbUrl}
-                        alt=""
-                        className={cn(
-                          "size-full object-contain",
-                          readmeConfig.bannerSource === "custom-image" &&
-                            activeCustomBannerAsset
-                            ? "object-cover"
-                            : "p-0.5"
-                        )}
-                        style={{
-                          imageRendering:
-                            readmeConfig.bannerSource === "custom-image"
-                              ? "auto"
-                              : "pixelated",
-                        }}
-                      />
-                    </span>
-                    {!collapsed && (
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-[13px] font-medium">
-                          {part.label}
-                        </span>
-                        <span className="truncate text-[12px] text-[var(--text-2)] tabular-nums">
-                          {statuses[part.id]}
-                        </span>
-                      </div>
-                    )}
-                  </button>
-                );
-
-                if (!collapsed) return button;
-                return (
-                  <Tooltip key={part.id}>
-                    <TooltipTrigger render={button} />
-                    <TooltipContent
-                      data-app="studio"
-                      side="right"
-                      className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-                    >
-                      {part.label} ({statuses[part.id]})
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </aside>
-    </TooltipProvider>
-  );
-}
-
-/** Compact top selector strip shown below 1200px to pick sections and open the bottom sheet inspector. */
-export function ReadmeMapTopStrip({
-  activePart,
-  onSelectPart,
-  onOpenInspectorSheet,
-}: {
-  activePart: CustomizePartId;
-  onSelectPart: (part: CustomizePartId) => void;
-  onOpenInspectorSheet: () => void;
-}) {
-  return (
-    <div className="mb-4 flex items-center justify-between gap-2 min-[1200px]:hidden">
-      <div
-        role="tablist"
-        aria-label="README map"
-        className="studio-no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-[8px] bg-[var(--surface)] p-1"
-      >
+  if (collapsed) {
+    return (
+      <div className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--surface)] p-1.5">
         {CUSTOMIZE_PARTS.map((part) => {
           const Icon = getPartIcon(part.id);
           const selected = activePart === part.id;
           return (
-            <button
-              key={part.id}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              onClick={() => onSelectPart(part.id)}
-              className={cn(
-                "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-[6px] px-2.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
-                selected
-                  ? "bg-[var(--surface-3)] text-[var(--text)]"
-                  : "text-[var(--text-2)] hover:text-[var(--text)]"
-              )}
-            >
-              <Icon className="size-3.5 shrink-0" />
-              <span>{part.label}</span>
-            </button>
+            <Tooltip key={part.id}>
+              <TooltipTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label={part.label}
+                    aria-current={selected ? "location" : undefined}
+                    onClick={() => onSelectPart(part.id)}
+                    className={cn(
+                      "flex size-10 w-full cursor-pointer items-center justify-center rounded-[8px] transition-colors duration-150",
+                      selected
+                        ? "bg-[var(--surface-3)] text-[var(--text)]"
+                        : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                    )}
+                  />
+                }
+              >
+                <Icon className="size-4" />
+              </TooltipTrigger>
+              <TooltipContent
+                data-app="studio"
+                side="right"
+                className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
+              >
+                {part.label} ({statuses[part.id]})
+              </TooltipContent>
+            </Tooltip>
           );
         })}
       </div>
+    );
+  }
 
-      <button
-        type="button"
-        onClick={onOpenInspectorSheet}
-        className="inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-[8px] bg-[var(--primary)] px-3 text-[13px] font-medium text-[var(--on-primary)] transition-colors duration-150 hover:bg-[var(--primary-hover)]"
-      >
-        <Sliders className="size-3.5" />
-        <span>Inspector</span>
-      </button>
+  return (
+    <div className="flex flex-col gap-3">
+      {/* 1. README parts (always open) */}
+      <div className="flex flex-col gap-2 rounded-[12px] bg-[var(--surface)] p-2.5">
+        <div className="px-1.5 py-1 text-[12px] font-semibold text-[var(--text)]">
+          README parts
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <div className="px-1.5 pt-0.5 text-[11px] font-medium text-[var(--text-3)]">
+            Text and stack
+          </div>
+          {textParts.map((part) => {
+            const Icon = getPartIcon(part.id);
+            const selected = activePart === part.id;
+            return (
+              <button
+                key={part.id}
+                type="button"
+                aria-current={selected ? "location" : undefined}
+                onClick={() => onSelectPart(part.id)}
+                className={cn(
+                  "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors duration-150",
+                  selected
+                    ? "bg-[var(--surface-3)] text-[var(--text)]"
+                    : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[13px] font-medium">
+                    {part.label}
+                  </span>
+                  <span className="truncate text-[11px] text-[var(--text-2)] tabular-nums">
+                    {statuses[part.id]}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <div className="px-1.5 pt-0.5 text-[11px] font-medium text-[var(--text-3)]">
+            Creature
+          </div>
+          {creatureParts.map((part) => {
+            const selected = activePart === part.id;
+            return (
+              <button
+                key={part.id}
+                type="button"
+                aria-current={selected ? "location" : undefined}
+                onClick={() => onSelectPart(part.id)}
+                className={cn(
+                  "flex w-full cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors duration-150",
+                  selected
+                    ? "bg-[var(--surface-3)] text-[var(--text)]"
+                    : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                )}
+              >
+                <span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-[#0D1117]">
+                  <img
+                    src={thumbUrl}
+                    alt=""
+                    className={cn(
+                      "size-full object-contain",
+                      readmeConfig.bannerSource === "custom-image" &&
+                        activeCustomBannerAsset
+                        ? "object-cover"
+                        : "p-0.5"
+                    )}
+                    style={{
+                      imageRendering:
+                        readmeConfig.bannerSource === "custom-image"
+                          ? "auto"
+                          : "pixelated",
+                    }}
+                  />
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[13px] font-medium">
+                    {part.label}
+                  </span>
+                  <span className="truncate text-[11px] text-[var(--text-2)] tabular-nums">
+                    {statuses[part.id]}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. Add to README (collapsible) */}
+      <div className="overflow-hidden rounded-[12px] bg-[var(--surface)]">
+        <button
+          type="button"
+          data-add-to-readme="true"
+          aria-expanded={openSections.add}
+          onClick={() => toggleSection("add")}
+          className="flex w-full cursor-pointer items-center justify-between bg-[var(--surface-2)] px-3.5 py-2.5 text-left text-[12px] font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-3)]"
+        >
+          <span>Add to README</span>
+          <ChevronDown
+            className={cn(
+              "size-4 text-[var(--text-2)] transition-transform duration-150",
+              openSections.add && "rotate-180"
+            )}
+          />
+        </button>
+        {openSections.add && (
+          <div className="p-3">
+            <InsertPalette
+              onInsertBlock={onInsertBlock}
+              onInsertEmoji={onInsertEmoji}
+              onInsertSnippet={onInsertSnippet}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 3. Templates (collapsible) */}
+      <div className="overflow-hidden rounded-[12px] bg-[var(--surface)]">
+        <button
+          type="button"
+          aria-expanded={openSections.templates}
+          onClick={() => toggleSection("templates")}
+          className="flex w-full cursor-pointer items-center justify-between bg-[var(--surface-2)] px-3.5 py-2.5 text-left text-[12px] font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-3)]"
+        >
+          <span>Templates</span>
+          <ChevronDown
+            className={cn(
+              "size-4 text-[var(--text-2)] transition-transform duration-150",
+              openSections.templates && "rotate-180"
+            )}
+          />
+        </button>
+        {openSections.templates && (
+          <div className="p-3">
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              className="w-full justify-start"
+              onClick={onOpenTemplates}
+            >
+              <LayoutTemplate />
+              <span>
+                Browse templates ({PROFILE_EDITOR_TEMPLATES.length})
+              </span>
+            </StudioButton>
+          </div>
+        )}
+      </div>
+
+      {/* 4. Dynamic values (collapsible) */}
+      <div className="overflow-hidden rounded-[12px] bg-[var(--surface)]">
+        <button
+          type="button"
+          aria-expanded={openSections.dynamic}
+          onClick={() => toggleSection("dynamic")}
+          className="flex w-full cursor-pointer items-center justify-between bg-[var(--surface-2)] px-3.5 py-2.5 text-left text-[12px] font-semibold text-[var(--text)] transition-colors hover:bg-[var(--surface-3)]"
+        >
+          <span>Dynamic values</span>
+          <ChevronDown
+            className={cn(
+              "size-4 text-[var(--text-2)] transition-transform duration-150",
+              openSections.dynamic && "rotate-180"
+            )}
+          />
+        </button>
+        {openSections.dynamic && (
+          <div className="p-3">
+            <DynamicValuesList
+              creatureConfig={creatureConfig}
+              onInsertToken={onInsertToken}
+            />
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+/** Collapsible 288px desktop left sidebar (56px icon rail when collapsed, shortcut "["). */
+export function ReadmeMapSidebar({
+  collapsed,
+  onToggleCollapsed,
+  ...rest
+}: ReadmeMapSidebarProps) {
+  return (
+    <TooltipProvider delay={120}>
+      <aside
+        aria-label="Parts and blocks"
+        className={cn(
+          "studio-no-scrollbar hidden h-full shrink-0 flex-col gap-2.5 overflow-y-auto transition-[width] duration-150 min-[1280px]:flex",
+          collapsed ? "w-[56px]" : "w-[288px]"
+        )}
+      >
+        <div className="flex items-center justify-between gap-2 px-1">
+          {!collapsed && (
+            <span className="text-[12px] font-semibold tracking-[-0.01em] text-[var(--text-2)]">
+              Parts and blocks
+            </span>
+          )}
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  onClick={onToggleCollapsed}
+                  aria-label={
+                    collapsed ? "Expand left sidebar" : "Collapse left sidebar"
+                  }
+                  className="ml-auto flex size-8 cursor-pointer items-center justify-center rounded-[8px] bg-[var(--surface)] text-[var(--text-2)] transition-colors duration-150 hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                />
+              }
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="size-4" />
+              ) : (
+                <PanelLeftClose className="size-4" />
+              )}
+            </TooltipTrigger>
+            <TooltipContent
+              data-app="studio"
+              className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
+            >
+              {collapsed ? "Expand sidebar ([)" : "Collapse sidebar ([)"}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        <LeftSidebarContent collapsed={collapsed} {...rest} />
+      </aside>
+    </TooltipProvider>
   );
 }

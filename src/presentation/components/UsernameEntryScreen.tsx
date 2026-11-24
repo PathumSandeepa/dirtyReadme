@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  GitCommitHorizontal,
   Loader2,
   ShieldCheck,
 } from "lucide-react";
@@ -21,9 +20,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { BRAND } from "@/config/brand";
 import { StudioButton } from "../studio/ui/StudioButton";
 import { StudioField, StudioInput } from "../studio/ui/StudioInput";
-import { HOME_FACTS, showcaseAsset } from "./home/homeData";
 
 interface UsernameEntryScreenProps {
   initialInput: string;
@@ -36,6 +35,38 @@ interface UsernameEntryScreenProps {
     rawInput: string,
     preloadedSnapshot?: GitHubProfileSnapshot | null
   ) => Promise<void>;
+}
+
+const RECENT_USERNAMES_KEY = "dirtyreadme_recent_usernames_v1";
+const MAX_RECENT_USERNAMES = 3;
+
+function readRecentUsernames(): string[] {
+  try {
+    const raw = window.localStorage.getItem(RECENT_USERNAMES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+      .slice(0, MAX_RECENT_USERNAMES);
+  } catch {
+    return [];
+  }
+}
+
+function writeRecentUsernames(list: string[]): void {
+  try {
+    if (list.length === 0) {
+      window.localStorage.removeItem(RECENT_USERNAMES_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      RECENT_USERNAMES_KEY,
+      JSON.stringify(list.slice(0, MAX_RECENT_USERNAMES))
+    );
+  } catch {
+    // Ignore storage quota or private browsing errors.
+  }
 }
 
 function GitHubMark({ className }: { className?: string }) {
@@ -52,7 +83,7 @@ function GitHubMark({ className }: { className?: string }) {
 }
 
 /**
- * Step 1 Connect screen with two-column layout and debounced live GitHub profile card.
+ * Step 1 Connect screen with full-height two-panel layout, recent usernames, and floating glass profile card.
  */
 export function UsernameEntryScreen({
   initialInput,
@@ -66,6 +97,7 @@ export function UsernameEntryScreen({
   const [inputValue, setInputValue] = useState(
     initialInput === "your-username" ? "" : initialInput
   );
+  const [recentUsernames, setRecentUsernames] = useState<string[]>([]);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [previewState, setPreviewState] = useState<{
     status: "idle" | "loading" | "found" | "error";
@@ -93,6 +125,26 @@ export function UsernameEntryScreen({
     (previewState.status === "error" ? previewState.error : null);
   const isEmpty = !inputValue.trim();
   const isSubmitDisabled = loading || isEmpty;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setRecentUsernames(readRecentUsernames());
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const recordRecentUsername = (username: string) => {
+    const clean = username.trim();
+    if (!clean) return;
+    setRecentUsernames((prev) => {
+      const next = [
+        clean,
+        ...prev.filter((item) => item.toLowerCase() !== clean.toLowerCase()),
+      ].slice(0, MAX_RECENT_USERNAMES);
+      writeRecentUsernames(next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!parsedPreview) {
@@ -124,6 +176,7 @@ export function UsernameEntryScreen({
         const snap = await fetchGitHubProfileSnapshot(parsedPreview);
         if (lookupSeqRef.current !== requestId) return;
         setPreviewState({ status: "found", snapshot: snap, error: null });
+        recordRecentUsername(snap.username);
       } catch (err) {
         if (lookupSeqRef.current !== requestId) return;
         const message =
@@ -155,7 +208,15 @@ export function UsernameEntryScreen({
         parsedPreview.toLowerCase()
         ? previewState.snapshot
         : null;
+    if (readySnapshot) {
+      recordRecentUsername(readySnapshot.username);
+    }
     await onNext(inputValue, readySnapshot);
+  };
+
+  const handleClearRecent = () => {
+    setRecentUsernames([]);
+    writeRecentUsernames([]);
   };
 
   const continueBtn = (
@@ -181,24 +242,27 @@ export function UsernameEntryScreen({
 
   return (
     <TooltipProvider delay={150}>
-      <div className="mx-auto w-full max-w-[1120px] px-4 py-10 sm:px-6 sm:py-16">
-        <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
-          {/* Left Form Column */}
-          <div className="flex min-w-0 flex-col gap-6 lg:col-span-6">
+      <div className="mx-auto flex min-h-[calc(100vh-156px)] w-full max-w-[1200px] items-center px-4 pt-8 pb-16 sm:px-6">
+        <div className="grid w-full items-center gap-8 min-[900px]:grid-cols-[46fr_54fr] min-[900px]:gap-10">
+          {/* Left Panel (46%) */}
+          <div className="flex min-w-0 flex-col gap-6">
             <div className="flex flex-col gap-3">
+              <span className="text-[12px] font-semibold tracking-[0.04em] text-[var(--text-3)] uppercase">
+                Step 1 of 4
+              </span>
               <h1 className="text-[28px] leading-[1.18] font-semibold tracking-[-0.025em] text-[var(--text)] sm:text-[32px]">
                 Connect your GitHub profile
               </h1>
               <p className="text-[15px] leading-6 text-[var(--text-2)]">
-                ReadmeForge reads your public language stats and commit counts to
-                shape your creature. It also checks your profile repository for
-                any saved setup so you can continue editing cleanly.
+                {BRAND.name} reads your public language stats and commit counts
+                to populate your profile. It also checks your profile repository
+                for any saved README setup.
               </p>
             </div>
 
             <form
               onSubmit={handleSubmit}
-              className="flex flex-col gap-6 rounded-[12px] bg-[var(--surface)] p-6 sm:p-8"
+              className="flex flex-col gap-5 rounded-[14px] bg-[var(--surface)] p-6 sm:p-8"
             >
               <StudioField
                 label="GitHub username or profile URL"
@@ -207,7 +271,7 @@ export function UsernameEntryScreen({
                 error={activeError}
               >
                 <div className="relative">
-                  <GitHubMark className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--text-2)]" />
+                  <GitHubMark className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[var(--text-2)]" />
                   <StudioInput
                     id="github-username-input"
                     inputSize="lg"
@@ -220,10 +284,39 @@ export function UsernameEntryScreen({
                       if (syncError) onClearError?.();
                     }}
                     placeholder="octocat or https://github.com/octocat"
-                    className="pl-10"
+                    className="h-[52px] pl-11 text-[15px]"
                   />
                 </div>
               </StudioField>
+
+              {recentUsernames.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[12px] text-[var(--text-3)]">
+                    Recent
+                  </span>
+                  {recentUsernames.map((recent) => (
+                    <button
+                      key={recent}
+                      type="button"
+                      onClick={() => {
+                        setInputValue(recent);
+                        if (validationError) setValidationError(null);
+                        if (syncError) onClearError?.();
+                      }}
+                      className="studio-mono cursor-pointer rounded-full bg-[var(--surface-2)] px-3 py-1 text-[12px] font-medium text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)]"
+                    >
+                      {recent}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleClearRecent}
+                    className="cursor-pointer px-1.5 py-1 text-[12px] font-medium text-[var(--text-3)] transition-colors duration-150 hover:text-[var(--text)]"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
 
               {parsedPreview && !activeError && (
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-[8px] bg-[var(--surface-2)] px-3.5 py-2.5 text-[13px]">
@@ -278,67 +371,69 @@ export function UsernameEntryScreen({
             </div>
           </div>
 
-          {/* Right Glass Profile Preview Card */}
-          <div className="min-w-0 lg:col-span-6">
-            <div
-              aria-live="polite"
-              data-testid="connect-preview-card"
-              className="flex min-w-0 flex-col gap-6 overflow-hidden rounded-[16px] bg-[var(--surface)]/80 p-6 shadow-[var(--shadow-float)] backdrop-blur-xl sm:p-8"
-            >
-              {(previewState.status === "loading" || loading) && (
-                <div
-                  data-testid="connect-preview-skeleton"
-                  className="flex flex-col gap-6"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="size-16 shrink-0 animate-pulse rounded-full bg-[var(--surface-2)]" />
-                    <div className="flex flex-1 flex-col gap-2">
-                      <div className="h-5 w-44 animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
-                      <div className="h-4 w-28 animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="h-4 w-full animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
-                    <div className="h-4 w-3/4 animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <div className="h-7 w-24 animate-pulse rounded-full bg-[var(--surface-2)]" />
-                    <div className="h-7 w-24 animate-pulse rounded-full bg-[var(--surface-2)]" />
-                    <div className="h-7 w-20 animate-pulse rounded-full bg-[var(--surface-2)]" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="h-20 animate-pulse rounded-[12px] bg-[var(--surface-2)]" />
-                    <div className="h-20 animate-pulse rounded-[12px] bg-[var(--surface-2)]" />
-                  </div>
-                </div>
-              )}
-
-              {!(previewState.status === "loading" || loading) &&
-                previewState.status === "found" &&
-                previewState.snapshot && (
-                  <LiveSnapshotPreviewCard snapshot={previewState.snapshot} />
-                )}
-
-              {!(previewState.status === "loading" || loading) &&
-                previewState.status === "error" && (
-                  <div className="flex flex-col gap-5">
-                    <div className="flex items-start gap-3 rounded-[12px] bg-[var(--danger-soft)] p-4 text-[13px] leading-5 text-[var(--text)]">
-                      <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--danger)]" />
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold text-[var(--danger)]">
-                          Profile lookup did not succeed
-                        </span>
-                        <span className="text-[var(--text-2)]">
-                          {previewState.error}
-                        </span>
+          {/* Right Panel (54%): Wallpaper + Floating Glass Profile Card */}
+          <div className="min-w-0">
+            <div className="studio-wallpaper flex items-center justify-center rounded-[20px] p-4 sm:p-7 min-[900px]:p-10">
+              <div
+                aria-live="polite"
+                data-testid="connect-preview-card"
+                className="flex w-full min-w-0 flex-col gap-6 overflow-hidden rounded-[16px] bg-[var(--surface)]/80 p-5 shadow-[var(--shadow-float)] backdrop-blur-xl transition-all duration-150 sm:p-7"
+              >
+                {(previewState.status === "loading" || loading) && (
+                  <div
+                    data-testid="connect-preview-skeleton"
+                    className="flex flex-col gap-6"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="size-16 shrink-0 animate-pulse rounded-full bg-[var(--surface-2)]" />
+                      <div className="flex flex-1 flex-col gap-2">
+                        <div className="h-5 w-44 animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
+                        <div className="h-4 w-28 animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
                       </div>
                     </div>
-                    <SampleTulkunPreviewCard muted />
+                    <div className="flex flex-col gap-2">
+                      <div className="h-4 w-full animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
+                      <div className="h-4 w-3/4 animate-pulse rounded-[6px] bg-[var(--surface-2)]" />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <div className="h-7 w-24 animate-pulse rounded-full bg-[var(--surface-2)]" />
+                      <div className="h-7 w-24 animate-pulse rounded-full bg-[var(--surface-2)]" />
+                      <div className="h-7 w-20 animate-pulse rounded-full bg-[var(--surface-2)]" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="h-20 animate-pulse rounded-[12px] bg-[var(--surface-2)]" />
+                      <div className="h-20 animate-pulse rounded-[12px] bg-[var(--surface-2)]" />
+                    </div>
                   </div>
                 )}
 
-              {!(previewState.status === "loading" || loading) &&
-                previewState.status === "idle" && <SampleTulkunPreviewCard />}
+                {!(previewState.status === "loading" || loading) &&
+                  previewState.status === "found" &&
+                  previewState.snapshot && (
+                    <LiveSnapshotPreviewCard snapshot={previewState.snapshot} />
+                  )}
+
+                {!(previewState.status === "loading" || loading) &&
+                  previewState.status === "error" && (
+                    <div className="flex flex-col gap-5">
+                      <div className="flex items-start gap-3 rounded-[12px] bg-[var(--danger-soft)] p-4 text-[13px] leading-5 text-[var(--text)]">
+                        <AlertCircle className="mt-0.5 size-4 shrink-0 text-[var(--danger)]" />
+                        <div className="flex flex-col gap-1">
+                          <span className="font-semibold text-[var(--danger)]">
+                            Profile lookup did not succeed
+                          </span>
+                          <span className="text-[var(--text-2)]">
+                            {previewState.error}
+                          </span>
+                        </div>
+                      </div>
+                      <SamplePlaceholderCard muted />
+                    </div>
+                  )}
+
+                {!(previewState.status === "loading" || loading) &&
+                  previewState.status === "idle" && <SamplePlaceholderCard />}
+              </div>
             </div>
           </div>
         </div>
@@ -347,47 +442,66 @@ export function UsernameEntryScreen({
   );
 }
 
-function SampleTulkunPreviewCard({ muted = false }: { muted?: boolean }) {
+function SamplePlaceholderCard({ muted = false }: { muted?: boolean }) {
   return (
-    <div className={muted ? "flex flex-col gap-5 opacity-75" : "flex flex-col gap-5"}>
+    <div
+      className={
+        muted
+          ? "flex flex-col gap-5 opacity-75 transition-opacity duration-150"
+          : "flex flex-col gap-5 transition-opacity duration-150"
+      }
+    >
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[12px] font-medium tracking-[0.04em] text-[var(--text-3)] uppercase">
-          Sample preview
-        </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ember-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--ember)]">
-          Stage 4 Mature
-        </span>
-      </div>
-
-      <div className="overflow-hidden rounded-[12px] bg-[#0d1117] p-3">
-        <img
-          src={showcaseAsset("hero-tulkun.webp")}
-          alt="Animated Pixel Tulkun banner preview"
-          className="aspect-2/1 w-full rounded-[6px] object-contain"
-        />
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {HOME_FACTS.sampleLanguages.map((lang) => (
-            <span
-              key={lang.name}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-[12px] text-[var(--text)]"
-            >
-              <span
-                className="size-2 rounded-full"
-                style={{ backgroundColor: lang.color }}
-              />
-              <span>{lang.name}</span>
-            </span>
-          ))}
+        <div className="flex items-center gap-3.5">
+          <div className="size-12 shrink-0 rounded-full bg-[var(--surface-2)] sm:size-14" />
+          <div className="flex flex-col gap-2">
+            <div className="h-4 w-32 rounded-[6px] bg-[var(--surface-2)]" />
+            <div className="h-3 w-20 rounded-[6px] bg-[var(--surface-2)]" />
+          </div>
         </div>
-
-        <span className="studio-mono inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-2)] tabular-nums">
-          <GitCommitHorizontal className="size-3.5 text-[var(--ember)]" />
-          <span>{HOME_FACTS.sampleCommits.toLocaleString("en-US")} commits</span>
+        <span className="rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-[11px] font-medium text-[var(--text-3)]">
+          Sample profile
         </span>
       </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="h-3.5 w-full rounded-[6px] bg-[var(--surface-2)]" />
+        <div className="h-3.5 w-4/5 rounded-[6px] bg-[var(--surface-2)]" />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-3 py-1 text-[12px] text-[var(--text-2)]">
+          <span className="size-2 rounded-full bg-[#3178C6]" />
+          <span>TypeScript</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-3 py-1 text-[12px] text-[var(--text-2)]">
+          <span className="size-2 rounded-full bg-[#3572A5]" />
+          <span>Python</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-3 py-1 text-[12px] text-[var(--text-2)]">
+          <span className="size-2 rounded-full bg-[#00ADD8]" />
+          <span>Go</span>
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--surface-2)] p-3.5">
+          <span className="text-[11px] text-[var(--text-3)]">
+            Commits this year
+          </span>
+          <div className="h-5 w-16 rounded-[6px] bg-[var(--surface-3)]" />
+        </div>
+        <div className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--surface-2)] p-3.5">
+          <span className="text-[11px] text-[var(--text-3)]">
+            All time commits
+          </span>
+          <div className="h-5 w-20 rounded-[6px] bg-[var(--surface-3)]" />
+        </div>
+      </div>
+
+      <p className="text-[12px] text-[var(--text-3)]">
+        Enter a username to load live stats and README repository status.
+      </p>
     </div>
   );
 }
@@ -400,7 +514,10 @@ function LiveSnapshotPreviewCard({
   const topLanguages = snapshot.languages.slice(0, 5);
 
   return (
-    <div data-testid="connect-live-profile" className="flex min-w-0 flex-col gap-6">
+    <div
+      data-testid="connect-live-profile"
+      className="flex min-w-0 flex-col gap-5 transition-opacity duration-150"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-4">
           <img
@@ -417,23 +534,6 @@ function LiveSnapshotPreviewCard({
             </span>
           </div>
         </div>
-
-        <span
-          className={
-            snapshot.profileRepoExists
-              ? "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--tide-soft)] px-2.5 py-1 text-[12px] font-medium text-[var(--tide)]"
-              : "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-[12px] font-medium text-[var(--text-2)]"
-          }
-        >
-          {snapshot.profileRepoExists ? (
-            <>
-              <CheckCircle2 className="size-3.5" />
-              <span>Profile repo found</span>
-            </>
-          ) : (
-            <span>Ready to set up</span>
-          )}
-        </span>
       </div>
 
       <p className="text-[14px] leading-6 break-words text-[var(--text-2)]">
@@ -441,7 +541,7 @@ function LiveSnapshotPreviewCard({
           "Public GitHub profile loaded and ready to customize."}
       </p>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2">
         <span className="text-[12px] font-medium text-[var(--text-3)]">
           Top public languages
         </span>
@@ -485,9 +585,16 @@ function LiveSnapshotPreviewCard({
         </div>
       </div>
 
-      <p className="text-[12px] leading-5 text-[var(--text-3)]">
-        {snapshot.sourceNote}
-      </p>
+      <div className="flex items-center gap-2 text-[12px] font-medium">
+        {snapshot.profileRepoExists ? (
+          <>
+            <CheckCircle2 className="size-4 shrink-0 text-[var(--tide)]" />
+            <span className="text-[var(--tide)]">README repository found</span>
+          </>
+        ) : (
+          <span className="text-[var(--text-2)]">No README repository yet</span>
+        )}
+      </div>
     </div>
   );
 }

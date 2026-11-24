@@ -189,18 +189,6 @@ export function LinksInspector({
         description="Displays your enabled link badges beneath the tech stack."
       />
 
-      <StudioField label="Badges and CTA alignment">
-        <StudioSegmentedControl<"left" | "center">
-          ariaLabel="Badges and links alignment"
-          value={readmeConfig.align}
-          onChange={(align) => onUpdateField("align", align)}
-          options={[
-            { value: "left", label: "Left" },
-            { value: "center", label: "Center" },
-          ]}
-        />
-      </StudioField>
-
       {/* Quick add row */}
       <div className="flex flex-col gap-2">
         <span className="text-[13px] font-medium text-[var(--text)]">
@@ -231,7 +219,22 @@ export function LinksInspector({
 
       {/* Existing links */}
       <div className="flex flex-col gap-3">
-        {readmeConfig.actionLinks.map((link, idx) => {
+        {readmeConfig.actionLinks.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-[12px] bg-[var(--surface-2)] p-5 text-center">
+            <p className="text-[13px] text-[var(--text-2)]">
+              No profile links yet.
+            </p>
+            <StudioButton
+              variant="secondary"
+              size="sm"
+              onClick={() => customInputRef.current?.focus()}
+            >
+              <Plus />
+              <span>Add a link</span>
+            </StudioButton>
+          </div>
+        ) : (
+          readmeConfig.actionLinks.map((link, idx) => {
           const urlError = validateLinkUrl(link.url);
           return (
             <div
@@ -377,7 +380,8 @@ export function LinksInspector({
               </div>
             </div>
           );
-        })}
+        })
+        )}
       </div>
 
       {/* Custom Link Form */}

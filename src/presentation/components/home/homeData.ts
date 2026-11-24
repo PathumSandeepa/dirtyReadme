@@ -1,8 +1,6 @@
 import {
-  CREATURE_CATALOG,
   DEFAULT_CREATURE_CONFIG,
   DEFAULT_LANGUAGES,
-  STAGE_DEFINITIONS,
 } from "@/domain/creature/entities";
 import {
   DEFAULT_TECH_STACK_CARDS,
@@ -12,7 +10,6 @@ import {
 } from "@/domain/profile/entities";
 import { PROFILE_EDITOR_TEMPLATES } from "@/domain/profile/markdownRichText";
 import { PLATFORM_ICON_CATALOG } from "@/domain/profile/platformIcons";
-import { generateEvolveWorkflowYaml } from "@/domain/automation/workflowService";
 import pkg from "../../../../package.json";
 
 export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -30,8 +27,7 @@ export const LICENSE_NAME = "MIT License";
 export const HOME_FACTS = {
   templateCount: PROFILE_EDITOR_TEMPLATES.length,
   layoutPresetCount: README_TEMPLATES.length,
-  creatureCount: CREATURE_CATALOG.length,
-  stageCount: STAGE_DEFINITIONS.length,
+  studioStepCount: 4,
   serverCount: 0,
   techBadgeCount: TECH_STACK_CATALOG.length,
   techCategoryCount: TECH_CATEGORIES_ORDER.length,
@@ -76,24 +72,6 @@ export const STACK_DEMO_PLATFORMS = (() => {
     .map((id) => PLATFORM_ICON_CATALOG.find((item) => item.id === id))
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 })();
-
-export const WORKFLOW_SNIPPET = (() => {
-  const full = generateEvolveWorkflowYaml(DEFAULT_CREATURE_CONFIG, "0 0 * * *");
-  const lines = full.split("\n");
-  if (lines.length <= 36) return full;
-  return [
-    ...lines.slice(0, 34),
-    "      # Commits updated creature.webp, creature-config.json and README.md",
-  ].join("\n");
-})();
-
-export const STAGE_DISPLAY_NAMES: Record<number, string> = {
-  1: "Calf",
-  2: "Young",
-  3: "Sub-adult",
-  4: "Mature",
-  5: "Elder",
-};
 
 /**
  * Strips emoji, HTML tags, markdown syntax, and forbidden copy separators

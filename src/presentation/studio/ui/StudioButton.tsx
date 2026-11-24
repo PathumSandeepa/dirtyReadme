@@ -25,10 +25,10 @@ const VARIANT_CLASSES: Record<StudioButtonVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<StudioButtonSize, string> = {
-  default: "h-9 px-3.5 text-[14px] gap-2",
-  sm: "h-8 px-3 text-[13px] gap-1.5",
-  lg: "h-10 px-4 text-[14px] gap-2",
-  icon: "size-9 p-0",
+  default: "min-h-11 h-11 sm:min-h-0 sm:h-9 px-3.5 text-[14px] gap-2",
+  sm: "min-h-11 h-11 sm:min-h-0 sm:h-8 px-3 text-[13px] gap-1.5",
+  lg: "min-h-11 h-11 sm:min-h-0 sm:h-10 px-4 text-[14px] gap-2",
+  icon: "size-11 sm:size-9 p-0",
 };
 
 /** Borderless surface-step button bound to Abyss and Paper tokens. */

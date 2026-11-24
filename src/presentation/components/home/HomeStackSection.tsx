@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GripVertical, X } from "lucide-react";
 import { cn } from "cn";
 import {
   HOME_FACTS,
@@ -40,21 +41,28 @@ export function HomeStackSection() {
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(0);
 
   const badgeDock = useDockMagnification({
-    maxScale: 1.32,
+    maxScale: 1.24,
     radius: 136,
-    lift: 8,
+    lift: 6,
+    disabled: reducedMotion,
+  });
+
+  const linksDock = useDockMagnification({
+    maxScale: 1.22,
+    radius: 120,
+    lift: 6,
     disabled: reducedMotion,
   });
 
   return (
     <section
       id="stack"
-      className="home-section-below px-4 py-24 sm:px-6 sm:py-32"
+      className="home-section-below px-4 py-20 sm:px-6 sm:py-28"
     >
       <div className="mx-auto max-w-[1160px]">
         <Reveal className="flex flex-col items-center text-center">
           <div className="home-section-label">Stack and links</div>
-          <h2 className="home-h2 home-gradient-text mt-3">
+          <h2 className="home-h2 home-gradient-text mt-3 mb-2 pb-1">
             Show what you build with.
           </h2>
         </Reveal>
@@ -87,9 +95,19 @@ export function HomeStackSection() {
                         backgroundColor: normalizeHex(badge.color),
                         color: getContrastingInk(badge.color),
                       }}
-                      className="origin-bottom rounded-[7px] px-3 py-1.5 font-mono text-[12px] font-semibold shadow-sm transition-transform duration-150 ease-out will-change-transform select-none"
+                      className="inline-flex origin-bottom items-center gap-1.5 rounded-[7px] py-1.5 pr-2 pl-2 font-mono text-[12px] font-semibold shadow-sm transition-transform duration-150 ease-out will-change-transform select-none"
                     >
-                      {badge.label}
+                      <GripVertical
+                        className="size-3 opacity-60"
+                        aria-hidden="true"
+                      />
+                      <span>{badge.label}</span>
+                      <span
+                        aria-hidden="true"
+                        className="inline-flex size-3.5 items-center justify-center rounded-full bg-black/15 opacity-75"
+                      >
+                        <X className="size-2.5" />
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -99,18 +117,23 @@ export function HomeStackSection() {
                   <div className="home-mono-caption mb-3 text-[var(--home-text-2)]">
                     Profile links
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {STACK_DEMO_PLATFORMS.map((platform) => {
+                  <div
+                    onPointerMove={linksDock.onPointerMove}
+                    onPointerLeave={linksDock.onPointerLeave}
+                    className="flex flex-wrap items-end gap-2.5 py-1"
+                  >
+                    {STACK_DEMO_PLATFORMS.map((platform, index) => {
                       const label =
                         platform.id === "x" ? "X" : platform.label;
                       return (
                         <span
                           key={platform.id}
+                          ref={linksDock.registerItem(index)}
                           style={{
                             backgroundColor: normalizeHex(platform.hex),
                             color: getContrastingInk(platform.hex),
                           }}
-                          className="inline-flex items-center gap-2 rounded-[8px] px-3 py-1.5 text-[12px] font-semibold shadow-sm"
+                          className="inline-flex origin-bottom items-center gap-2 rounded-[8px] px-3 py-1.5 text-[12px] font-semibold shadow-sm transition-transform duration-150 ease-out will-change-transform select-none"
                         >
                           <svg
                             viewBox="0 0 24 24"

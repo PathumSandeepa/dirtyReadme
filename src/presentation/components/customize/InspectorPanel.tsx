@@ -1,14 +1,18 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { cn } from "cn";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { StudioButton } from "../../studio/ui/StudioButton";
+import { StudioSegmentedControl } from "../../studio/ui/StudioSegmentedControl";
 import { CUSTOMIZE_PARTS, type CustomizePartId } from "./customizeTypes";
 
-interface InspectorPanelProps {
-  activePart: CustomizePartId;
-  onAdvancePart: () => void;
-  children: React.ReactNode;
-}
+export type RightSidebarTab = "part" | "format" | "page";
 
 export function getNextPartId(current: CustomizePartId): CustomizePartId | null {
   const idx = CUSTOMIZE_PARTS.findIndex((p) => p.id === current);
@@ -20,42 +24,136 @@ export function getPartMeta(id: CustomizePartId) {
   return CUSTOMIZE_PARTS.find((p) => p.id === id) ?? CUSTOMIZE_PARTS[0];
 }
 
-/** Fixed 360px right inspector rendered on desktop viewports (1200px and wider). */
-export function InspectorPanel({
+interface RightSidebarContentProps {
+  activeTab: RightSidebarTab;
+  onTabChange: (tab: RightSidebarTab) => void;
+  activePart: CustomizePartId;
+  onAdvancePart: () => void;
+  partContent: React.ReactNode;
+  formatContent: React.ReactNode;
+  pageContent: React.ReactNode;
+}
+
+export function RightSidebarContent({
+  activeTab,
+  onTabChange,
   activePart,
   onAdvancePart,
-  children,
-}: InspectorPanelProps) {
+  partContent,
+  formatContent,
+  pageContent,
+}: RightSidebarContentProps) {
   const meta = getPartMeta(activePart);
 
   return (
-    <aside
-      aria-label="Part inspector"
-      className="hidden w-[360px] shrink-0 overflow-hidden rounded-[12px] bg-[var(--surface)] min-[1200px]:sticky min-[1200px]:top-[116px] min-[1200px]:flex min-[1200px]:max-h-[calc(100vh-188px)] min-[1200px]:flex-col min-[1200px]:self-start"
-    >
-      <div className="shrink-0 px-5 pt-5 pb-3">
-        <h2 className="text-[18px] leading-6 font-semibold tracking-[-0.02em] text-[var(--text)]">
-          {meta.label}
-        </h2>
-        <p className="mt-1 text-[13px] leading-5 text-[var(--text-2)]">
-          {meta.description}
-        </p>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[12px] bg-[var(--surface)]">
+      <div className="shrink-0 p-6 pb-3">
+        <StudioSegmentedControl<RightSidebarTab>
+          ariaLabel="Settings panel tab"
+          size="sm"
+          value={activeTab}
+          onChange={onTabChange}
+          options={[
+            { value: "part", label: "Part" },
+            { value: "format", label: "Format" },
+            { value: "page", label: "Page" },
+          ]}
+        />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
-        {children}
+      {activeTab === "part" && (
+        <div className="shrink-0 px-6 pt-2 pb-4">
+          <h2 className="text-[16px] leading-6 font-semibold tracking-[-0.02em] text-[var(--text)]">
+            {meta.label}
+          </h2>
+          <p className="mt-0.5 text-[12px] leading-5 text-[var(--text-2)]">
+            {meta.description}
+          </p>
+        </div>
+      )}
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+        {activeTab === "part" && partContent}
+        {activeTab === "format" && formatContent}
+        {activeTab === "page" && pageContent}
       </div>
 
-      <div className="shrink-0 bg-[var(--surface-2)] px-5 py-3.5">
-        <StudioButton
-          variant="primary"
-          className="w-full justify-between"
-          onClick={onAdvancePart}
-        >
-          <span>{meta.nextLabel}</span>
-          <ArrowRight />
-        </StudioButton>
-      </div>
-    </aside>
+      {activeTab === "part" && (
+        <div className="shrink-0 bg-[var(--surface-2)] px-6 py-4">
+          <StudioButton
+            variant="primary"
+            className="w-full justify-between"
+            onClick={onAdvancePart}
+          >
+            <span>{meta.nextLabel}</span>
+            <ArrowRight />
+          </StudioButton>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface InspectorPanelProps extends RightSidebarContentProps {
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+}
+
+/** Collapsible 352px right sidebar on desktop viewports (1280px and wider, shortcut "]"). */
+export function InspectorPanel({
+  collapsed,
+  onToggleCollapsed,
+  ...rest
+}: InspectorPanelProps) {
+  return (
+    <TooltipProvider delay={120}>
+      <aside
+        aria-label="Settings"
+        className={cn(
+          "hidden h-full shrink-0 flex-col gap-2.5 transition-[width] duration-150 min-[1280px]:flex",
+          collapsed ? "w-[44px]" : "w-[352px]"
+        )}
+      >
+        <div className="flex items-center justify-between gap-2 px-1">
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  onClick={onToggleCollapsed}
+                  aria-label={
+                    collapsed ? "Expand right sidebar" : "Collapse right sidebar"
+                  }
+                  className="flex size-8 cursor-pointer items-center justify-center rounded-[8px] bg-[var(--surface)] text-[var(--text-2)] transition-colors duration-150 hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
+                />
+              }
+            >
+              {collapsed ? (
+                <PanelRightOpen className="size-4" />
+              ) : (
+                <PanelRightClose className="size-4" />
+              )}
+            </TooltipTrigger>
+            <TooltipContent
+              data-app="studio"
+              className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
+            >
+              {collapsed ? "Expand settings (])" : "Collapse settings (])"}
+            </TooltipContent>
+          </Tooltip>
+          {!collapsed && (
+            <span className="text-[12px] font-semibold tracking-[-0.01em] text-[var(--text-2)]">
+              Settings
+            </span>
+          )}
+        </div>
+
+        {!collapsed && (
+          <div className="min-h-0 flex-1">
+            <RightSidebarContent {...rest} />
+          </div>
+        )}
+      </aside>
+    </TooltipProvider>
   );
 }

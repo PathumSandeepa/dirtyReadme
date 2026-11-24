@@ -37,20 +37,23 @@ export function useDockMagnification({
     for (const el of itemRefs.current) {
       if (!el) continue;
       if (disabled || cursorX === null) {
-        el.style.transform = "translate3d(0, 0, 0) scale(1)";
+        el.style.setProperty("transform", "translate3d(0, 0, 0) scale(1)");
         continue;
       }
       const rect = el.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const distance = Math.abs(cursorX - centerX);
       if (distance >= radius) {
-        el.style.transform = "translate3d(0, 0, 0) scale(1)";
+        el.style.setProperty("transform", "translate3d(0, 0, 0) scale(1)");
         continue;
       }
       const influence = Math.cos((distance / radius) * (Math.PI / 2));
       const scale = 1 + (maxScale - 1) * influence;
       const liftY = lift * influence;
-      el.style.transform = `translate3d(0, -${liftY.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
+      el.style.setProperty(
+        "transform",
+        `translate3d(0, -${liftY.toFixed(2)}px, 0) scale(${scale.toFixed(3)})`
+      );
     }
   }, [disabled, lift, maxScale, radius]);
 

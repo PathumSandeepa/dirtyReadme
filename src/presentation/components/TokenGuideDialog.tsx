@@ -34,7 +34,7 @@ export function TokenGuideDialog({
   const safeUser =
     username && username !== "your-username" ? username : "YOUR_USERNAME";
   const secretsUrl = `https://github.com/${encodeURIComponent(safeUser)}/${encodeURIComponent(safeUser)}/settings/secrets/actions`;
-  const classicUrl = `https://github.com/settings/tokens/new?description=dynamic-readme-creature&scopes=${includeWorkflowFiles ? "repo,workflow" : "repo"}`;
+  const classicUrl = `https://github.com/settings/tokens/new?description=dirtyreadme&scopes=${includeWorkflowFiles ? "repo,workflow" : "repo"}`;
   const fineGrainedUrl =
     "https://github.com/settings/personal-access-tokens/new";
 
@@ -127,7 +127,7 @@ export function TokenGuideDialog({
                     <code className="studio-mono">
                       .github/workflows/evolve-creature.yml
                     </code>{" "}
-                    for the 12:00 AM daily auto evolve GitHub Action.
+                    for the daily update GitHub Action.
                   </p>
                 </div>
                 <span
@@ -140,7 +140,7 @@ export function TokenGuideDialog({
                 >
                   {includeWorkflowFiles
                     ? "Required now"
-                    : "When 12 AM action is on"}
+                    : "When daily update is on"}
                 </span>
               </div>
             </div>
@@ -163,7 +163,7 @@ export function TokenGuideDialog({
                   </strong>{" "}
                   Enter a label such as{" "}
                   <code className="studio-mono text-[var(--text)]">
-                    readmeforge-publish
+                    dirtyreadme-publish
                   </code>{" "}
                   so you recognize it later.
                 </li>
@@ -180,8 +180,7 @@ export function TokenGuideDialog({
                     4. Select scopes.
                   </strong>{" "}
                   Check <strong className="text-[var(--text)]">repo</strong>. If
-                  you enabled the 12:00 AM daily auto evolve GitHub Action, also
-                  check{" "}
+                  you enabled the daily update GitHub Action, also check{" "}
                   <strong className="text-[var(--text)]">workflow</strong>.
                 </li>
                 <li className="rounded-[8px] bg-[var(--surface-2)] p-3">
@@ -248,7 +247,7 @@ export function TokenGuideDialog({
                 >
                   {includeWorkflowFiles
                     ? "Required now"
-                    : "When 12 AM action is on"}
+                    : "When daily update is on"}
                 </span>
               </div>
 
@@ -303,7 +302,7 @@ export function TokenGuideDialog({
                 <strong className="text-[var(--text)]">
                   Workflows read and write
                 </strong>{" "}
-                if the 12:00 AM Action is enabled, then copy your{" "}
+                if the daily update is enabled, then copy your{" "}
                 <code className="studio-mono">github_pat_</code> token.
               </li>
             </ol>
@@ -317,7 +316,7 @@ export function TokenGuideDialog({
               <span>Optional PROFILE_PAT secret</span>
             </div>
             <p className="text-[var(--text-2)]">
-              The 12:00 AM GitHub Action works with zero secrets for public
+              The daily update GitHub Action works with zero secrets for public
               commits. To count private commits too, add a repository secret
               named <code className="studio-mono">PROFILE_PAT</code> with{" "}
               <code className="studio-mono">read:user</code> and{" "}

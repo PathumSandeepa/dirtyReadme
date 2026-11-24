@@ -2,13 +2,14 @@
 
 import type { MouseEvent } from "react";
 import { BRAND } from "@/config/brand";
+import { BrandLockup } from "@/presentation/studio/ui/BrandLockup";
 import { useReducedMotion } from "./useReducedMotion";
 
 const PRODUCT_LINKS = [
   { id: "editor", label: "Editor" },
   { id: "templates", label: "Templates" },
   { id: "stack", label: "Stack" },
-  { id: "creatures", label: "Creatures" },
+  { id: "images", label: "Images" },
   { id: "privacy", label: "Privacy" },
 ] as const;
 
@@ -46,9 +47,7 @@ export function HomeFooter() {
       <div className="mx-auto max-w-[1200px] px-5 sm:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="home-display text-[18px] font-extrabold tracking-[-0.03em] text-white">
-              {BRAND.name}
-            </p>
+            <BrandLockup size="md" variant="landing" />
             <p className="mt-3 max-w-[260px] text-[14px] leading-relaxed text-[var(--home-text-2)]">
               Build, edit and publish a GitHub profile README right in your
               browser.
@@ -125,7 +124,8 @@ export function HomeFooter() {
         className="mt-6 flex justify-center overflow-hidden px-2"
       >
         <span className="home-footer-wordmark -mb-[0.18em] whitespace-nowrap">
-          {BRAND.name}
+          <span className="home-footer-wordmark-dirty">Dirty</span>
+          <span className="home-footer-wordmark-readme">Readme</span>
         </span>
       </div>
     </footer>

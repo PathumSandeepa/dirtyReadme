@@ -165,6 +165,13 @@
   animation: studio-step-enter 160ms ease-out both;
 }
 
+.studio-wallpaper {
+  background-color: var(--surface-2);
+  background-image:
+    radial-gradient(circle at 18% 20%, var(--tide-soft) 0%, transparent 56%),
+    radial-gradient(circle at 84% 78%, var(--ember-soft) 0%, transparent 58%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .studio-step-enter {
     animation: none;

@@ -102,7 +102,6 @@ import { loadCreatureSprite } from "@/infrastructure/browser/spriteLoader";
 import {
   encodeAnimatedGifFromCreature,
   encodeAnimatedWebPFromCreature,
-  exportShareCardPngBlob,
 } from "@/infrastructure/browser/webpEncoder";
 import type { GitHubProfileSnapshot } from "@/infrastructure/github/githubClient";
 import {
@@ -139,9 +138,12 @@ import { StudioField, StudioInput } from "../../studio/ui/StudioInput";
 import { StudioSegmentedControl } from "../../studio/ui/StudioSegmentedControl";
 import { Switch } from "@/components/ui/switch";
 import { CreatureAnimatedView } from "../CreatureAnimatedView";
-import { EvolutionPanel } from "../EvolutionPanel";
 import { ImageStudioDialog } from "../ImageStudioDialog";
-import { ShareCardCanvasView } from "../ShareCardCanvasView";
+import { CanvasLinksSection } from "./CanvasLinksSection";
+import { CanvasStackSection } from "./CanvasStackSection";
+import { EditorTopBar } from "./EditorTopBar";
+import type { FormatPanelActions, FormatPanelState } from "./FormatPanel";
+import type { InsertBlockAction } from "./InsertPalette";
 import { TemplateGalleryDialog } from "./TemplateGalleryDialog";
 import type { CustomizePartId } from "./customizeTypes";
 
@@ -159,7 +161,7 @@ const StudioImageExtension = ImageExtension.extend({
   },
 });
 
-type CanvasViewMode = "visual" | "markdown" | "share-card" | "stages";
+type CanvasViewMode = "visual" | "markdown";
 type WidthMode = "github-848" | "fit-pane";
 
 const PROFILE_EMOJIS = [
@@ -370,6 +372,7 @@ function ToolbarIconButton({
   onClick: () => void;
   children: React.ReactNode;
 }) {
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -409,15 +412,24 @@ const getBubbleMenuContainer = () =>
 export interface LiveProfileCanvasHandle {
   insertToken: (token: string) => void;
   insertSnippet: (markdown: string) => void;
+  insertSnippetById: (snippetId: "status" | "roadmap" | "visitors") => void;
+  insertBlock: (action: InsertBlockAction) => void;
+  insertEmoji: (emoji: string) => void;
   openTemplates: () => void;
   openEditorImageStudio: () => void;
   scrollToPart: (part: CustomizePartId) => void;
+  exportWebP: () => Promise<void>;
+  exportGif: () => Promise<void>;
+  getFormatActions: () => FormatPanelActions;
 }
 
 interface LiveProfileCanvasProps {
   activePart: CustomizePartId;
   selectedStackCardId: string;
   onSelectPart: (part: CustomizePartId, stackCardId?: string) => void;
+  onEditorFocus?: () => void;
+  onFormatStateChange?: (state: FormatPanelState) => void;
+  onExportBusyChange?: (busy: { webp: boolean; gif: boolean }) => void;
   creatureConfig: CreatureConfig;
   readmeConfig: ReadmeConfig;
   readmeMarkdown: string;
@@ -433,11 +445,34 @@ interface LiveProfileCanvasProps {
   onChangeRawMarkdown: (raw: string | null) => void;
   onAddStackCard: (title?: string) => string;
   onToggleStackCardVisibility: (cardId: string, visible: boolean) => void;
+  onDeleteStackCard: (cardId: string) => void;
   onReorderStackCards: (fromIdx: number, toIdx: number) => void;
+  onAddBadgeToCard: (
+    cardId: string,
+    badgeId: string,
+    beforeBadgeId?: string
+  ) => void;
+  onRemoveBadgeFromCard: (cardId: string, badgeId: string) => void;
+  onMoveBadgeAcrossCards: (
+    badgeId: string,
+    fromCardId: string,
+    toCardId: string,
+    targetBadgeId?: string
+  ) => void;
+  onAddCustomBadgeToCard: (
+    cardId: string,
+    badge: Omit<ReadmeBadge, "enabled">
+  ) => void;
   onSyncFromForm: () => void;
   onRegisterCustomImage: (asset: CustomImageMemoryAsset) => void;
   onSelectView: (view: CameraView) => void;
-  onOpenAutoEvolve: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  onClearAll: () => void;
+  onShowUndoToast: (message: string) => void;
+  onFocusAddToReadme?: () => void;
 }
 
 export const LiveProfileCanvas = forwardRef<
@@ -448,6 +483,9 @@ export const LiveProfileCanvas = forwardRef<
     activePart,
     selectedStackCardId,
     onSelectPart,
+    onEditorFocus,
+    onFormatStateChange,
+    onExportBusyChange,
     creatureConfig,
     readmeConfig,
     readmeMarkdown,
@@ -460,11 +498,21 @@ export const LiveProfileCanvas = forwardRef<
     onChangeRawMarkdown,
     onAddStackCard,
     onToggleStackCardVisibility,
+    onDeleteStackCard,
     onReorderStackCards,
+    onAddBadgeToCard,
+    onRemoveBadgeFromCard,
+    onMoveBadgeAcrossCards,
+    onAddCustomBadgeToCard,
     onSyncFromForm,
     onRegisterCustomImage,
-    onSelectView,
-    onOpenAutoEvolve,
+    canUndo,
+    canRedo,
+    onUndo,
+    onRedo,
+    onClearAll,
+    onShowUndoToast,
+    onFocusAddToReadme,
   },
   ref
 ) {
@@ -479,19 +527,12 @@ export const LiveProfileCanvas = forwardRef<
 
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [editorImageOpen, setEditorImageOpen] = useState(false);
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
-  const [emojisOpen, setEmojisOpen] = useState(false);
-
-  const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
-  const [linkUrlInput, setLinkUrlInput] = useState("https://");
-  const [linkError, setLinkError] = useState<string | null>(null);
   const [bubbleLinkMode, setBubbleLinkMode] = useState(false);
   const [bubbleLinkInput, setBubbleLinkInput] = useState("https://");
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [webpBusy, setWebpBusy] = useState(false);
   const [gifBusy, setGifBusy] = useState(false);
-  const [shareBusy, setShareBusy] = useState(false);
 
   const [slashState, setSlashState] = useState<SlashState | null>(null);
   const [slashIndex, setSlashIndex] = useState(0);
@@ -545,6 +586,7 @@ export const LiveProfileCanvas = forwardRef<
     shouldRerenderOnTransaction: true,
     extensions: [
       StarterKit.configure({
+        undoRedo: false,
         heading: { levels: [1, 2, 3, 4] },
         link: {
           openOnClick: false,
@@ -613,6 +655,9 @@ export const LiveProfileCanvas = forwardRef<
         }
         return false;
       },
+    },
+    onFocus: () => {
+      onEditorFocus?.();
     },
     onUpdate: ({ editor: activeEditor }) => {
       const serialized = tiptapJsonToGithubMarkdown(activeEditor.getJSON());
@@ -700,7 +745,7 @@ export const LiveProfileCanvas = forwardRef<
           setEditorImageOpen(true);
           break;
         case "emoji":
-          setEmojisOpen(true);
+          editor.chain().focus().insertContent("👋").run();
           break;
         case "stackGroup": {
           const id = onAddStackCard(
@@ -765,27 +810,6 @@ export const LiveProfileCanvas = forwardRef<
     }
   };
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      insertToken: (token: string) => {
-        setViewMode("visual");
-        editor?.chain().focus().insertContent(token).run();
-      },
-      insertSnippet: (markdown: string) => {
-        setViewMode("visual");
-        editor
-          ?.chain()
-          .focus()
-          .insertContent(markdownToEditorHtml(markdown, imageUrlMap))
-          .run();
-      },
-      openTemplates: () => setTemplatesOpen(true),
-      openEditorImageStudio: () => setEditorImageOpen(true),
-      scrollToPart: scrollToCanvasPart,
-    }),
-    [editor, imageUrlMap]
-  );
 
   const stage = getEvolutionStage(creatureConfig.commits);
   const meta = getCreatureMeta(creatureConfig.creature);
@@ -831,6 +855,7 @@ export const LiveProfileCanvas = forwardRef<
     ? readmeConfig.advancedProfileMarkdown.split(/\r?\n/).length
     : 0;
 
+
   const currentHeadingLabel = editor?.isActive("heading", { level: 1 })
     ? "Heading 1"
     : editor?.isActive("heading", { level: 2 })
@@ -846,6 +871,30 @@ export const LiveProfileCanvas = forwardRef<
       editor?.isActive("heading", { level: 2 })
   );
   const inTable = Boolean(editor?.isActive("table"));
+
+  useEffect(() => {
+    onFormatStateChange?.({
+      hasEditor: Boolean(editor && viewMode === "visual"),
+      headingLabel: currentHeadingLabel,
+      hasHeadingUnderline,
+      bold: Boolean(editor?.isActive("bold")),
+      italic: Boolean(editor?.isActive("italic")),
+      underline: Boolean(editor?.isActive("underline")),
+      strike: Boolean(editor?.isActive("strike")),
+      code: Boolean(editor?.isActive("code")),
+      alignLeft: Boolean(editor?.isActive({ textAlign: "left" })),
+      alignCenter: Boolean(editor?.isActive({ textAlign: "center" })),
+      alignRight: Boolean(editor?.isActive({ textAlign: "right" })),
+      bulletList: Boolean(editor?.isActive("bulletList")),
+      orderedList: Boolean(editor?.isActive("orderedList")),
+      taskList: Boolean(editor?.isActive("taskList")),
+      blockquote: Boolean(editor?.isActive("blockquote")),
+      codeBlock: Boolean(editor?.isActive("codeBlock")),
+      inTable,
+      hasLink: Boolean(editor?.isActive("link")),
+      currentLinkHref: String(editor?.getAttributes("link").href ?? ""),
+    });
+  });
 
   const handleCopy = async (id: string, content: string) => {
     await copyToClipboard(content);
@@ -870,6 +919,7 @@ export const LiveProfileCanvas = forwardRef<
 
   const handleExportGif = async () => {
     setGifBusy(true);
+    onExportBusyChange?.({ webp: webpBusy, gif: true });
     try {
       const sprite = await loadCreatureSprite(
         getSpriteKey(creatureConfig.creature, creatureConfig.view)
@@ -878,52 +928,8 @@ export const LiveProfileCanvas = forwardRef<
       downloadBlobFile("creature.gif", blob);
     } finally {
       setGifBusy(false);
+      onExportBusyChange?.({ webp: webpBusy, gif: false });
     }
-  };
-
-  const handleExportShareCardPng = async () => {
-    setShareBusy(true);
-    try {
-      const sprite = await loadCreatureSprite(
-        getSpriteKey(creatureConfig.creature, creatureConfig.view)
-      );
-      const blob = await exportShareCardPngBlob(creatureConfig, sprite);
-      downloadBlobFile("share-card.png", blob);
-    } finally {
-      setShareBusy(false);
-    }
-  };
-
-  const handleOpenLinkPopover = (open: boolean) => {
-    if (open && editor) {
-      const existing = String(editor.getAttributes("link").href ?? "");
-      setLinkUrlInput(existing || "https://");
-      setLinkError(null);
-    }
-    setLinkPopoverOpen(open);
-  };
-
-  const handleApplyLink = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editor) return;
-    const raw = linkUrlInput.trim();
-    if (!raw) {
-      editor.chain().focus().unsetLink().run();
-      setLinkPopoverOpen(false);
-      return;
-    }
-    if (!isValidUrlInput(raw)) {
-      setLinkError("Enter a valid URL starting with https://");
-      return;
-    }
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: normalizeInputUrl(raw) })
-      .run();
-    setLinkError(null);
-    setLinkPopoverOpen(false);
   };
 
   const handleApplyTemplate = (
@@ -942,6 +948,7 @@ export const LiveProfileCanvas = forwardRef<
         .setContent(markdownToEditorHtml(nextMd, imageUrlMap))
         .run();
     }
+    onShowUndoToast("Template applied");
   };
 
   const handleToggleHeadingUnderline = () => {
@@ -956,628 +963,178 @@ export const LiveProfileCanvas = forwardRef<
     }
   };
 
-  const formattingToolbar = (
-    <div className="flex flex-wrap items-center gap-2 rounded-[10px] bg-[var(--surface-2)] px-2.5 py-1.5">
-      {/* Group 1: Undo / Redo */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarIconButton
-          label="Undo"
-          tooltip="Undo (Ctrl Z)"
-          disabled={!editor?.can().undo()}
-          onClick={() => editor?.chain().focus().undo().run()}
-        >
-          <Undo2 />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Redo"
-          tooltip="Redo (Ctrl Y)"
-          disabled={!editor?.can().redo()}
-          onClick={() => editor?.chain().focus().redo().run()}
-        >
-          <Redo2 />
-        </ToolbarIconButton>
-      </div>
-
-      {/* Group 2: Heading dropdown + Heading underline */}
-      <div className="flex items-center gap-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                className="h-8 bg-[var(--surface)] px-2.5 text-[12px]"
-                aria-label="Text block level"
-              />
-            }
-          >
-            <Heading className="size-3.5" />
-            <span>{currentHeadingLabel}</span>
-            <ChevronDown className="size-3 text-[var(--text-2)]" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            data-app="studio"
-            className="w-60 rounded-[12px] border-0 bg-[var(--surface)] p-1 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-[12px] text-[var(--text-2)]">
-                Text block level
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => editor?.chain().focus().setParagraph().run()}
-              >
-                Normal text (16px)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor?.chain().focus().toggleHeading({ level: 1 }).run()
-                }
-              >
-                Heading 1 (with underline)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor?.chain().focus().toggleHeading({ level: 2 }).run()
-                }
-              >
-                Heading 2 (with underline)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor?.chain().focus().toggleHeading({ level: 3 }).run()
-                }
-              >
-                Heading 3 (no underline)
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor?.chain().focus().toggleHeading({ level: 4 }).run()
-                }
-              >
-                Heading 4 (small)
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                active={hasHeadingUnderline}
-                onClick={handleToggleHeadingUnderline}
-                className={cn(
-                  "h-8 px-2.5 text-[12px]",
-                  !hasHeadingUnderline && "bg-[var(--surface)]"
-                )}
-                aria-label="Heading underline"
-              />
-            }
-          >
-            <span>Heading underline</span>
-          </TooltipTrigger>
-          <TooltipContent
-            data-app="studio"
-            className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-          >
-            Toggle GitHub horizontal underline under this heading
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      {/* Group 3: Inline styles */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarIconButton
-          label="Bold"
-          tooltip="Bold (Ctrl B)"
-          active={Boolean(editor?.isActive("bold"))}
-          onClick={() => editor?.chain().focus().toggleBold().run()}
-        >
-          <Bold />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Italic"
-          tooltip="Italic (Ctrl I)"
-          active={Boolean(editor?.isActive("italic"))}
-          onClick={() => editor?.chain().focus().toggleItalic().run()}
-        >
-          <Italic />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Underline"
-          tooltip="Underline (Ctrl U)"
-          active={Boolean(editor?.isActive("underline"))}
-          onClick={() => editor?.chain().focus().toggleUnderline().run()}
-        >
-          <UnderlineIcon />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Strikethrough"
-          tooltip="Strikethrough"
-          active={Boolean(editor?.isActive("strike"))}
-          onClick={() => editor?.chain().focus().toggleStrike().run()}
-        >
-          <Strikethrough />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Inline code"
-          tooltip="Inline code"
-          active={Boolean(editor?.isActive("code"))}
-          onClick={() => editor?.chain().focus().toggleCode().run()}
-        >
-          <Code />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Clear formatting"
-          tooltip="Clear formatting"
-          onClick={() =>
-            editor?.chain().focus().unsetAllMarks().clearNodes().run()
-          }
-        >
-          <RemoveFormatting />
-        </ToolbarIconButton>
-      </div>
-
-      {/* Group 4: Alignment */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarIconButton
-          label="Align left"
-          tooltip="Align left"
-          active={Boolean(editor?.isActive({ textAlign: "left" }))}
-          onClick={() => editor?.chain().focus().setTextAlign("left").run()}
-        >
-          <AlignLeft />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Align center"
-          tooltip="Align center"
-          active={Boolean(editor?.isActive({ textAlign: "center" }))}
-          onClick={() => editor?.chain().focus().setTextAlign("center").run()}
-        >
-          <AlignCenter />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Align right"
-          tooltip="Align right"
-          active={Boolean(editor?.isActive({ textAlign: "right" }))}
-          onClick={() => editor?.chain().focus().setTextAlign("right").run()}
-        >
-          <AlignRight />
-        </ToolbarIconButton>
-      </div>
-
-      {/* Group 5: Lists, Quote, Code block */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarIconButton
-          label="Bullet list"
-          tooltip="Bullet list"
-          active={Boolean(editor?.isActive("bulletList"))}
-          onClick={() => editor?.chain().focus().toggleBulletList().run()}
-        >
-          <List />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Numbered list"
-          tooltip="Numbered list"
-          active={Boolean(editor?.isActive("orderedList"))}
-          onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-        >
-          <ListOrdered />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Checklist"
-          tooltip="Task checklist"
-          active={Boolean(editor?.isActive("taskList"))}
-          onClick={() => editor?.chain().focus().toggleTaskList().run()}
-        >
-          <CheckSquare />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Quote"
-          tooltip="Blockquote"
-          active={Boolean(editor?.isActive("blockquote"))}
-          onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-        >
-          <Quote />
-        </ToolbarIconButton>
-        <ToolbarIconButton
-          label="Code block"
-          tooltip="Code block"
-          active={Boolean(editor?.isActive("codeBlock"))}
-          onClick={() => editor?.chain().focus().toggleCodeBlock().run()}
-        >
-          <FileCode2 />
-        </ToolbarIconButton>
-      </div>
-
-      {/* Group 6: Divider, Link, Image, Table, Emoji, Snippets */}
-      <div className="flex items-center gap-0.5">
-        <ToolbarIconButton
-          label="Divider"
-          tooltip="Insert horizontal divider"
-          onClick={() => editor?.chain().focus().setHorizontalRule().run()}
-        >
-          <SeparatorHorizontal />
-        </ToolbarIconButton>
-
-        <Popover open={linkPopoverOpen} onOpenChange={handleOpenLinkPopover}>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <PopoverTrigger
-                  render={
-                    <StudioButton
-                      variant="ghost"
-                      size="icon"
-                      active={Boolean(editor?.isActive("link"))}
-                      aria-label="Insert or edit link"
-                      className="size-8"
-                    />
-                  }
-                >
-                  <Link2 />
-                </PopoverTrigger>
-              }
-            />
-            <TooltipContent
-              data-app="studio"
-              className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-            >
-              Insert or edit link
-            </TooltipContent>
-          </Tooltip>
-          <PopoverContent
-            data-app="studio"
-            className="w-80 rounded-[12px] border-0 bg-[var(--surface)] p-4 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
-          >
-            <form onSubmit={handleApplyLink} className="flex flex-col gap-3">
-              <div className="text-[14px] font-semibold text-[var(--text)]">
-                Add or edit link
-              </div>
-              <StudioField
-                label="Target URL"
-                htmlFor="canvas-link-url"
-                error={linkError}
-              >
-                <StudioInput
-                  id="canvas-link-url"
-                  value={linkUrlInput}
-                  invalid={Boolean(linkError)}
-                  onChange={(e) => {
-                    setLinkUrlInput(e.target.value);
-                    if (linkError) setLinkError(null);
-                  }}
-                  placeholder="https://github.com/..."
-                />
-              </StudioField>
-              <div className="flex items-center justify-between gap-2">
-                {editor?.isActive("link") && (
-                  <StudioButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      editor.chain().focus().unsetLink().run();
-                      setLinkPopoverOpen(false);
-                    }}
-                  >
-                    <Unlink />
-                    <span>Remove</span>
-                  </StudioButton>
-                )}
-                <StudioButton
-                  type="submit"
-                  variant="primary"
-                  size="sm"
-                  className="ml-auto"
-                >
-                  Apply link
-                </StudioButton>
-              </div>
-            </form>
-          </PopoverContent>
-        </Popover>
-
-        <ToolbarIconButton
-          label="Insert image"
-          tooltip="Insert custom WebP image or URL"
-          onClick={() => setEditorImageOpen(true)}
-        >
-          <ImageIcon />
-        </ToolbarIconButton>
-
-        <ToolbarIconButton
-          label="Insert table"
-          tooltip="Insert three column table"
-          active={inTable}
-          onClick={() =>
+  useImperativeHandle(
+    ref,
+    () => ({
+      insertToken: (token: string) => {
+        setViewMode("visual");
+        editor?.chain().focus().insertContent(token).run();
+      },
+      insertSnippet: (markdown: string) => {
+        setViewMode("visual");
+        editor
+          ?.chain()
+          .focus()
+          .insertContent(markdownToEditorHtml(markdown, imageUrlMap))
+          .run();
+      },
+      insertSnippetById: (snippetId: "status" | "roadmap" | "visitors") => {
+        setViewMode("visual");
+        if (snippetId === "status") {
+          editor
+            ?.chain()
+            .focus()
+            .insertContent(
+              markdownToEditorHtml(
+                [
+                  "- Currently building open source web tools",
+                  "- Learning distributed systems",
+                  "- Reach me through GitHub or Email",
+                ].join("\n"),
+                imageUrlMap
+              )
+            )
+            .run();
+        } else if (snippetId === "roadmap") {
+          editor
+            ?.chain()
+            .focus()
+            .insertContent(
+              markdownToEditorHtml(
+                [
+                  "- [x] Shipped v1.0 open source release",
+                  "- [ ] Exploring distributed systems",
+                ].join("\n"),
+                imageUrlMap
+              )
+            )
+            .run();
+        } else {
+          editor
+            ?.chain()
+            .focus()
+            .insertContent(
+              markdownToEditorHtml(
+                `![Profile views](https://komarev.com/ghpvc/?username=${encodeURIComponent(username)}&color=58D6B0&style=for-the-badge)`,
+                imageUrlMap
+              )
+            )
+            .run();
+        }
+      },
+      insertBlock: (action: InsertBlockAction) => {
+        if (action === "image") {
+          setEditorImageOpen(true);
+          return;
+        }
+        if (action === "stackGroup") {
+          const newId = onAddStackCard("Tech stack");
+          onSelectPart("stack", newId);
+          return;
+        }
+        if (action === "linkButtons") {
+          onUpdateReadmeField("showLinksRow", true);
+          onSelectPart("links");
+          return;
+        }
+        if (action === "creatureBanner") {
+          onUpdateReadmeField("showCreatureBanner", true);
+          onSelectPart("creature");
+          return;
+        }
+        setViewMode("visual");
+        if (!editor) return;
+        const chain = editor.chain().focus();
+        switch (action) {
+          case "h1":
+            chain.toggleHeading({ level: 1 }).run();
+            break;
+          case "h2":
+            chain.toggleHeading({ level: 2 }).run();
+            break;
+          case "h3":
+            chain.toggleHeading({ level: 3 }).run();
+            break;
+          case "paragraph":
+            chain.setParagraph().run();
+            break;
+          case "quote":
+            chain.toggleBlockquote().run();
+            break;
+          case "bulletList":
+            chain.toggleBulletList().run();
+            break;
+          case "orderedList":
+            chain.toggleOrderedList().run();
+            break;
+          case "taskList":
+            chain.toggleTaskList().run();
+            break;
+          case "table":
+            chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+            break;
+          case "divider":
+            chain.setHorizontalRule().run();
+            break;
+          case "link":
+            onEditorFocus?.();
+            break;
+          case "codeBlock":
+            chain.toggleCodeBlock().run();
+            break;
+        }
+      },
+      insertEmoji: (emoji: string) => {
+        setViewMode("visual");
+        editor?.chain().focus().insertContent(emoji).run();
+      },
+      openTemplates: () => setTemplatesOpen(true),
+      openEditorImageStudio: () => setEditorImageOpen(true),
+      scrollToPart: scrollToCanvasPart,
+      exportWebP: handleExportWebP,
+      exportGif: handleExportGif,
+      getFormatActions: () => ({
+        setParagraph: () => editor?.chain().focus().setParagraph().run(),
+        toggleHeading: (level: 1 | 2 | 3 | 4) =>
+          editor?.chain().focus().toggleHeading({ level }).run(),
+        toggleHeadingUnderline: handleToggleHeadingUnderline,
+        toggleBold: () => editor?.chain().focus().toggleBold().run(),
+        toggleItalic: () => editor?.chain().focus().toggleItalic().run(),
+        toggleUnderline: () => editor?.chain().focus().toggleUnderline().run(),
+        toggleStrike: () => editor?.chain().focus().toggleStrike().run(),
+        toggleCode: () => editor?.chain().focus().toggleCode().run(),
+        clearFormatting: () =>
+          editor?.chain().focus().unsetAllMarks().clearNodes().run(),
+        setAlign: (align: "left" | "center" | "right") =>
+          editor?.chain().focus().setTextAlign(align).run(),
+        toggleBulletList: () =>
+          editor?.chain().focus().toggleBulletList().run(),
+        toggleOrderedList: () =>
+          editor?.chain().focus().toggleOrderedList().run(),
+        toggleTaskList: () => editor?.chain().focus().toggleTaskList().run(),
+        toggleBlockquote: () =>
+          editor?.chain().focus().toggleBlockquote().run(),
+        toggleCodeBlock: () => editor?.chain().focus().toggleCodeBlock().run(),
+        applyLink: (url: string) => {
+          const normalized = normalizeInputUrl(url);
+          if (normalized) {
             editor
               ?.chain()
               .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-              .run()
+              .extendMarkRange("link")
+              .setLink({ href: normalized })
+              .run();
           }
-        >
-          <Table2 />
-        </ToolbarIconButton>
-
-        <Popover open={emojisOpen} onOpenChange={setEmojisOpen}>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <PopoverTrigger
-                  render={
-                    <StudioButton
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Insert emoji into README"
-                      className="size-8"
-                    />
-                  }
-                >
-                  <Smile />
-                </PopoverTrigger>
-              }
-            />
-            <TooltipContent
-              data-app="studio"
-              className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-            >
-              Insert emoji into README
-            </TooltipContent>
-          </Tooltip>
-          <PopoverContent
-            data-app="studio"
-            className="w-72 rounded-[12px] border-0 bg-[var(--surface)] p-3 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
-          >
-            <div className="mb-2 text-[13px] font-semibold text-[var(--text)]">
-              Insert emoji
-            </div>
-            <div className="grid grid-cols-6 gap-1">
-              {PROFILE_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  type="button"
-                  onClick={() => {
-                    editor?.chain().focus().insertContent(emoji).run();
-                    setEmojisOpen(false);
-                  }}
-                  className="flex size-9 cursor-pointer items-center justify-center rounded-[8px] text-base transition-colors duration-150 hover:bg-[var(--surface-2)]"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <StudioButton
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-[12px]"
-                aria-label="Insert snippet"
-              />
-            }
-          >
-            <Sparkles className="size-3.5" />
-            <span>Snippets</span>
-            <ChevronDown className="size-3 text-[var(--text-2)]" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            data-app="studio"
-            className="w-60 rounded-[12px] border-0 bg-[var(--surface)] p-1 text-[var(--text)] ring-0 shadow-[var(--shadow-float)]"
-          >
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-[12px] text-[var(--text-2)]">
-                Insert block
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor
-                    ?.chain()
-                    .focus()
-                    .insertContent(
-                      markdownToEditorHtml(
-                        [
-                          "- Building open source web tools",
-                          "- Learning distributed systems",
-                          "- Connect via GitHub or Email",
-                        ].join("\n"),
-                        imageUrlMap
-                      )
-                    )
-                    .run()
-                }
-              >
-                Developer status bullets
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor
-                    ?.chain()
-                    .focus()
-                    .insertContent(
-                      markdownToEditorHtml(
-                        "> Current focus: Building clean architecture and open source developer tools.",
-                        imageUrlMap
-                      )
-                    )
-                    .run()
-                }
-              >
-                Highlight callout quote
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor
-                    ?.chain()
-                    .focus()
-                    .insertContent(
-                      markdownToEditorHtml(
-                        [
-                          "- [x] Shipped v1.0 open source release",
-                          "- [ ] Exploring distributed systems",
-                        ].join("\n"),
-                        imageUrlMap
-                      )
-                    )
-                    .run()
-                }
-              >
-                Roadmap checklist
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                onClick={() =>
-                  editor
-                    ?.chain()
-                    .focus()
-                    .insertContent(
-                      markdownToEditorHtml(
-                        `![Profile views](https://komarev.com/ghpvc/?username=${encodeURIComponent(username)}&color=58D6B0&style=for-the-badge)`,
-                        imageUrlMap
-                      )
-                    )
-                    .run()
-                }
-              >
-                Profile visitor counter badge
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Right actions: Templates, Sync, Clear, Copy MD, Fullscreen */}
-      <div className="ml-auto flex flex-wrap items-center gap-1">
-        <StudioButton
-          variant="secondary"
-          size="sm"
-          className="h-8 bg-[var(--surface)] px-2.5 text-[12px]"
-          onClick={() => setTemplatesOpen(true)}
-        >
-          <LayoutTemplate className="size-3.5" />
-          <span>Templates ({PROFILE_EDITOR_TEMPLATES.length})</span>
-        </StudioButton>
-
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <StudioButton
-                variant="ghost"
-                size="icon"
-                aria-label="Sync from form"
-                onClick={onSyncFromForm}
-                className="size-8"
-              />
-            }
-          >
-            <RotateCcw />
-          </TooltipTrigger>
-          <TooltipContent
-            data-app="studio"
-            className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-          >
-            Sync intro from GitHub profile form
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <StudioButton
-                variant="ghost"
-                size="icon"
-                aria-label="Clear all intro text"
-                onClick={() => setConfirmClearOpen(true)}
-                className="size-8 hover:text-[var(--danger)]"
-              />
-            }
-          >
-            <Eraser />
-          </TooltipTrigger>
-          <TooltipContent
-            data-app="studio"
-            className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-          >
-            Clear header and intro text
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <StudioButton
-                variant="ghost"
-                size="icon"
-                aria-label="Copy markdown"
-                onClick={() => void handleCopy("intro-md", readmeMarkdown)}
-                className="size-8"
-              />
-            }
-          >
-            {copiedId === "intro-md" ? <Check /> : <Copy />}
-          </TooltipTrigger>
-          <TooltipContent
-            data-app="studio"
-            className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-          >
-            Copy full README markdown
-          </TooltipContent>
-        </Tooltip>
-
-        <ToolbarIconButton
-          label={fullscreen ? "Exit fullscreen" : "Fullscreen editor"}
-          tooltip={fullscreen ? "Exit fullscreen" : "Fullscreen canvas"}
-          active={fullscreen}
-          onClick={() => setFullscreen((prev) => !prev)}
-        >
-          {fullscreen ? <Minimize2 /> : <Maximize2 />}
-        </ToolbarIconButton>
-      </div>
-    </div>
-  );
-
-  const dynamicTokenChips = (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-[12px] font-medium text-[var(--text-2)]">
-        Dynamic values
-      </span>
-      {DYNAMIC_TOKENS.map((t) => {
-        const resolved = resolveDynamicTokens(t.token, creatureConfig);
-        return (
-          <Tooltip key={t.token}>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  onClick={() => {
-                    editor?.chain().focus().insertContent(t.token).run();
-                  }}
-                  className="studio-mono inline-flex h-7 cursor-pointer items-center rounded-[6px] bg-[var(--surface-2)] px-2 text-[11px] text-[var(--text)] transition-colors duration-150 hover:bg-[var(--surface-3)]"
-                />
-              }
-            >
-              {t.token}
-            </TooltipTrigger>
-            <TooltipContent
-              data-app="studio"
-              className="border-0 bg-[var(--text)] text-[var(--bg)] shadow-[var(--shadow-float)]"
-            >
-              <span>
-                {t.description}: <strong className="studio-mono">{resolved}</strong>
-              </span>
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
+        },
+        removeLink: () => editor?.chain().focus().unsetLink().run(),
+        addTableRow: () => editor?.chain().focus().addRowAfter().run(),
+        deleteTableRow: () => editor?.chain().focus().deleteRow().run(),
+        addTableColumn: () => editor?.chain().focus().addColumnAfter().run(),
+        deleteTableColumn: () => editor?.chain().focus().deleteColumn().run(),
+        deleteTable: () => editor?.chain().focus().deleteTable().run(),
+      }),
+    }),
+    [editor, imageUrlMap, onAddStackCard, onEditorFocus, onSelectPart, onUpdateReadmeField]
   );
 
   const readmeBoxContent = (isModalFullscreen: boolean) => {
@@ -1640,12 +1197,14 @@ export const LiveProfileCanvas = forwardRef<
                   <span className="truncate">{company}</span>
                 </div>
               )}
+
               {location && (
                 <div className="flex items-center gap-2">
                   <MapPin className="size-4 shrink-0" />
                   <span className="truncate">{location}</span>
                 </div>
               )}
+
               {website && (
                 <div className="flex items-center gap-2">
                   <Link2 className="size-4 shrink-0" />
@@ -1657,6 +1216,7 @@ export const LiveProfileCanvas = forwardRef<
                   </span>
                 </div>
               )}
+
             </div>
           </aside>
         )}
@@ -1873,211 +1433,78 @@ export const LiveProfileCanvas = forwardRef<
                 </div>
               )}
 
-              {/* 2. Interactive Tech Stack Group Blocks */}
-              {!isMarkerOnly && !isMinimal && (
-                <div data-canvas-section="stack" className="flex flex-col gap-3">
-                  {readmeConfig.stackCards.map((card, cardIdx) => {
-                    if (card.visible === false) return null;
-                    const cardBadges = card.badgeIds
-                      .map((id) => badgeById.get(id))
-                      .filter((b): b is ReadmeBadge =>
-                        Boolean(b && b.label.trim())
-                      );
-                    if (cardBadges.length === 0) return null;
 
-                    const selectedBlock =
-                      activePart === "stack" && selectedStackCardId === card.id;
-
-                    return (
-                      <div
-                        key={card.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onSelectPart("stack", card.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onSelectPart("stack", card.id);
-                          }
-                        }}
-                        className={cn(
-                          "group relative flex cursor-pointer flex-col gap-2 rounded-[8px] px-3 py-2.5 transition-colors duration-150",
-                          selectedBlock
-                            ? "bg-[var(--surface-3)]/35"
-                            : "hover:bg-[var(--surface-2)]/30"
-                        )}
+              {/* Empty State when Clear all has emptied the README */}
+              {!isMarkerOnly &&
+                readmeConfig.advancedProfileMarkdown.trim() === "" &&
+                readmeConfig.stackCards.filter((c) => c.visible !== false).length === 0 &&
+                enabledLinks.length === 0 &&
+                readmeConfig.showCreatureBanner === false && (
+                  <div className="flex flex-col items-center justify-center gap-3 rounded-[10px] border border-dashed border-[var(--gh-border)] px-6 py-12 text-center">
+                    <div className="text-[15px] font-semibold text-[var(--gh-text)]">
+                      Your README is empty
+                    </div>
+                    <p className="max-w-sm text-[13px] text-[var(--gh-muted)]">
+                      Start from a template or add a block from the left sidebar.
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+                      <StudioButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setTemplatesOpen(true)}
                       >
-                        {/* Floating block handle */}
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          className="pointer-events-none absolute -top-3 right-2 z-10 flex items-center gap-0.5 rounded-[8px] bg-[var(--surface)] p-1 text-[var(--text)] opacity-0 shadow-[var(--shadow-float)] transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-                        >
-                          <button
-                            type="button"
-                            onClick={() => onSelectPart("stack", card.id)}
-                            className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[12px] font-medium text-[var(--text)] hover:bg-[var(--surface-2)]"
-                          >
-                            <Edit3 className="size-3" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            type="button"
-                            disabled={cardIdx === 0}
-                            onClick={() =>
-                              onReorderStackCards(cardIdx, cardIdx - 1)
-                            }
-                            aria-label="Move stack group up"
-                            title="Move up"
-                            className="flex size-7 cursor-pointer items-center justify-center rounded-[6px] text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] disabled:opacity-35"
-                          >
-                            <ArrowUp className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            disabled={
-                              cardIdx === readmeConfig.stackCards.length - 1
-                            }
-                            onClick={() =>
-                              onReorderStackCards(cardIdx, cardIdx + 1)
-                            }
-                            aria-label="Move stack group down"
-                            title="Move down"
-                            className="flex size-7 cursor-pointer items-center justify-center rounded-[6px] text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] disabled:opacity-35"
-                          >
-                            <ArrowDown className="size-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onToggleStackCardVisibility(card.id, false)
-                            }
-                            aria-label="Hide stack group"
-                            title="Hide"
-                            className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[12px] text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                          >
-                            <EyeOff className="size-3" />
-                            <span>Hide</span>
-                          </button>
-                        </div>
+                        <LayoutTemplate />
+                        <span>Start from a template</span>
+                      </StudioButton>
+                      <StudioButton
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => onFocusAddToReadme?.()}
+                      >
+                        <Sparkles />
+                        <span>Add a block</span>
+                      </StudioButton>
+                    </div>
+                  </div>
+                )}
 
-                        {card.title.trim() && (
-                          <h4
-                            className={cn(
-                              "text-[16px] leading-tight font-semibold text-[var(--gh-text)]",
-                              isAlignedLeft ? "text-left" : "text-center"
-                            )}
-                          >
-                            {card.title}
-                          </h4>
-                        )}
-                        <div
-                          className={cn(
-                            "flex flex-wrap gap-1.5",
-                            isAlignedLeft ? "justify-start" : "justify-center"
-                          )}
-                        >
-                          {cardBadges.map((badge) => (
-                            <img
-                              key={`${card.id}-${badge.id}`}
-                              src={buildShieldBadgeUrl(badge)}
-                              alt={badge.label}
-                              className="h-7 w-auto"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* 2. Interactive Tech Stack Cards */}
+              {!isMarkerOnly && !isMinimal && (
+                <CanvasStackSection
+                  readmeConfig={readmeConfig}
+                  activePart={activePart}
+                  selectedStackCardId={selectedStackCardId}
+                  isAlignedLeft={isAlignedLeft}
+                  onSelectGroup={(cardId) => onSelectPart("stack", cardId)}
+                  onAddBadgeToCard={onAddBadgeToCard}
+                  onRemoveBadgeFromCard={onRemoveBadgeFromCard}
+                  onMoveBadgeAcrossCards={onMoveBadgeAcrossCards}
+                  onAddStackCard={onAddStackCard}
+                  onToggleStackCardVisibility={onToggleStackCardVisibility}
+                  onDeleteStackCard={onDeleteStackCard}
+                  onReorderStackCards={onReorderStackCards}
+                  onAddCustomBadgeToCard={onAddCustomBadgeToCard}
+                />
               )}
 
               {/* 3. Interactive Links Row */}
               {!isMarkerOnly &&
                 !isMinimal &&
-                readmeConfig.showLinksRow !== false &&
-                enabledLinks.length > 0 && (
-                  <div
-                    data-canvas-section="links"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onSelectPart("links")}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        onSelectPart("links");
-                      }
-                    }}
-                    className={cn(
-                      "group relative flex cursor-pointer flex-wrap gap-2 rounded-[8px] px-3 py-2.5 transition-colors duration-150",
-                      isAlignedLeft ? "justify-start" : "justify-center",
-                      activePart === "links"
-                        ? "bg-[var(--surface-3)]/35"
-                        : "hover:bg-[var(--surface-2)]/30"
-                    )}
-                  >
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="pointer-events-none absolute -top-3 right-2 z-10 flex items-center gap-0.5 rounded-[8px] bg-[var(--surface)] p-1 text-[var(--text)] opacity-0 shadow-[var(--shadow-float)] transition-opacity duration-150 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onSelectPart("links")}
-                        className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[12px] font-medium text-[var(--text)] hover:bg-[var(--surface-2)]"
-                      >
-                        <Edit3 className="size-3" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        disabled
-                        title="Order follows your tech stack"
-                        aria-label="Move links up"
-                        className="flex size-7 items-center justify-center rounded-[6px] text-[var(--text-3)] opacity-40"
-                      >
-                        <ArrowUp className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        disabled
-                        title="Order sits above the banner"
-                        aria-label="Move links down"
-                        className="flex size-7 items-center justify-center rounded-[6px] text-[var(--text-3)] opacity-40"
-                      >
-                        <ArrowDown className="size-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onUpdateReadmeField("showLinksRow", false)
-                        }
-                        aria-label="Hide links row"
-                        className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[12px] text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text)]"
-                      >
-                        <EyeOff className="size-3" />
-                        <span>Hide</span>
-                      </button>
-                    </div>
-
-                    {enabledLinks.map((link) => {
-                      const href = resolveDynamicTokens(link.url, creatureConfig);
-                      return (
-                        <a
-                          key={link.id}
-                          href={href}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            onSelectPart("links");
-                          }}
-                        >
-                          <img
-                            src={buildActionLinkBadgeUrl(link, creatureConfig)}
-                            alt={link.label}
-                            className="h-7 w-auto transition-opacity duration-150 hover:opacity-85"
-                          />
-                        </a>
-                      );
-                    })}
-                  </div>
+                readmeConfig.showLinksRow !== false && (
+                  <CanvasLinksSection
+                    creatureConfig={creatureConfig}
+                    readmeConfig={readmeConfig}
+                    activePart={activePart}
+                    isAlignedLeft={isAlignedLeft}
+                    onSelectLinks={() => onSelectPart("links")}
+                    onUpdateLinks={(nextLinks) =>
+                      onUpdateReadmeField("actionLinks", nextLinks)
+                    }
+                    onHideLinks={() =>
+                      onUpdateReadmeField("showLinksRow", false)
+                    }
+                    onShowUndoToast={onShowUndoToast}
+                  />
                 )}
 
               {/* 4. Interactive Creature or Custom Image Banner */}
@@ -2117,7 +1544,7 @@ export const LiveProfileCanvas = forwardRef<
                       className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-[6px] px-2 text-[12px] font-medium text-[var(--text)] hover:bg-[var(--surface-2)]"
                     >
                       <Edit3 className="size-3" />
-                      <span>Edit</span>
+                      <span>Replace</span>
                     </button>
                     <button
                       type="button"
@@ -2191,6 +1618,23 @@ export const LiveProfileCanvas = forwardRef<
                 </div>
               )}
 
+              {readmeConfig.showCreatureBanner === false &&
+                (readmeConfig.advancedProfileMarkdown.trim() !== "" ||
+                  readmeConfig.stackCards.length > 0 ||
+                  enabledLinks.length > 0) && (
+                  <div className="flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUpdateReadmeField("showCreatureBanner", true)
+                      }
+                      className="cursor-pointer rounded-[8px] bg-[var(--gh-surface)] px-3 py-1.5 text-[12px] font-medium text-[var(--gh-muted)] transition-colors hover:text-[var(--gh-text)]"
+                    >
+                      Show creature
+                    </button>
+                  </div>
+                )}
+
               {/* 5. Optional Telemetry Table */}
               {!isMarkerOnly &&
                 !isMinimal &&
@@ -2246,26 +1690,6 @@ export const LiveProfileCanvas = forwardRef<
                   </div>
                 )}
 
-              {/* 6. Optional Share Card */}
-              {!isMarkerOnly &&
-                !isMinimal &&
-                readmeConfig.includeShareCard &&
-                readmeConfig.bannerSource !== "custom-image" && (
-                  <div
-                    onClick={() => onSelectPart("creature")}
-                    className="flex cursor-pointer justify-center"
-                  >
-                    <div
-                      style={{ width: `${bannerWidthPx}px`, maxWidth: "100%" }}
-                      className="overflow-hidden rounded-[6px] border border-[var(--gh-border)]"
-                    >
-                      <ShareCardCanvasView
-                        config={creatureConfig}
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                )}
             </div>
           </div>
         </div>
@@ -2289,185 +1713,37 @@ export const LiveProfileCanvas = forwardRef<
 
   return (
     <TooltipProvider delay={160}>
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        {/* Sticky Canvas Top Toolbar */}
-        <div className="sticky top-[104px] z-10 flex flex-col gap-2.5 rounded-[12px] bg-[var(--surface)]/92 p-3 backdrop-blur-md shadow-[var(--shadow-float)]">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="max-w-full">
-              <StudioSegmentedControl<CanvasViewMode>
-                ariaLabel="Canvas view mode"
-                size="sm"
-                layout="auto"
-                value={viewMode}
-                onChange={setViewMode}
-                options={[
-                  { value: "visual", label: "Visual" },
-                  { value: "markdown", label: "Markdown" },
-                  { value: "share-card", label: "Share card" },
-                  { value: "stages", label: "Stages" },
-                ]}
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              {viewMode === "visual" && (
-                <>
-                  <StudioButton
-                    variant="secondary"
-                    size="sm"
-                    active={showSidebar}
-                    onClick={() => setShowSidebar((prev) => !prev)}
-                  >
-                    <PanelLeft />
-                    <span>Sidebar</span>
-                  </StudioButton>
-
-                  <div className="shrink-0">
-                    <StudioSegmentedControl<"light" | "dark">
-                      ariaLabel="GitHub canvas theme"
-                      size="sm"
-                      layout="auto"
-                      value={githubTheme}
-                      onChange={onGithubThemeChange}
-                      options={[
-                        { value: "light", label: "Light", icon: <Sun /> },
-                        { value: "dark", label: "Dark", icon: <Moon /> },
-                      ]}
-                    />
-                  </div>
-
-                  {widthMode === "github-848" && (
-                    <div className="shrink-0">
-                      <StudioSegmentedControl<ReadmeZoomMode>
-                        ariaLabel="Canvas zoom"
-                        size="sm"
-                        layout="auto"
-                        value={zoomMode}
-                        onChange={setZoomMode}
-                        options={[
-                          { value: "fit", label: `Fit ${zoomPct}%` },
-                          { value: "100", label: "100%" },
-                        ]}
-                      />
-                    </div>
-                  )}
-
-                  <div className="hidden shrink-0 sm:block">
-                    <StudioSegmentedControl<WidthMode>
-                      ariaLabel="README box width"
-                      size="sm"
-                      layout="auto"
-                      value={widthMode}
-                      onChange={setWidthMode}
-                      options={[
-                        { value: "github-848", label: "848px" },
-                        { value: "fit-pane", label: "Fit" },
-                      ]}
-                    />
-                  </div>
-                </>
-              )}
-
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                disabled={webpBusy}
-                onClick={handleExportWebP}
-              >
-                <Download />
-                <span>{webpBusy ? "Encoding" : "WebP"}</span>
-              </StudioButton>
-
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                disabled={gifBusy}
-                onClick={handleExportGif}
-              >
-                <Download />
-                <span>{gifBusy ? "Encoding" : "GIF"}</span>
-              </StudioButton>
-
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                onClick={() => void handleCopy("top-md", readmeMarkdown)}
-              >
-                {copiedId === "top-md" ? <Check /> : <Copy />}
-                <span>{copiedId === "top-md" ? "Copied" : "Copy"}</span>
-              </StudioButton>
-
-              <StudioButton
-                variant="secondary"
-                size="sm"
-                onClick={onOpenAutoEvolve}
-              >
-                <Clock />
-                <span>12 AM Action</span>
-              </StudioButton>
-            </div>
-          </div>
-
-          {viewMode === "visual" && (
-            <>
-              {formattingToolbar}
-
-              {inTable && (
-                <div className="flex flex-wrap items-center gap-1.5 rounded-[8px] bg-[var(--tide-soft)] px-3 py-1.5 text-[12px]">
-                  <span className="font-medium text-[var(--tide)]">Table</span>
-                  <StudioButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => editor?.chain().focus().addRowAfter().run()}
-                  >
-                    <Rows3 />
-                    <span>Add row</span>
-                  </StudioButton>
-                  <StudioButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => editor?.chain().focus().deleteRow().run()}
-                  >
-                    Remove row
-                  </StudioButton>
-                  <StudioButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() =>
-                      editor?.chain().focus().addColumnAfter().run()
-                    }
-                  >
-                    <Columns3 />
-                    <span>Add column</span>
-                  </StudioButton>
-                  <StudioButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => editor?.chain().focus().deleteColumn().run()}
-                  >
-                    Remove column
-                  </StudioButton>
-                  <StudioButton
-                    variant="danger"
-                    size="sm"
-                    className="ml-auto"
-                    onClick={() => editor?.chain().focus().deleteTable().run()}
-                  >
-                    <Trash2 />
-                    <span>Delete table</span>
-                  </StudioButton>
-                </div>
-              )}
-
-              {dynamicTokenChips}
-            </>
-          )}
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+        {/* Slim 44px Single-Row Top Bar */}
+        <div className="overflow-hidden rounded-[12px]">
+          <EditorTopBar
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onUndo={onUndo}
+            onRedo={onRedo}
+            onClearAll={onClearAll}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            githubTheme={githubTheme}
+            onGithubThemeChange={onGithubThemeChange}
+            zoomMode={zoomMode}
+            onZoomModeChange={setZoomMode}
+            zoomPct={zoomPct}
+            widthMode={widthMode}
+            onWidthModeChange={setWidthMode}
+            showSidebar={showSidebar}
+            onShowSidebarChange={setShowSidebar}
+            copied={copiedId === "top-md"}
+            onCopyMarkdown={() => void handleCopy("top-md", readmeMarkdown)}
+            fullscreen={fullscreen}
+            onToggleFullscreen={() => setFullscreen((prev) => !prev)}
+          />
         </div>
 
-        {/* Main Canvas Viewport */}
+        {/* Main Canvas Viewport (scrolls inside its own column) */}
         <div
           ref={canvasScrollRef}
-          className="flex flex-col gap-3 rounded-[12px] bg-[var(--surface)] p-3 sm:p-4"
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-[12px] bg-[var(--surface)] p-2 sm:p-3"
         >
           {viewMode === "visual" && !fullscreen && (
             <>
@@ -2601,43 +1877,6 @@ export const LiveProfileCanvas = forwardRef<
               )}
             </div>
           )}
-
-          {viewMode === "share-card" && (
-            <div className="flex flex-col gap-4 rounded-[12px] bg-[var(--surface-2)] p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex flex-col gap-0.5">
-                  <h3 className="text-[16px] font-semibold text-[var(--text)]">
-                    Social share card (1280 by 640)
-                  </h3>
-                  <p className="text-[13px] text-[var(--text-2)]">
-                    Static PNG banner synced with your creature palette and stage.
-                  </p>
-                </div>
-                <StudioButton
-                  variant="primary"
-                  size="sm"
-                  disabled={shareBusy}
-                  onClick={handleExportShareCardPng}
-                >
-                  <Download />
-                  <span>{shareBusy ? "Exporting..." : "Download PNG"}</span>
-                </StudioButton>
-              </div>
-              <div className="overflow-hidden rounded-[8px]">
-                <ShareCardCanvasView
-                  config={creatureConfig}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          )}
-
-          {viewMode === "stages" && (
-            <EvolutionPanel
-              baseConfig={creatureConfig}
-              onSelectView={onSelectView}
-            />
-          )}
         </div>
 
         {/* Slash Command Menu Overlay */}
@@ -2696,7 +1935,7 @@ export const LiveProfileCanvas = forwardRef<
           </div>
         )}
 
-        {/* Templates Gallery Modal (30 templates) */}
+        {/* Templates Gallery Modal */}
         <TemplateGalleryDialog
           open={templatesOpen}
           onOpenChange={setTemplatesOpen}
@@ -2732,23 +1971,6 @@ export const LiveProfileCanvas = forwardRef<
           }}
         />
 
-        {/* Clear All Confirmation */}
-        <StudioConfirmDialog
-          open={confirmClearOpen}
-          onOpenChange={setConfirmClearOpen}
-          title="Clear header and intro?"
-          description="This empties your top profile text in the canvas. Your tech stack cards, links and banner settings stay intact."
-          confirmLabel="Clear all"
-          destructive
-          onConfirm={() => {
-            if (editor) {
-              editor.chain().focus().clearContent(true).run();
-            } else {
-              onUpdateReadmeField("advancedProfileMarkdown", "");
-            }
-          }}
-        />
-
         {/* Fullscreen Modal Canvas */}
         <StudioDialog
           open={fullscreen}
@@ -2765,10 +1987,8 @@ export const LiveProfileCanvas = forwardRef<
             </StudioButton>
           }
         >
-          <div className="flex flex-col gap-3">
-            {formattingToolbar}
-            {dynamicTokenChips}
-            <div className="overflow-x-auto">{fullscreen && readmeBoxContent(true)}</div>
+          <div className="overflow-x-auto">
+            {fullscreen && readmeBoxContent(true)}
           </div>
         </StudioDialog>
       </div>

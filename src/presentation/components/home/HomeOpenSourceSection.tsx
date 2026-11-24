@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { BRAND } from "@/config/brand";
 import { Reveal } from "./Reveal";
-import { HOME_FACTS, LICENSE_NAME, showcaseAsset } from "./homeData";
+import { HOME_FACTS, LICENSE_NAME } from "./homeData";
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -32,7 +32,7 @@ interface HomeOpenSourceSectionProps {
 
 const BUILD_COMMANDS = [
   `git clone ${BRAND.repoUrl}.git`,
-  "cd dynamic-readme-creature",
+  "cd DirtyReadme",
   "pnpm install",
   "pnpm dev",
 ].join("\n");
@@ -120,16 +120,16 @@ export function HomeOpenSourceSection({
                       <p className="mt-0.5 text-[10px] text-[#5e5850]">
                         {BRAND.tagline}
                       </p>
-                      <div className="mt-2.5 flex justify-center rounded-lg bg-[#091c2e] p-2">
-                        <img
-                          src={showcaseAsset("hero-tulkun.webp")}
-                          alt="Pixel Tulkun preview inside miniature window"
-                          width={520}
-                          height={220}
-                          loading="lazy"
-                          className="h-[72px] w-auto object-contain"
-                          style={{ imageRendering: "pixelated" }}
-                        />
+                      <div className="mt-2.5 flex flex-wrap gap-1 rounded-lg bg-[#0d1117] p-2.5">
+                        <span className="rounded bg-[#3178C6] px-2 py-0.5 font-mono text-[9px] font-semibold text-white">
+                          TypeScript
+                        </span>
+                        <span className="rounded bg-[#181717] px-2 py-0.5 font-mono text-[9px] font-semibold text-white">
+                          Next.js
+                        </span>
+                        <span className="rounded bg-[#06B6D4] px-2 py-0.5 font-mono text-[9px] font-semibold text-[#111111]">
+                          Tailwind
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -229,7 +229,7 @@ export function HomeOpenSourceSection({
                   Contribute
                 </h3>
                 <p className="mt-1.5 text-[14px] leading-relaxed text-[var(--home-text-2)]">
-                  Report a bug, request a creature or open a pull request on
+                  Report a bug, suggest a template or open a pull request on
                   GitHub.
                 </p>
               </div>

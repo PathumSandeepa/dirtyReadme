@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
-const repoName = "dynamic-readme-creature";
+const repoName = "DirtyReadme";
 const prodBasePath = `/${repoName}`;
 const basePath = isProd ? prodBasePath : "";
 

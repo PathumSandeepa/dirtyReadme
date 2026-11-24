@@ -1249,7 +1249,7 @@ export function renderShareCardToCanvas(
   ctx.font = `700 15px ${mono}`;
   ctx.fillStyle = "#E6EDF3";
   ctx.textAlign = "left";
-  ctx.fillText(`READMEFORGE  @${safeUser}`, 66, 57);
+  ctx.fillText(`DIRTYREADME  @${safeUser}`, 66, 57);
 
   ctx.fillStyle = p.accentMain;
   ctx.textAlign = "right";

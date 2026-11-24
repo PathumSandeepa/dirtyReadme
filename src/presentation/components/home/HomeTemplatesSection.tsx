@@ -17,8 +17,9 @@ interface HomeTemplatesSectionProps {
   onStartBuilding: () => void;
 }
 
-const ROW_ONE_TEMPLATES = PROFILE_EDITOR_TEMPLATES.slice(0, 15);
-const ROW_TWO_TEMPLATES = PROFILE_EDITOR_TEMPLATES.slice(15, 30);
+const TEMPLATE_SPLIT_INDEX = Math.ceil(PROFILE_EDITOR_TEMPLATES.length / 2);
+const ROW_ONE_TEMPLATES = PROFILE_EDITOR_TEMPLATES.slice(0, TEMPLATE_SPLIT_INDEX);
+const ROW_TWO_TEMPLATES = PROFILE_EDITOR_TEMPLATES.slice(TEMPLATE_SPLIT_INDEX);
 
 function TemplateMarqueeCard({
   tpl,
@@ -164,8 +165,7 @@ export function HomeTemplatesSection({
 
       <Reveal className="mx-auto mt-12 flex max-w-[1160px] flex-col items-center px-4 text-center sm:px-6">
         <p className="text-[18px] font-medium text-[var(--home-text-2)]">
-          {HOME_FACTS.templateCount} templates, ready for every kind of
-          developer.
+          {HOME_FACTS.templateCount} templates for every kind of developer.
         </p>
         <button
           type="button"

@@ -1,6 +1,7 @@
 {
-  "name": "dynamic-readme-creature",
+  "name": "dirtyreadme",
   "version": "0.1.0",
+  "description": "DirtyReadme is a free, open source GitHub README builder. Edit with a live preview, start from templates, add badges and links, and publish to your profile in one push.",
   "private": true,
   "scripts": {
     "dev": "next dev",
