@@ -5,4 +5,4 @@
 :HL["/dynamic-readme-creature/_next/static/media/d8aeca813a9ab546-s.p.18rizl4rsrl42.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/dynamic-readme-creature/_next/static/chunks/2mzs_dc-vadm4.css","style"]
 1:[["children",{"s":"__PAGE__","h":160}]]
-0:{"b":"mj-LT9UfgyJKJVi4iRkin","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"NkXUcufGH6Mwl280s25F6","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
