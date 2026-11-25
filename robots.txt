@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://pathumsandeepa.github.io/DirtyReadme/sitemap.xml
+Sitemap: https://pathumsandeepa.github.io/dirtyReadme/sitemap.xml
