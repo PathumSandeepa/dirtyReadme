@@ -879,8 +879,10 @@ export const LiveProfileCanvas = forwardRef<
   );
   const inTable = Boolean(editor?.isActive("table"));
 
+  const lastFormatStateJsonRef = useRef("");
+
   useEffect(() => {
-    onFormatStateChange?.({
+    const nextState: FormatPanelState = {
       hasEditor: Boolean(editor && viewMode === "visual"),
       headingLabel: currentHeadingLabel,
       hasHeadingUnderline,
@@ -902,7 +904,11 @@ export const LiveProfileCanvas = forwardRef<
       tableBorderColor,
       hasLink: Boolean(editor?.isActive("link")),
       currentLinkHref: String(editor?.getAttributes("link").href ?? ""),
-    });
+    };
+    const serialized = JSON.stringify(nextState);
+    if (serialized === lastFormatStateJsonRef.current) return;
+    lastFormatStateJsonRef.current = serialized;
+    onFormatStateChange?.(nextState);
   });
 
   const handleCopy = async (id: string, content: string) => {
