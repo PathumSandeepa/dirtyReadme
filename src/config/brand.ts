@@ -2,7 +2,7 @@ const GITHUB_PAGES_HOST = "https://pathumsandeepa.github.io";
 const CONFIGURED_BASE_PATH =
   process.env.NEXT_PUBLIC_BASE_PATH ||
   process.env.NEXT_PUBLIC_SITE_BASE_PATH ||
-  "/DirtyReadme";
+  "/dirtyReadme";
 const NORMALIZED_BASE_PATH = CONFIGURED_BASE_PATH.replace(/^\/+|\/+$/g, "");
 const SITE_URL = NORMALIZED_BASE_PATH
   ? `${GITHUB_PAGES_HOST}/${NORMALIZED_BASE_PATH}/`
@@ -13,12 +13,12 @@ export const BRAND = {
   tagline: "Build your GitHub README fast and push it in one click.",
   description:
     "DirtyReadme is a free, open source GitHub README builder. Edit with a live preview, start from templates, add badges and links, and publish to your profile in one push.",
-  repoUrl: "https://github.com/PathumSandeepa/DirtyReadme",
-  issuesUrl: "https://github.com/PathumSandeepa/DirtyReadme/issues",
-  pullsUrl: "https://github.com/PathumSandeepa/DirtyReadme/pulls",
-  readmeUrl: "https://github.com/PathumSandeepa/DirtyReadme#readme",
+  repoUrl: "https://github.com/PathumSandeepa/dirtyReadme",
+  issuesUrl: "https://github.com/PathumSandeepa/dirtyReadme/issues",
+  pullsUrl: "https://github.com/PathumSandeepa/dirtyReadme/pulls",
+  readmeUrl: "https://github.com/PathumSandeepa/dirtyReadme#readme",
   contributingUrl:
-    "https://github.com/PathumSandeepa/DirtyReadme#contributing",
+    "https://github.com/PathumSandeepa/dirtyReadme#contributing",
   authorUrl: "https://github.com/PathumSandeepa",
   authorHandle: "PathumSandeepa",
   siteUrl: SITE_URL,

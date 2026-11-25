@@ -6,8 +6,8 @@ Build your GitHub README fast and push it in one click.
 
 > This is an open source project. Issues, ideas and pull requests are welcome.
 
-- [Live site](https://pathumsandeepa.github.io/DirtyReadme/)
-- [GitHub repository](https://github.com/PathumSandeepa/DirtyReadme)
+- [Live site](https://pathumsandeepa.github.io/dirtyReadme/)
+- [GitHub repository](https://github.com/PathumSandeepa/dirtyReadme)
 
 ## Why DirtyReadme
 
@@ -68,8 +68,8 @@ DirtyReadme runs completely in your browser with no backend server. Your GitHub 
 ## Getting started
 
 ```bash
-git clone https://github.com/PathumSandeepa/DirtyReadme.git
-cd DirtyReadme
+git clone https://github.com/PathumSandeepa/dirtyReadme.git
+cd dirtyReadme
 pnpm install
 pnpm dev
 ```
@@ -98,7 +98,7 @@ docs/              Documentation and screenshots
 
 Contributions are welcome.
 
-1. Open an issue in [GitHub Issues](https://github.com/PathumSandeepa/DirtyReadme/issues) to describe a bug or propose an improvement.
+1. Open an issue in [GitHub Issues](https://github.com/PathumSandeepa/dirtyReadme/issues) to describe a bug or propose an improvement.
 2. Fork the repository and create a short feature branch.
 3. Follow the Next.js 16 notes in [AGENTS.md](AGENTS.md) and check `node_modules/next/dist/docs/` before changing Next.js APIs.
 4. Run `pnpm exec tsc --noEmit`, `pnpm lint` and `pnpm build` before opening a pull request.
