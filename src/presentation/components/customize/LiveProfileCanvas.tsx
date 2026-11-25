@@ -409,6 +409,24 @@ const BUBBLE_MENU_OPTIONS = {
 const getBubbleMenuContainer = () =>
   document.querySelector<HTMLElement>('[data-app="studio"]') ?? document.body;
 
+const shouldShowBubbleMenu = ({
+  editor: ed,
+}: {
+  editor: {
+    state: { selection: { empty: boolean } };
+    isActive: (name: string) => boolean;
+    getAttributes: (name: string) => Record<string, unknown>;
+  };
+}) => {
+  if (ed.state.selection.empty) return false;
+  if (ed.isActive("image")) {
+    return String(ed.getAttributes("image").src ?? "").includes(
+      "komarev.com/ghpvc"
+    );
+  }
+  return true;
+};
+
 export interface LiveProfileCanvasHandle {
   insertToken: (token: string) => void;
   insertSnippet: (markdown: string) => void;
@@ -1393,15 +1411,7 @@ export const LiveProfileCanvas = forwardRef<
                       options={BUBBLE_MENU_OPTIONS}
                       appendTo={getBubbleMenuContainer}
                       updateDelay={100}
-                      shouldShow={({ editor: ed }) => {
-                        if (ed.state.selection.empty) return false;
-                        if (ed.isActive("image")) {
-                          return String(
-                            ed.getAttributes("image").src ?? ""
-                          ).includes("komarev.com/ghpvc");
-                        }
-                        return true;
-                      }}
+                      shouldShow={shouldShowBubbleMenu}
                       className="z-50 flex flex-wrap items-center gap-0.5 rounded-[10px] bg-[var(--surface)] p-1 text-[var(--text)] shadow-[var(--shadow-float)]"
                     >
                       {editor.isActive("image") &&
